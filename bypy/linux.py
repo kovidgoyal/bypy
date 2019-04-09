@@ -129,10 +129,12 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
 
     for cmd in [
         # Basic build environment
-        'add-apt-repository ppa:deadsnakes/ppa',
         'apt-get update',
-        'apt-get install -y build-essential nasm cmake'
-        ' chrpath zsh git python3.7',
+        'apt-get install -y build-essential cmake software-properties-common'
+        ' nasm chrpath zsh git',
+        'add-apt-repository ppa:deadsnakes/ppa -y',
+        'apt-get update',
+        'apt-get install -y python3.7',
         deps_cmd,
         # Cleanup
         'apt-get clean',
