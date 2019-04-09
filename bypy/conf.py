@@ -13,7 +13,8 @@ def parse_conf_file(path_or_data_or_file_object):
         with open(path_or_data_or_file_object, 'rb') as f:
             path_or_data_or_file_object = f.read()
     for line in path_or_data_or_file_object.decode('utf-8').splitlines():
-        if line.startswith('#'):
+        line = line.strip()
+        if line.startswith('#') or not line:
             continue
         key, rest = line.split(maxsplit=1)
         ans[key] = ast.literal_eval(rest.strip())

@@ -237,13 +237,13 @@ def main(args=tuple(sys.argv)):
         del args[1]
     if not singleinstance():
         raise SystemExit('Another instance of the linux container is running')
+    initialize_env()
     if len(args) > 1:
         if args[1] == 'shutdown':
             raise SystemExit(0)
         if args[1] == 'container':
             build_container()
             return
-    initialize_env()
     if not check_for_image(arch):
         build_container()
     run(args)
