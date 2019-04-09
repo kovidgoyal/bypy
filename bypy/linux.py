@@ -9,12 +9,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from urllib.request import urlopen
 from functools import partial
+from urllib.request import urlopen
 
 from .conf import parse_conf_file
 from .constants import base_dir
-from .utils import call, print_cmd
+from .utils import call, print_cmd, single_instance
 
 DEFAULT_BASE_IMAGE = (
     'https://partner-images.canonical.com/core/'
@@ -224,14 +224,25 @@ def run(args):
         shutil.rmtree(tdir)
 
 
+def singleinstance():
+    name = f'bypy-{arch}-singleinstance-{os.getcwd()}'
+    return single_instance(name)
+
+
 def main(args=tuple(sys.argv)):
     global arch
     args = list(args)
     if len(args) > 1 and args[1] in ('64', '32'):
         arch = args[1]
         del args[1]
-    if len(args) > 1 and args[1] == 'shutdown':
-        raise SystemExit(0)
+    if not singleinstance():
+        raise SystemExit('Another instance of the linux container is running')
+    if len(args) > 1:
+        if args[1] == 'shutdown':
+            raise SystemExit(0)
+        if args[1] == 'container':
+            build_container()
+            return
     initialize_env()
     if not check_for_image(arch):
         build_container()
