@@ -28,8 +28,8 @@ conf = {}
 
 def initialize_env():
     global img_path, sw_dir
-    os.makedirs(os.path.join(base_dir(), 'sources-cache'), exist_ok=True)
-    output_dir = os.path.join(base_dir(), 'linux', arch)
+    os.makedirs(os.path.join(base_dir(), 'b', 'sources-cache'), exist_ok=True)
+    output_dir = os.path.join(base_dir(), 'b', 'linux', arch)
     os.makedirs(output_dir, exist_ok=True)
     img_path = os.path.abspath(
         os.path.realpath(os.path.join(output_dir, 'chroot')))
