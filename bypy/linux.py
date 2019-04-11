@@ -164,12 +164,12 @@ def check_for_image(tag):
 
 def get_mounts():
     ans = {}
-    with open('/proc/self/mountinfo', 'rb') as f:
-        for line in f:
-            line = line.decode('utf-8')
-            parts = line.split()
-            src, dest = parts[3:5]
-            ans[os.path.abspath(os.path.realpath(dest))] = src
+    lines = open('/proc/self/mountinfo', 'rb').read().decode(
+            'utf-8').splitlines()
+    for line in lines:
+        parts = line.split()
+        src, dest = parts[3:5]
+        ans[os.path.abspath(os.path.realpath(dest))] = src
     return ans
 
 
@@ -187,9 +187,9 @@ def mount_all(tdir):
 
     mount(tdir, '/tmp')
     mount(sw_dir, '/sw')
-    mount('sources-cache', '/sources')
-    mount(os.path.dirname(os.path.abspath(__file__)), '/bypy', readonly=True)
     mount(os.getcwd(), '/src', readonly=True)
+    mount(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+          '/bypy', readonly=True)
     mount('/dev', '/dev')
     scall('sudo', 'mount', '-t', 'proc', 'proc',
           os.path.join(img_path, 'proc'))
@@ -197,13 +197,17 @@ def mount_all(tdir):
     scall('sudo', 'chmod', 'a+w', os.path.join(img_path, 'dev/shm'))
     scall('sudo', 'mount', '--bind', '/dev/shm',
           os.path.join(img_path, 'dev/shm'))
-    print_cmd.silent_calls = False
 
 
 def umount_all():
-    for mp in sorted(get_mounts(), key=len, reverse=True):
-        if mp.startswith(img_path):
-            call('sudo', 'umount', '-l', mp, echo=False)
+    found = True
+    while found:
+        found = False
+        for mp in sorted(get_mounts(), key=len, reverse=True):
+            if mp.startswith(img_path) and '/chroot/src/' not in mp:
+                call('sudo', 'umount', '-l', mp, echo=False)
+                found = True
+                break
 
 
 def run(args):
