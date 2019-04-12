@@ -4,11 +4,48 @@
 
 
 import atexit
+import ctypes
 import errno
 import fcntl
+import os
 import shlex
+import shutil
 import socket
 import subprocess
+import sys
+import time
+
+from .constants import LIBDIR, iswindows, worker_env
+
+if iswindows:
+    import msvcrt
+    from ctypes import wintypes
+    k32 = ctypes.windll.kernel32
+    get_file_type = k32.GetFileType
+    get_file_type.argtypes = [wintypes.HANDLE]
+    get_file_type.restype = wintypes.DWORD
+    get_file_info_by_handle = k32.GetFileInformationByHandleEx
+    get_file_info_by_handle.argtypes = [
+        wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD]
+    get_file_info_by_handle.restype = wintypes.BOOL
+
+    def rmtree(x, tries=10):
+        for i in range(tries):
+            try:
+                return shutil.rmtree(x)
+            except WindowsError as err:
+                if i >= tries - 1:
+                    raise
+                if err.winerror == 32:
+                    # sharing violation (file open in another process)
+                    time.sleep(1)
+                    continue
+                raise
+else:
+    rmtree = shutil.rmtree
+
+
+hardlink = os.link
 
 
 def print_cmd(cmd):
@@ -42,3 +79,55 @@ def single_instance(name):
     fcntl.fcntl(fd, fcntl.F_SETFD, old_flags | fcntl.FD_CLOEXEC)
     atexit.register(sock.close)
     return True
+
+
+def current_env(library_path=False):
+    env = os.environ.copy()
+    env.update(worker_env)
+    if library_path:
+        if library_path is True:
+            library_path = LIBDIR
+        else:
+            library_path = library_path + os.pathsep + LIBDIR
+        env['LD_LIBRARY_PATH'] = library_path
+    return env
+
+
+def isatty():
+    if isatty.no_tty:
+        return False
+    f = sys.stdout
+    if f.isatty():
+        return True
+    if not iswindows:
+        return False
+    # Check for a cygwin ssh pipe
+    buf = ctypes.create_string_buffer(1024)
+    h = msvcrt.get_osfhandle(f.fileno())
+    if get_file_type(h) != 3:
+        return False
+    ret = get_file_info_by_handle(h, 2, buf, ctypes.sizeof(buf))
+    if not ret:
+        raise ctypes.WinError()
+    data = buf.raw
+    name = data[4:].decode('utf-16').rstrip(u'\0')
+    parts = name.split('-')
+    return (
+        parts[0] == r'\cygwin' and parts[2].startswith('pty') and
+        parts[4] == 'master')
+
+
+isatty.no_tty = False
+
+
+def run_shell(library_path=False):
+    if not isatty():
+        raise SystemExit('STDOUT is not a tty, aborting...')
+    sh = 'C:/cygwin64/bin/zsh' if iswindows else '/bin/zsh'
+    env = current_env(library_path=library_path)
+    if iswindows:
+        from .constants import cygwin_paths
+        paths = env['PATH'].split(os.pathsep)
+        paths = cygwin_paths + paths
+        env['PATH'] = os.pathsep.join(paths)
+    return subprocess.Popen([sh, '-i'], env=env).wait()

@@ -66,7 +66,7 @@ def chroot(cmd, as_root=True):
     user = pwd.getpwuid(os.geteuid()).pw_name
     env = {
         'PATH': '/sbin:/usr/sbin:/bin:/usr/bin',
-        'PS1': '\x1b[92mchroot\x1b[0m ({}-bit) {}'.format(
+        'PS1': '\x1b[92mbypy\x1b[0m ({}-bit) %d {} '.format(
             arch, '#' if as_root else '$'),
         'HOME': '/root' if as_root else '/home/' + user,
         'USER': 'root' if as_root else user,
@@ -219,7 +219,7 @@ def run(args):
         open(os.path.join(tdir, '.zshrc'), 'wb').close()
     try:
         mount_all(tdir)
-        cmd = ['python3', '/bypy', 'main'] + args
+        cmd = ['python3.7', '/bypy', 'main'] + args
         os.environ.pop('LANG', None)
         for k in tuple(os.environ):
             if k.startswith('LC') or k.startswith('XAUTH'):
