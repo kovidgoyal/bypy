@@ -31,11 +31,13 @@ def base_dir():
 ROOT = 'C:\\' if iswindows else '/'
 is64bit = sys.maxsize > (1 << 32)
 SW = ROOT + 'sw'
+PKG = os.path.join(SW, 'pkg')
 if iswindows:
     is64bit = os.environ['BUILD_ARCH'] == '64'
     SW += '64' if is64bit else '32'
 BYPY = ROOT + 'bypy'
 SRC = ROOT + 'src'
+OS_NAME = 'windows' if iswindows else ('macos' if ismacos else 'linux')
 SOURCES = os.path.join(SRC, 'bypy', 'b', 'sources-cache')
 PATCHES = os.path.join(BYPY, 'patches')
 if iswindows:
@@ -77,3 +79,16 @@ else:
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     LIBDIR = os.path.join(PREFIX, 'lib')
     LDFLAGS = worker_env['LDFLAGS'] = f'-L{LIBDIR} -Wl,-rpath-link,{LIBDIR}'
+
+
+def mkdtemp(prefix=''):
+    tdir = getattr(mkdtemp, 'tdir', None)
+    if tdir is None:
+        if iswindows:
+            tdir = tempfile.tempdir
+        else:
+            tdir = os.path.join(tempfile.gettempdir(), 't')
+        from .utils import ensure_clear_dir
+        ensure_clear_dir(tdir)
+        mkdtemp.tdir = tdir
+    return tdir

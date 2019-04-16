@@ -6,6 +6,7 @@ import argparse
 import sys
 
 from .utils import run_shell
+from .deps import main as deps_main, init_env
 
 
 def option_parser():
@@ -32,8 +33,12 @@ def option_parser():
 def main(args):
     args = option_parser().parse_args(args[2:])
     if args.shell or args.deps == ['shell']:
+        init_env()
         run_shell()
         return
+    if args.deps == ['program']:
+        raise NotImplementedError('TODO: implement building program')
+    deps_main(args)
 
 
 if __name__ == '__main__':

@@ -131,3 +131,26 @@ def run_shell(library_path=False):
         paths = cygwin_paths + paths
         env['PATH'] = os.pathsep.join(paths)
     return subprocess.Popen([sh, '-i'], env=env).wait()
+
+
+def lcopy(src, dst, no_hardlinks=False):
+    try:
+        if os.path.islink(src):
+            linkto = os.readlink(src)
+            os.symlink(linkto, dst)
+            return True
+        else:
+            if no_hardlinks:
+                shutil.copy(src, dst)
+            else:
+                os.link(src, dst)
+            return False
+    except FileExistsError:
+        os.unlink(dst)
+        return lcopy(src, dst)
+
+
+def ensure_clear_dir(path):
+    if os.path.exists(path):
+        rmtree(path)
+    os.makedirs(path)
