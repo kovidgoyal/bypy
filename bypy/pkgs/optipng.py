@@ -5,8 +5,8 @@
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
-from .constants import iswindows
-from .utils import simple_build, run, install_binaries
+from bypy.constants import iswindows
+from bypy.utils import simple_build, run, install_binaries
 
 
 def main(args):

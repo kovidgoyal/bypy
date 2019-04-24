@@ -5,7 +5,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .utils import python_build, replace_in_file, python_install
+from bypy.utils import python_build, replace_in_file, python_install
 
 
 def main(args):

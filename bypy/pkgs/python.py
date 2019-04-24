@@ -9,8 +9,8 @@ import re
 import glob
 import shutil
 
-from .constants import build_dir, CFLAGS, isosx, iswindows, LIBDIR, PREFIX, islinux, PYTHON, is64bit
-from .utils import ModifiedEnv, run, simple_build, replace_in_file, install_binaries, copy_headers, walk
+from bypy.constants import build_dir, CFLAGS, ismacos, iswindows, LIBDIR, PREFIX, islinux, PYTHON, is64bit
+from bypy.utils import ModifiedEnv, run, simple_build, replace_in_file, install_binaries, copy_headers, walk
 
 if iswindows:
     def main(args):
@@ -60,12 +60,12 @@ else:
         conf = (
             '--prefix={} --with-threads --enable-ipv6 --enable-unicode={}'
             ' --with-system-expat --with-pymalloc --without-ensurepip').format(
-            build_dir(), ('ucs2' if isosx or iswindows else 'ucs4'))
+            build_dir(), ('ucs2' if ismacos or iswindows else 'ucs4'))
         if islinux:
             conf += ' --with-system-ffi --enable-shared'
             # Needed as the system openssl is too old, causing the _ssl module to fail
             env['LD_LIBRARY_PATH'] = LIBDIR
-        elif isosx:
+        elif ismacos:
             conf += ' --enable-framework={}/python --with-signal-module'.format(build_dir())
             env['MACOSX_DEPLOYMENT_TARGET'] = '10.9'  # Needed for readline detection
 
@@ -75,7 +75,7 @@ else:
         bindir = os.path.join(build_dir(), 'bin')
         P = os.path.join(bindir, 'python')
         replace_in_file(P + '-config', re.compile(br'^#!.+/bin/', re.MULTILINE), '#!' + PREFIX + '/bin/')
-        if isosx:
+        if ismacos:
             bindir = os.path.join(build_dir(), 'bin')
             for f in os.listdir(bindir):
                 link = os.path.join(bindir, f)

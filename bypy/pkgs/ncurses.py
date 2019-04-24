@@ -5,8 +5,8 @@
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
-from .constants import PKG_CONFIG_PATH
-from .utils import simple_build
+from bypy.constants import PKG_CONFIG_PATH
+from bypy.utils import simple_build
 
 
 def main(args):

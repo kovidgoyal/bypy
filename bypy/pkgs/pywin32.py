@@ -7,8 +7,8 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import shutil
 
-from .constants import is64bit, PYTHON, build_dir, SW, PREFIX
-from .utils import run, replace_in_file
+from bypy.constants import is64bit, PYTHON, build_dir, SW, PREFIX
+from bypy.utils import run, replace_in_file
 
 
 def main(args):

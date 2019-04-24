@@ -7,8 +7,8 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import re
 
-from .constants import PREFIX, iswindows, build_dir, islinux
-from .utils import simple_build, run, install_tree, walk, install_binaries, replace_in_file
+from bypy.constants import PREFIX, iswindows, build_dir, islinux
+from bypy.utils import simple_build, run, install_tree, walk, install_binaries, replace_in_file
 
 
 def main(args):

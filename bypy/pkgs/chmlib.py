@@ -6,8 +6,8 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 import os
 
-from .constants import isosx, iswindows
-from .utils import simple_build, run, install_binaries, copy_headers
+from bypy.constants import ismacos, iswindows
+from bypy.utils import simple_build, run, install_binaries, copy_headers
 
 
 def main(args):
@@ -20,6 +20,6 @@ def main(args):
         copy_headers('chm_lib.h')
     else:
         conf = '--disable-dependency-tracking'
-        if isosx:
+        if ismacos:
             conf += ' --disable-pread --disable-io64'
         simple_build(conf)

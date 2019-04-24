@@ -6,8 +6,8 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 import os
 
-from .constants import build_dir, isosx, PREFIX
-from .utils import simple_build, windows_cmake_build, iswindows, install_binaries
+from bypy.constants import build_dir, ismacos, PREFIX
+from bypy.utils import simple_build, windows_cmake_build, iswindows, install_binaries
 
 
 def main(args):
@@ -17,6 +17,6 @@ def main(args):
         install_binaries('build/cjpeg-static.exe', 'bin', fname_map=lambda x: 'cjpeg-calibre.exe')
     else:
         conf = '--disable-dependency-tracking --disable-shared --with-jpeg8 --without-turbojpeg'
-        if isosx:
+        if ismacos:
             conf += ' --host x86_64-apple-darwin NASM={}/bin/nasm'.format(PREFIX)
         simple_build(conf, override_prefix=os.path.join(build_dir(), 'private', 'mozjpeg'))

@@ -14,7 +14,7 @@ def main(args):
             '/p:Configuration=Release')
         install_binaries('./build/*/Release/unrar.dll', 'bin')
         install_binaries('./build/*/Release/UnRAR.lib', 'lib')
-        # from .utils import run_shell
+        # from bypy.utils import run_shell
         # run_shell()
     else:
         if ismacos:

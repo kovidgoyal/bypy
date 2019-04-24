@@ -5,8 +5,8 @@
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
-from .constants import isosx, PREFIX, iswindows
-from .utils import simple_build, windows_cmake_build
+from bypy.constants import ismacos, PREFIX, iswindows
+from bypy.utils import simple_build, windows_cmake_build
 
 
 def main(args):
@@ -19,6 +19,6 @@ def main(args):
         )
     else:
         conf = ' --disable-dependency-tracking --enable-shared --with-jpeg8 --without-turbojpeg --disable-static'
-        if isosx:
+        if ismacos:
             conf += ' --host x86_64-apple-darwin NASM={}/bin/nasm'.format(PREFIX)
         simple_build(conf)

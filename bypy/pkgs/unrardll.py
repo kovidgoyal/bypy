@@ -6,8 +6,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
-from .constants import PREFIX
-from .utils import ModifiedEnv, python_build, python_install
+from bypy.constants import PREFIX
+from bypy.utils import ModifiedEnv, python_build, python_install
 
 
 def main(args):

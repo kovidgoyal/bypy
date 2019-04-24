@@ -7,8 +7,8 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import shutil
 
-from .constants import PREFIX, build_dir, islinux, CMAKE, LIBDIR, iswindows
-from .utils import walk, run, ModifiedEnv, install_binaries, replace_in_file, install_tree, windows_cmake_build, copy_headers
+from bypy.constants import PREFIX, build_dir, islinux, CMAKE, LIBDIR, iswindows
+from bypy.utils import walk, run, ModifiedEnv, install_binaries, replace_in_file, install_tree, windows_cmake_build, copy_headers
 
 
 def main(args):

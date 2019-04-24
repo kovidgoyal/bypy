@@ -5,7 +5,7 @@
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
-from .utils import windows_cmake_build
+from bypy.utils import windows_cmake_build
 
 
 def main(args):

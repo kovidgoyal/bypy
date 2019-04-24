@@ -8,8 +8,8 @@ import os
 import re
 import shutil
 
-from .constants import build_dir, PREFIX, MAKEOPTS
-from .utils import run, replace_in_file, install_binaries, copy_headers
+from bypy.constants import build_dir, PREFIX, MAKEOPTS
+from bypy.utils import run, replace_in_file, install_binaries, copy_headers
 
 
 def main(args):

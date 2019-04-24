@@ -4,8 +4,8 @@
 
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
-from .constants import iswindows
-from .utils import windows_cmake_build
+from bypy.constants import iswindows
+from bypy.utils import windows_cmake_build
 
 
 if iswindows:

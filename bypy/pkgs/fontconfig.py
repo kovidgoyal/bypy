@@ -7,8 +7,8 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import shutil
 
-from .constants import PREFIX, build_dir
-from .utils import simple_build, ModifiedEnv, walk
+from bypy.constants import PREFIX, build_dir
+from bypy.utils import simple_build, ModifiedEnv, walk
 
 
 def main(args):

@@ -6,8 +6,8 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 import os
 
-from .constants import PREFIX, PYTHON, iswindows
-from .utils import python_build, run, replace_in_file, python_install
+from bypy.constants import PREFIX, PYTHON, iswindows
+from bypy.utils import python_build, run, replace_in_file, python_install
 
 
 def main(args):

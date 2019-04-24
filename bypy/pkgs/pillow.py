@@ -7,8 +7,8 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import re
 
-from .constants import iswindows, PREFIX
-from .utils import replace_in_file, python_build, python_install
+from bypy.constants import iswindows, PREFIX
+from bypy.utils import replace_in_file, python_build, python_install
 
 
 if iswindows:

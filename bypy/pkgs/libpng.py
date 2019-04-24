@@ -6,8 +6,8 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 import os
 
-from .constants import iswindows, PREFIX
-from .utils import simple_build, windows_cmake_build
+from bypy.constants import iswindows, PREFIX
+from bypy.utils import simple_build, windows_cmake_build
 
 
 def main(args):

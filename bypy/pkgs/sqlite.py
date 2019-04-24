@@ -5,8 +5,8 @@
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
-from .constants import CFLAGS, isosx, iswindows
-from .utils import simple_build, ModifiedEnv, copy_headers
+from bypy.constants import CFLAGS, ismacos, iswindows
+from bypy.utils import simple_build, ModifiedEnv, copy_headers
 
 
 def main(args):
@@ -16,7 +16,7 @@ def main(args):
         copy_headers('sqlite3*.h')
         return
     cflags = CFLAGS
-    if isosx:
+    if ismacos:
         cflags += ' -O2 -DSQLITE_ENABLE_LOCKING_STYLE'
     with ModifiedEnv(CFLAGS=cflags):
         simple_build('--disable-dependency-tracking --disable-static')

@@ -8,8 +8,8 @@ import os
 import re
 import shutil
 
-from .constants import MAKEOPTS, build_dir, iswindows, PREFIX, isosx
-from .utils import walk, run, run_shell, replace_in_file, ModifiedEnv, current_env, apply_patch
+from bypy.constants import MAKEOPTS, build_dir, iswindows, PREFIX, ismacos
+from bypy.utils import walk, run, run_shell, replace_in_file, ModifiedEnv, current_env, apply_patch
 
 
 def main(args):
@@ -17,7 +17,7 @@ def main(args):
     apply_patch('webkit_control_hinting.patch', convert_line_endings=iswindows)
     # Do not build webkit2
     replace_in_file('Tools/qmake/mkspecs/features/configure.prf', 'build_webkit2 \\', '\\')
-    if isosx:
+    if ismacos:
         # Bug in qtwebkit, the OBJC API gets turned on if
         # MAC_OSX_DEPLOYMENT_TARGET >= 10.9 (which we do in the qt build)
         # However it is broken, so disable it explicitly here

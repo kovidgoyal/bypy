@@ -5,8 +5,8 @@
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
-from .constants import PREFIX, LDFLAGS, CFLAGS, LIBDIR, islinux
-from .utils import simple_build, ModifiedEnv
+from bypy.constants import PREFIX, LDFLAGS, CFLAGS, LIBDIR, islinux
+from bypy.utils import simple_build, ModifiedEnv
 
 
 def main(args):

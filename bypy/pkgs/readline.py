@@ -6,8 +6,8 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 import glob
 import os
-from .constants import PATCHES
-from .utils import simple_build, apply_patch
+from bypy.constants import PATCHES
+from bypy.utils import simple_build, apply_patch
 
 
 def main(args):

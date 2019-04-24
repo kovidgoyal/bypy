@@ -6,8 +6,8 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 
 import os
-from .constants import iswindows, is64bit
-from .utils import walk, run, install_binaries
+from bypy.constants import iswindows, is64bit
+from bypy.utils import walk, run, install_binaries
 
 
 def main(args):

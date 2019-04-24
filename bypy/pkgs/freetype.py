@@ -8,8 +8,8 @@ import os
 import shutil
 import glob
 
-from .constants import iswindows, is64bit, build_dir
-from .utils import simple_build, replace_in_file, run, install_binaries
+from bypy.constants import iswindows, is64bit, build_dir
+from bypy.utils import simple_build, replace_in_file, run, install_binaries
 
 
 def main(args):
@@ -37,7 +37,7 @@ def main(args):
         install_binaries('objs/vc2010/*/freetype*MT.dll', 'bin')
         for f in glob.glob('objs/vc2010/*/freetype*MT.lib'):
             shutil.copy2(f, os.path.join(build_dir(), 'lib', 'freetype.lib'))
-        # from .utils import run_shell
+        # from bypy.utils import run_shell
         # run_shell()
     else:
         simple_build('--disable-dependency-tracking --disable-static')

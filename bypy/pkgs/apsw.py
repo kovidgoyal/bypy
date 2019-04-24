@@ -7,8 +7,8 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import shutil
 
-from .constants import iswindows, PYTHON, build_dir, SW, PREFIX
-from .utils import run
+from bypy.constants import iswindows, PYTHON, build_dir, SW, PREFIX
+from bypy.utils import run
 
 
 if iswindows:

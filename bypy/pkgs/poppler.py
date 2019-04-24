@@ -7,8 +7,8 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import re
 
-from .constants import CFLAGS, PREFIX, isosx, MAKEOPTS, iswindows
-from .utils import run, ModifiedEnv, install_binaries, simple_build, windows_cmake_build, replace_in_file
+from bypy.constants import CFLAGS, PREFIX, ismacos, MAKEOPTS, iswindows
+from bypy.utils import run, ModifiedEnv, install_binaries, simple_build, windows_cmake_build, replace_in_file
 
 
 def main(args):
@@ -41,7 +41,7 @@ def main(args):
                     '--enable-zlib --enable-splash-output --disable-cairo-output --disable-poppler-glib '
                     '--disable-poppler-qt4 --disable-poppler-qt5 --disable-poppler-cpp --disable-gtk-test '
                     '--enable-libjpeg --enable-compile-warnings=no')
-            if isosx:
+            if ismacos:
                 simple_build(conf)
             else:
                 run(('./configure --prefix={} ' + conf).format(PREFIX))

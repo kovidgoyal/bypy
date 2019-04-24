@@ -7,12 +7,12 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import shutil
 
-from .constants import is64bit, CFLAGS, LDFLAGS, MAKEOPTS, isosx, build_dir, iswindows
-from .utils import run
+from bypy.constants import is64bit, CFLAGS, LDFLAGS, MAKEOPTS, ismacos, build_dir, iswindows
+from bypy.utils import run
 
 
 def main(args):
-    if isosx:
+    if ismacos:
         run('sh ./Configure darwin64-x86_64-cc shared enable-ec_nistp_64_gcc_128 no-ssl2 --openssldir=' + build_dir())
         run('make ' + MAKEOPTS)
         run('make install')

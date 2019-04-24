@@ -6,13 +6,13 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 import os
 
-from .constants import PYTHON, MAKEOPTS, build_dir, PREFIX, isosx, iswindows
-from .utils import run, replace_in_file
+from bypy.constants import PYTHON, MAKEOPTS, build_dir, PREFIX, ismacos, iswindows
+from bypy.utils import run, replace_in_file
 
 
 def main(args):
     b = build_dir()
-    if isosx:
+    if ismacos:
         b = os.path.join(b, 'python/Python.framework/Versions/2.7')
     elif iswindows:
         b = os.path.join(b, 'private', 'python')

@@ -7,8 +7,8 @@ from __future__ import (unicode_literals, division, absolute_import,
 import os
 import shutil
 
-from .constants import CFLAGS, LDFLAGS, MAKEOPTS, build_dir, isosx, islinux, LIBDIR, iswindows, PREFIX
-from .utils import apply_patch, run, run_shell, replace_in_file, ModifiedEnv, current_env
+from bypy.constants import CFLAGS, LDFLAGS, MAKEOPTS, build_dir, ismacos, islinux, LIBDIR, iswindows, PREFIX
+from bypy.utils import apply_patch, run, run_shell, replace_in_file, ModifiedEnv, current_env
 
 
 def main(args):
@@ -28,7 +28,7 @@ def main(args):
             'searchOrder << QFileInfo(qAppFileName()).path();',
             r'''searchOrder << (QFileInfo(qAppFileName()).path().replace(QLatin1Char('/'), QLatin1Char('\\')) + QString::fromLatin1("\\app\\DLLs\\"));''')
     cflags, ldflags = CFLAGS, LDFLAGS
-    if isosx:
+    if ismacos:
         apply_patch('fix_mojave_font_weights_in_qt_5.6.patch')
         ldflags = '-L' + LIBDIR
         # The following is needed as without it the Qt build system does not add the
@@ -52,7 +52,7 @@ def main(args):
     if islinux:
         # Ubuntu 12.04 has gcc 4.6.3 which does not support c++11
         conf += ' -qt-xcb -glib -openssl -gtkstyle -qt-pcre -c++std c++98'
-    elif isosx:
+    elif ismacos:
         # Use c++11 rather than the newest available for maximum backwards
         # compat
         conf += ' -no-pkg-config -framework -no-openssl -securetransport -no-freetype -no-fontconfig -c++std c++11'
