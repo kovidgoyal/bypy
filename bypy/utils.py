@@ -7,6 +7,7 @@ import atexit
 import ctypes
 import errno
 import fcntl
+import glob
 import os
 import shlex
 import shutil
@@ -18,6 +19,7 @@ import tarfile
 import time
 import zipfile
 from contextlib import contextmanager
+from functools import partial
 
 from .constants import (LIBDIR, MAKEOPTS, PREFIX, PYTHON, build_dir, islinux,
                         iswindows, mkdtemp, worker_env)
@@ -56,6 +58,7 @@ else:
 
 
 hardlink = os.link
+ensure_dir = partial(os.makedirs, ensure_ok=True)
 
 
 def print_cmd(cmd):
@@ -397,3 +400,53 @@ def walk(path='.'):
     for dirpath, dirnames, filenames in os.walk(path):
         for f in filenames:
             yield os.path.join(dirpath, f)
+
+
+def copy_headers(pattern, destdir='include'):
+    dest = os.path.join(build_dir(), destdir)
+    ensure_dir(dest)
+    files = glob.glob(pattern)
+    for f in files:
+        dst = os.path.join(dest, os.path.basename(f))
+        if os.path.isdir(f):
+            shutil.copytree(f, dst)
+        else:
+            shutil.copy2(f, dst)
+
+
+def library_symlinks(full_name, destdir='lib'):
+    parts = full_name.split('.')
+    idx = parts.index('so')
+    basename = '.'.join(parts[:idx + 1])
+    parts = parts[idx + 1:]
+    for i in range(len(parts)):
+        suffix = '.'.join(parts[:i])
+        if suffix:
+            suffix = '.' + suffix
+        ln = os.path.join(build_dir(), destdir, basename + suffix)
+        try:
+            os.symlink(full_name, ln)
+        except FileExistsError:
+            os.unlink(ln)
+            os.symlink(full_name, ln)
+
+
+def install_binaries(
+    pattern, destdir='lib', do_symlinks=False, fname_map=os.path.basename
+):
+    dest = os.path.join(build_dir(), destdir)
+    os.makedirs(dest, exist_ok=True)
+    files = glob.glob(pattern)
+    files.sort(key=len, reverse=True)
+    if not files:
+        raise ValueError(
+            f'The pattern {pattern} did not match any actual files')
+    for f in files:
+        dst = os.path.join(dest, fname_map(f))
+        islink = lcopy(f, dst)
+        if not islink:
+            os.chmod(dst, 0o755)
+        if iswindows and os.path.exists(f + '.manifest'):
+            shutil.copy(f + '.manifest', dst + '.manifest')
+    if do_symlinks:
+        library_symlinks(files[0], destdir=destdir)
