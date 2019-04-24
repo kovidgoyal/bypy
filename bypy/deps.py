@@ -29,7 +29,7 @@ def build_dep(dep, args, dest_dir=PREFIX):
         m = importlib.import_module('bypy.pkgs.' + idep)
     except ImportError:
         module_dir = os.path.join(os.path.dirname(
-            os.path.abspath(__file__)), '../pkgs')
+            os.path.abspath(__file__)), 'pkgs')
         if os.path.exists(os.path.join(module_dir, f'{idep}.py')):
             raise
         m = None
@@ -46,7 +46,7 @@ def build_dep(dep, args, dest_dir=PREFIX):
                 simple_build()
         if ismacos:
             fix_install_names(m, output_dir)
-    except Exception:
+    except (Exception, SystemExit):
         import traceback
         traceback.print_exc()
         print('\nDropping you into a shell')

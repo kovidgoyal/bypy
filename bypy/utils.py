@@ -58,7 +58,7 @@ else:
 
 
 hardlink = os.link
-ensure_dir = partial(os.makedirs, ensure_ok=True)
+ensure_dir = partial(os.makedirs, exist_ok=True)
 
 
 def print_cmd(cmd):
@@ -159,12 +159,7 @@ def run(*args, **kw):
     print(' '.join(shlex.quote(x) for x in cmd))
     sys.stdout.flush()
     env = current_env(library_path=kw.get('library_path'))
-    try:
-        p = subprocess.Popen(cmd, env=env, cwd=kw.get('cwd'))
-    except EnvironmentError as err:
-        if err.errno == errno.ENOENT:
-            raise SystemExit('Could not find the program: %s' % cmd[0])
-        raise
+    p = subprocess.Popen(cmd, env=env, cwd=kw.get('cwd'))
     rc = p.wait()
     if kw.get('no_check'):
         return rc
@@ -450,3 +445,20 @@ def install_binaries(
             shutil.copy(f + '.manifest', dst + '.manifest')
     if do_symlinks:
         library_symlinks(files[0], destdir=destdir)
+
+
+def replace_in_file(path, old, new, missing_ok=False):
+    if isinstance(old, str):
+        old = old.encode('utf-8')
+    if isinstance(new, str):
+        new = new.encode('utf-8')
+    with open(path, 'r+b') as f:
+        raw = f.read()
+        if isinstance(old, bytes):
+            nraw = raw.replace(old, new)
+        else:
+            nraw = old.sub(new, raw)
+        if raw == nraw and not missing_ok:
+            raise ValueError('Failed (pattern not found) to patch: ' + path)
+        f.seek(0), f.truncate()
+        f.write(nraw)
