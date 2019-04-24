@@ -10,11 +10,12 @@ import shutil
 import sys
 import tarfile
 import time
+from functools import lru_cache
+from operator import itemgetter
 from urllib.parse import urljoin
 from urllib.request import urlopen, urlretrieve
-from functools import lru_cache
 
-from .constants import SOURCES, iswindows, SRC, OS_NAME
+from .constants import OS_NAME, SOURCES, SRC, iswindows
 from .utils import run, tempdir, walk
 
 all_filenames = set()
@@ -43,19 +44,31 @@ def ok_dep(dep):
     return True
 
 
+def download_information(dep):
+    s = dep.get('unix', {'urls': ()})
+    if iswindows:
+        s = dep.get('windows') or s
+    return s
+
+
+def decorate_dep(dep):
+    s = download_information(dep)
+    if 'python' not in dep and s['urls'] == ['pypi']:
+        dep['python'] = 2
+    dep['filename'] = s.get('filename')
+    return dep
+
+
 @lru_cache()
 def read_deps(only_buildable=True):
     with open(os.path.join(SRC, 'bypy', 'sources.json')) as f:
         data = json.load(f)
     if only_buildable:
-        return tuple(filter(ok_dep, data))
+        return tuple(filter(ok_dep, map(decorate_dep, data)))
     ans = {}
     for item in data:
         add_filenames(item)
-        if iswindows:
-            s = item.get('windows') or item['unix']
-        else:
-            s = item['unix']
+        s = download_information(item)
         s['name'] = item['name']
         s['urls'] = [process_url(x, s['filename']) for x in s['urls']]
         ans[s['name']] = s
@@ -181,12 +194,13 @@ def cleanup_cache():
 def download(pkgs=None):
     sources = read_deps(only_buildable=False)
     cleanup_cache()
+    pkg_names = frozenset(map(itemgetter('name'), pkgs or ()))
     for name, pkg in sources.items():
-        if not pkgs or name in pkgs:
+        if not pkg_names or name in pkg_names:
             if not verify_hash(pkg):
                 download_pkg(pkg)
 
 
-def filename_for_dep(dep):
+def filename_for_dep(dep_name):
     sources = read_deps(only_buildable=False)
-    return sources[dep]['filename']
+    return sources[dep_name]['filename']

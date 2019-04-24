@@ -22,13 +22,14 @@ DEFAULT_BASE_IMAGE = (
 )
 
 arch = '64'
-img_path = sw_dir = None
+img_path = sw_dir = sources_dir = None
 conf = {}
 
 
 def initialize_env():
-    global img_path, sw_dir
-    os.makedirs(os.path.join(base_dir(), 'b', 'sources-cache'), exist_ok=True)
+    global img_path, sw_dir, sources_dir
+    sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
+    os.makedirs(sources_dir, exist_ok=True)
     output_dir = os.path.join(base_dir(), 'b', 'linux', arch)
     os.makedirs(output_dir, exist_ok=True)
     img_path = os.path.abspath(
@@ -176,6 +177,7 @@ def get_mounts():
 def mount_all(tdir):
     scall = partial(call, echo=False)
     current_mounts = get_mounts()
+    base = os.path.dirname(os.path.abspath(__file__))
 
     def mount(src, dest, readonly=False):
         dest = os.path.join(img_path, dest.lstrip('/'))
@@ -188,8 +190,8 @@ def mount_all(tdir):
     mount(tdir, '/tmp')
     mount(sw_dir, '/sw')
     mount(os.getcwd(), '/src', readonly=True)
-    mount(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-          '/bypy', readonly=True)
+    mount(sources_dir, '/sources')
+    mount(os.path.dirname(base), '/bypy', readonly=True)
     mount('/dev', '/dev')
     scall('sudo', 'mount', '-t', 'proc', 'proc',
           os.path.join(img_path, 'proc'))

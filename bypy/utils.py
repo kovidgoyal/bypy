@@ -11,11 +11,16 @@ import os
 import shlex
 import shutil
 import socket
+import stat
 import subprocess
 import sys
+import tarfile
 import time
+import zipfile
+from contextlib import contextmanager
 
-from .constants import LIBDIR, iswindows, worker_env
+from .constants import (LIBDIR, MAKEOPTS, PREFIX, PYTHON, build_dir, islinux,
+                        iswindows, mkdtemp, worker_env)
 
 if iswindows:
     import msvcrt
@@ -41,8 +46,13 @@ if iswindows:
                     time.sleep(1)
                     continue
                 raise
+
+    def split(x):
+        x = x.replace('\\', '\\\\')
+        return shlex.split(x)
 else:
     rmtree = shutil.rmtree
+    split = shlex.split
 
 
 hardlink = os.link
@@ -120,6 +130,11 @@ def isatty():
 isatty.no_tty = False
 
 
+def set_title(x):
+    if isatty():
+        print('''\033]2;%s\007''' % x)
+
+
 def run_shell(library_path=False):
     if not isatty():
         raise SystemExit('STDOUT is not a tty, aborting...')
@@ -131,6 +146,32 @@ def run_shell(library_path=False):
         paths = cygwin_paths + paths
         env['PATH'] = os.pathsep.join(paths)
     return subprocess.Popen([sh, '-i'], env=env).wait()
+
+
+def run(*args, **kw):
+    if len(args) == 1 and isinstance(args[0], str):
+        cmd = split(args[0])
+    else:
+        cmd = args
+    print(' '.join(shlex.quote(x) for x in cmd))
+    sys.stdout.flush()
+    env = current_env(library_path=kw.get('library_path'))
+    try:
+        p = subprocess.Popen(cmd, env=env, cwd=kw.get('cwd'))
+    except EnvironmentError as err:
+        if err.errno == errno.ENOENT:
+            raise SystemExit('Could not find the program: %s' % cmd[0])
+        raise
+    rc = p.wait()
+    if kw.get('no_check'):
+        return rc
+    if rc != 0:
+        print('The following command failed, with return code:', rc)
+        print(' '.join(shlex.quote(x) for x in cmd))
+        print('Dropping you into a shell')
+        sys.stdout.flush()
+        run_shell(library_path=kw.get('library_path'))
+        raise SystemExit(1)
 
 
 def lcopy(src, dst, no_hardlinks=False):
@@ -154,3 +195,205 @@ def ensure_clear_dir(path):
     if os.path.exists(path):
         rmtree(path)
     os.makedirs(path)
+
+
+def extract(source):
+    if source.lower().endswith('.zip'):
+        with zipfile.ZipFile(source) as zf:
+            zf.extractall()
+    else:
+        with tarfile.open(source, encoding='utf-8') as tf:
+            tf.extractall()
+
+
+def chdir_for_extract(name):
+    tdir = mkdtemp(prefix=os.path.basename(name).split('-')[0] + '-')
+    os.chdir(tdir)
+    return tdir
+
+
+def extract_source_and_chdir(source):
+    tdir = chdir_for_extract(source)
+    print('Extracting source:', source)
+    sys.stdout.flush()
+    extract(source)
+    x = os.listdir('.')
+    if len(x) == 1:
+        os.chdir(x[0])
+    return tdir
+
+
+def simple_build(
+        configure_args=(), make_args=(), install_args=(),
+        library_path=None, override_prefix=None, no_parallel=False,
+        configure_name='./configure'):
+    if isinstance(configure_args, str):
+        configure_args = split(configure_args)
+    if isinstance(make_args, str):
+        make_args = split(make_args)
+    if isinstance(install_args, str):
+        install_args = split(install_args)
+    run(configure_name, '--prefix=' + (
+        override_prefix or build_dir()), *configure_args)
+    make_opts = [] if no_parallel else split(MAKEOPTS)
+    run('make', *(make_opts + list(make_args)))
+    mi = ['make'] + list(install_args) + ['install']
+    run(*mi, library_path=library_path)
+
+
+def is_macho_binary(p):
+    try:
+        with open(p, 'rb') as f:
+            return f.read(4) in (b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf')
+    except FileNotFoundError:
+        return False
+
+
+def read_lib_names(p):
+    lines = subprocess.check_output(
+            ['otool', '-D', p]).decode('utf-8').splitlines()
+    install_name = None
+    if len(lines) > 1:
+        install_name = lines[1].strip()
+    lines = subprocess.check_output(
+            ['otool', '-L', p]).decode('utf-8').splitlines()
+    deps = []
+    for line in lines[1:]:
+        val = line.partition('(')[0].strip()
+        if val != install_name:
+            deps.append(val)
+    return install_name, deps
+
+
+def flipwritable(fn, mode=None):
+    """
+    Flip the writability of a file and return the old mode. Returns None
+    if the file is already writable.
+    """
+    if os.access(fn, os.W_OK):
+        return None
+    old_mode = os.stat(fn).st_mode
+    os.chmod(fn, stat.S_IWRITE | old_mode)
+    return old_mode
+
+
+def change_lib_names(p, changes):
+    cmd = ['install_name_tool']
+    for old_name, new_name in changes:
+        if old_name is None:
+            cmd.extend(['-id', new_name])
+        else:
+            cmd.extend(['-change', old_name, new_name])
+    cmd.append(p)
+    old_mode = flipwritable(p)
+    subprocess.check_call(cmd)
+    if old_mode is not None:
+        flipwritable(p, old_mode)
+
+
+def fix_install_names(m, output_dir):
+    dylibs = set()
+    mfunc = getattr(m, 'install_name_change_predicate', lambda p: False)
+    mcfunc = getattr(m, 'install_name_change',
+                        lambda old_name, is_dep: old_name)
+    for dirpath, dirnames, filenames in os.walk(output_dir):
+        for f in filenames:
+            p = os.path.abspath(os.path.realpath(os.path.join(dirpath, f)))
+            if (
+                p not in dylibs and
+                os.path.exists(p) and
+                (p.endswith('.dylib') or (
+                    is_macho_binary(p) and (
+                    'bin' in p.split('/') or mfunc(p))))
+            ):
+                dylibs.add(p)
+    for p in dylibs:
+        changes = []
+        install_name, deps = read_lib_names(p)
+        if install_name:
+            nn = install_name.replace(output_dir, PREFIX)
+            nn = mcfunc(nn, False)
+            if nn != install_name:
+                changes.append((None, nn))
+        for name in deps:
+            nn = name.replace(output_dir, PREFIX)
+            nn = mcfunc(nn, True)
+            if nn != name:
+                changes.append((name, nn))
+        if changes:
+            print('Changing lib names in:', p)
+            change_lib_names(p, changes)
+
+
+def python_build(extra_args=()):
+    if isinstance(extra_args, str):
+        extra_args = split(extra_args)
+    run(PYTHON, 'setup.py', 'install', '--root', build_dir(),
+        *extra_args, library_path=True)
+
+
+def create_package(module, src_dir, outpath):
+
+    exclude = getattr(module, 'pkg_exclude_names', frozenset(
+        'doc man info test tests gtk-doc README'.split()))
+    exclude_extensions = getattr(module, 'pkg_exclude_extensions', frozenset((
+        'pyc', 'pyo', 'la', 'chm', 'cpp', 'rst', 'md')))
+
+    try:
+        shutil.rmtree(outpath)
+    except FileNotFoundError:
+        pass
+
+    os.makedirs(outpath)
+
+    for dirpath, dirnames, filenames in os.walk(src_dir):
+
+        def get_name(x):
+            return os.path.relpath(os.path.join(dirpath, x),
+                                   src_dir).replace(os.sep, '/')
+
+        def is_ok(name):
+            parts = name.split('/')
+            for p in parts:
+                if p in exclude or p.rpartition('.')[-1] in exclude_extensions:
+                    return False
+            if hasattr(module, 'filter_pkg') and module.filter_pkg(parts):
+                return False
+            return True
+
+        for d in tuple(dirnames):
+            if os.path.islink(os.path.join(dirpath, d)):
+                dirnames.remove(d)
+                filenames.append(d)
+                continue
+            name = get_name(d)
+            if is_ok(name):
+                try:
+                    os.makedirs(os.path.join(outpath, name))
+                except EnvironmentError as err:
+                    if err.errno != errno.EEXIST:
+                        raise
+            else:
+                dirnames.remove(d)
+
+        for f in filenames:
+            name = get_name(f)
+            if is_ok(name):
+                # on Linux hardlinking fails because the package is
+                # built in tmpfs and outpath is on a different volume
+                lcopy(os.path.join(dirpath, f), os.path.join(outpath, name),
+                      no_hardlinks=islinux)
+
+
+@contextmanager
+def tempdir(prefix='tmp-'):
+    tdir = mkdtemp(prefix)
+    yield tdir
+    rmtree(tdir)
+
+
+def walk(path='.'):
+    ''' A nice interface to os.walk '''
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            yield os.path.join(dirpath, f)

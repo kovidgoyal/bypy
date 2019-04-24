@@ -38,7 +38,7 @@ if iswindows:
 BYPY = ROOT + 'bypy'
 SRC = ROOT + 'src'
 OS_NAME = 'windows' if iswindows else ('macos' if ismacos else 'linux')
-SOURCES = os.path.join(SRC, 'bypy', 'b', 'sources-cache')
+SOURCES = ROOT + 'sources'
 PATCHES = os.path.join(BYPY, 'patches')
 if iswindows:
     tempfile.tempdir = 'C:\\t\\t'
@@ -48,6 +48,7 @@ PYTHON = os.path.join(
     PREFIX, 'private', 'python', 'python.exe') if iswindows else os.path.join(
             BIN, 'python')
 cpu_count = os.cpu_count
+MAKEOPTS = f'-j{cpu_count()}'
 worker_env = {}
 cygwin_paths = []
 
@@ -91,4 +92,10 @@ def mkdtemp(prefix=''):
         from .utils import ensure_clear_dir
         ensure_clear_dir(tdir)
         mkdtemp.tdir = tdir
-    return tdir
+    return tempfile.mkdtemp(prefix=prefix, dir=tdir)
+
+
+def build_dir(newval=None):
+    if newval is not None:
+        build_dir.ans = newval
+    return getattr(build_dir, 'ans', None)
