@@ -507,8 +507,12 @@ def cmake_build(
         library_path=None, override_prefix=None, no_parallel=False,
         **kw
 ):
+    if isinstance(make_args, str):
+        make_args = shlex.split(make_args)
     os.mkdir('build')
     defs = {
+        'CMAKE_BUILD_TYPE': 'RELEASE',
+        'CMAKE_PREFIX_PATH': PREFIX,
         'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
     cmd = ['cmake']
