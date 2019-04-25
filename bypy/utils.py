@@ -509,7 +509,7 @@ def cmake_build(
 ):
     os.mkdir('build')
     defs = {
-        'CMAKE_INSTALL_PREFIX': build_dir(),
+        'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
     cmd = ['cmake']
     for d, val in kw.items():
