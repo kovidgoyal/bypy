@@ -75,6 +75,12 @@ def read_deps(only_buildable=True):
     return ans
 
 
+def sha256_for_pkg(pkg):
+    fname = os.path.join(SOURCES, pkg['filename'])
+    with open(fname, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
 def verify_hash(pkg):
     fname = os.path.join(SOURCES, pkg['filename'])
     alg, q = pkg['hash'].partition(':')[::2]
@@ -164,7 +170,8 @@ def try_once(pkg, url):
     if not verify_hash(pkg):
         raise SystemExit(
             f'The hash of the downloaded file: {filename}'
-            ' does not match the saved hash')
+            ' does not match the saved hash. It\'s sha256 is'
+            f': {sha256_for_pkg(pkg)}')
 
 
 def download_pkg(pkg):

@@ -26,4 +26,4 @@ def main(args):
         simple_build('--disable-dependency-tracking --disable-static --enable-shared --without-python --without-debug --with-iconv={0} --with-zlib={0}'.format(
             PREFIX))
         if islinux:
-            replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/libxml-2.0.pc'), re.compile(br'^prefix=.+$', re.M), b'prefix=%s' % PREFIX)
+            replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/libxml-2.0.pc'), re.compile(br'^prefix=.+$', re.M), 'prefix=%s' % PREFIX)

@@ -51,6 +51,8 @@ cpu_count = os.cpu_count
 MAKEOPTS = f'-j{cpu_count()}'
 worker_env = {}
 cygwin_paths = []
+PKG_CONFIG_PATH = worker_env['PKG_CONFIG_PATH'] = os.path.join(
+        PREFIX, 'lib', 'pkgconfig')
 
 if iswindows:
     CFLAGS = CPPFLAGS = LIBDIR = LDFLAGS = ''

@@ -2,13 +2,15 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import os
 import re
 
-from bypy.constants import PREFIX, iswindows, islinux, build_dir
-from bypy.utils import simple_build, install_binaries, install_tree, run, replace_in_file, walk
+from bypy.constants import PREFIX, build_dir, islinux, iswindows
+from bypy.utils import (install_binaries, install_tree, replace_in_file, run,
+                        simple_build, walk)
 
 
 def main(args):
@@ -28,7 +30,9 @@ def main(args):
                 install_binaries(f)
     else:
         simple_build(
-            '--disable-dependency-tracking --disable-static --enable-shared --without-python --without-debug --with-libxml-prefix={0}'
-            ' --with-libxml-include-prefix={0}/include/libxml2'.format(PREFIX))
+            '--disable-dependency-tracking --disable-static --enable-shared --without-python --without-debug')
         if islinux:
-            replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/libxslt.pc'), re.compile(br'^prefix=.+$', re.M), b'prefix=%s' % PREFIX)
+            replace_in_file(
+                os.path.join(build_dir(), 'lib/pkgconfig/libxslt.pc'),
+                re.compile(br'^prefix=.+$', re.M),
+                'prefix={PREFIX}')

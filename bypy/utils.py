@@ -9,6 +9,7 @@ import errno
 import fcntl
 import glob
 import os
+import re
 import shlex
 import shutil
 import socket
@@ -21,8 +22,8 @@ import zipfile
 from contextlib import contextmanager
 from functools import partial
 
-from .constants import (LIBDIR, MAKEOPTS, PREFIX, PYTHON, build_dir, islinux,
-                        iswindows, mkdtemp, worker_env)
+from .constants import (LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, build_dir,
+                        islinux, iswindows, mkdtemp, worker_env)
 
 if iswindows:
     import msvcrt
@@ -164,12 +165,8 @@ def run(*args, **kw):
     if kw.get('no_check'):
         return rc
     if rc != 0:
-        print('The following command failed, with return code:', rc)
-        print(' '.join(shlex.quote(x) for x in cmd))
-        print('Dropping you into a shell')
-        sys.stdout.flush()
-        run_shell(library_path=kw.get('library_path'))
-        raise SystemExit(1)
+        cmd = ' '.join(shlex.quote(x) for x in cmd)
+        raise subprocess.CalledProcessError(rc, cmd)
 
 
 def lcopy(src, dst, no_hardlinks=False):
@@ -457,8 +454,116 @@ def replace_in_file(path, old, new, missing_ok=False):
         if isinstance(old, bytes):
             nraw = raw.replace(old, new)
         else:
+            if isinstance(old.pattern, str):
+                old = re.compile(old.pattern.encode('utf-8'), old.flags)
             nraw = old.sub(new, raw)
         if raw == nraw and not missing_ok:
             raise ValueError('Failed (pattern not found) to patch: ' + path)
         f.seek(0), f.truncate()
         f.write(nraw)
+
+
+@contextmanager
+def current_dir(path):
+    cwd = os.getcwd()
+    os.chdir(path)
+    yield path
+    os.chdir(cwd)
+
+
+def windows_cmake_build(
+        headers=None, binaries=None, libraries=None, header_dest='include',
+        nmake_target='', make='nmake', **kw):
+    os.mkdir('build')
+    defs = {'CMAKE_BUILD_TYPE': 'Release'}
+    cmd = ['cmake', '-G', "NMake Makefiles"]
+    for d, val in kw.items():
+        if val is None:
+            defs.pop(d, None)
+        else:
+            defs[d] = val
+    for k, v in defs.items():
+        cmd.append('-D' + k + '=' + v)
+    cmd.append('..')
+    run(*cmd, cwd='build')
+    if nmake_target:
+        run(f'{make} {nmake_target}', cwd='build')
+    else:
+        run(make, cwd='build')
+    with current_dir('build'):
+        if headers:
+            for pat in headers.split():
+                copy_headers(pat, header_dest)
+        if binaries:
+            for pat in binaries.split():
+                install_binaries(pat, 'bin')
+        if libraries:
+            for pat in libraries.split():
+                install_binaries(pat)
+
+
+def cmake_build(
+        make_args=(), install_args=(),
+        library_path=None, override_prefix=None, no_parallel=False,
+        **kw
+):
+    os.mkdir('build')
+    defs = {
+        'CMAKE_INSTALL_PREFIX': build_dir(),
+    }
+    cmd = ['cmake']
+    for d, val in kw.items():
+        if val is None:
+            defs.pop(d, None)
+        else:
+            defs[d] = val
+    for k, v in defs.items():
+        cmd.append('-D' + k + '=' + v)
+    cmd.append('..')
+    run(*cmd, cwd='build')
+    make_opts = [] if no_parallel else split(MAKEOPTS)
+    run('make', *(make_opts + list(make_args)), cwd='build')
+    mi = ['make'] + list(install_args) + ['install']
+    run(*mi, library_path=library_path, cwd='build')
+
+
+class ModifiedEnv:
+
+    def __init__(self, **kwargs):
+        self.mods = kwargs
+
+    def apply(self, mods):
+        for k, val in mods.items():
+            if val:
+                worker_env[k] = val
+            else:
+                worker_env.pop(k, None)
+
+    def __enter__(self):
+        self.orig = {k: worker_env.get(k) for k in self.mods}
+        self.apply(self.mods)
+
+    def __exit__(self, *args):
+        self.apply(self.orig)
+
+
+def apply_patch(name, level=0, reverse=False, convert_line_endings=False):
+    if not os.path.isabs(name):
+        name = os.path.join(PATCHES, name)
+    patch = 'C:/cygwin64/bin/patch' if iswindows else 'patch'
+    args = [patch, '-p%d' % level, '-i', name]
+    if reverse:
+        args.insert(1, '-R')
+    if iswindows and convert_line_endings:
+        run('C:/cygwin64/bin/unix2dos', name)
+        args.insert(1, '--binary')
+    run(*args)
+
+
+def install_tree(src, dest_parent='include', ignore=None):
+    dest_parent = os.path.join(build_dir(), dest_parent)
+    dst = os.path.join(dest_parent, os.path.basename(src))
+    if os.path.exists(dst):
+        rmtree(dst)
+    shutil.copytree(src, dst, symlinks=True, ignore=ignore)
+    return dst

@@ -26,7 +26,7 @@ if iswindows:
         # os.makedirs('externals/bzip2-1.0.6')
 
         # dont need python 3 to get externals, use git instead
-        replace_in_file('PCbuild\\get_externals.bat', re.compile(r'^call.+find_python.bat.+$', re.MULTILINE), '')
+        replace_in_file('PCbuild\\get_externals.bat', re.compile(br'^call.+find_python.bat.+$', re.MULTILINE), '')
 
         run('PCbuild\\build.bat', '-e', '--no-tkinter', '--no-bsddb', '-c', 'Release', '-m',
             '-p', ('x64' if is64bit else 'Win32'), '-v', '-t', 'Build')
@@ -34,7 +34,7 @@ if iswindows:
         # run('PCbuild\\amd64\\python.exe', 'Lib/test/regrtest.py', '-u', 'network,cpu,subprocess,urlfetch')
 
         # Do not read mimetypes from the registry
-        replace_in_file('Lib\\mimetypes.py', re.compile(r'try:.*?import\s+_winreg.*?None', re.DOTALL), r'_winreg = None')
+        replace_in_file('Lib\\mimetypes.py', re.compile(br'try:.*?import\s+_winreg.*?None', re.DOTALL), r'_winreg = None')
 
         bindir = 'PCbuild\\amd64' if is64bit else 'PCbuild'
         install_binaries(bindir + os.sep + '*.exe', 'private\\python')
@@ -56,25 +56,34 @@ if iswindows:
 else:
     def main(args):
         env = {'CFLAGS': CFLAGS + ' -DHAVE_LOAD_EXTENSION'}
-        replace_in_file('setup.py', re.compile('def detect_tkinter.+:'), lambda m: m.group() + '\n' + ' ' * 8 + 'return 0')
+        replace_in_file(
+                'setup.py',
+                re.compile(b'def detect_tkinter.+:'),
+                lambda m: m.group() + b'\n' + b' ' * 8 + b'return 0'
+        )
         conf = (
             '--prefix={} --with-threads --enable-ipv6 --enable-unicode={}'
             ' --with-system-expat --with-pymalloc --without-ensurepip').format(
             build_dir(), ('ucs2' if ismacos or iswindows else 'ucs4'))
         if islinux:
             conf += ' --with-system-ffi --enable-shared'
-            # Needed as the system openssl is too old, causing the _ssl module to fail
+            # Needed as the system openssl is too old, causing the _ssl module
+            # to fail
             env['LD_LIBRARY_PATH'] = LIBDIR
         elif ismacos:
-            conf += ' --enable-framework={}/python --with-signal-module'.format(build_dir())
-            env['MACOSX_DEPLOYMENT_TARGET'] = '10.9'  # Needed for readline detection
+            conf += f' --enable-framework={build_dir()}/python --with-signal-module'
+            # Needed for readline detection
+            env['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
 
         with ModifiedEnv(**env):
             simple_build(conf)
 
         bindir = os.path.join(build_dir(), 'bin')
         P = os.path.join(bindir, 'python')
-        replace_in_file(P + '-config', re.compile(br'^#!.+/bin/', re.MULTILINE), '#!' + PREFIX + '/bin/')
+        replace_in_file(
+            P + '-config',
+            re.compile(br'^#!.+/bin/', re.MULTILINE),
+            '#!' + PREFIX + '/bin/')
         if ismacos:
             bindir = os.path.join(build_dir(), 'bin')
             for f in os.listdir(bindir):

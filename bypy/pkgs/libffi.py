@@ -14,4 +14,5 @@ from bypy.utils import simple_build, replace_in_file
 def main(args):
     simple_build('--disable-static --enable-pax_emutramp')
     if islinux:
-        replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/libffi.pc'), re.compile(br'^prefix=.+$', re.M), b'prefix=%s' % PREFIX)
+        replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/libffi.pc'),
+                        re.compile(br'^prefix=.+$', re.M), f'prefix={PREFIX}')

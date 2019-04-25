@@ -1,29 +1,27 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
-import os
-import shutil
 import glob
+import os
 import re
+import shutil
 
-from bypy.constants import build_dir, ismacos, MAKEOPTS, LIBDIR, iswindows
-from bypy.utils import apply_patch, simple_build, install_binaries, run, current_env, ModifiedEnv
+from bypy.constants import LIBDIR, MAKEOPTS, build_dir, ismacos, iswindows
+from bypy.utils import (ModifiedEnv, current_env, install_binaries, run,
+                        simple_build)
 
 
 def main(args):
     os.chdir('source')
-    # fix Malayalam encoding https://bugzilla.redhat.com/show_bug.cgi?id=654200
-    apply_patch('icu.8198.revert.icu5431.patch', level=3, reverse=True)
 
     if iswindows:
         paths = current_env()['PATH'].split(os.pathsep)
         paths.append('C:\\cygwin64\\bin')
         with ModifiedEnv(PATH=os.pathsep.join(paths)):
             run('C:/cygwin64/bin/dos2unix runConfigureICU')
-            run('C:/cygwin64/bin/bash ./runConfigureICU Cygwin/MSVC -prefix ' + build_dir().replace(os.sep, '/'))
+            run('C:/cygwin64/bin/bash ./runConfigureICU Cygwin/MSVC -prefix ' +
+                build_dir().replace(os.sep, '/'))
             run('C:/cygwin64/bin/make')  # parallel builds fail, so no MAKEOPTS
             run('C:/cygwin64/bin/make install')
             for dll in glob.glob(os.path.join(build_dir(), 'lib', '*.dll')):
