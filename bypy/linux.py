@@ -66,7 +66,7 @@ def chroot(cmd, as_root=True):
     print_cmd(['in-chroot'] + cmd)
     user = pwd.getpwuid(os.geteuid()).pw_name
     env = {
-        'PATH': '/sbin:/usr/sbin:/bin:/usr/bin',
+        'PATH': '/sbin:/usr/sbin:/usr/local/bin:/bin:/usr/bin',
         'PS1': '\x1b[92mbypy\x1b[0m ({}-bit) %d {} '.format(
             arch, '#' if as_root else '$'),
         'HOME': '/root' if as_root else '/home/' + user,
@@ -132,7 +132,8 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
         # Basic build environment
         'apt-get update',
         'apt-get install -y build-essential cmake software-properties-common'
-        ' nasm chrpath zsh git uuid-dev dh-autoreconf',
+        ' nasm chrpath zsh git uuid-dev dh-autoreconf ninja-build python3-pip',
+        'pip3 install meson',
         'add-apt-repository ppa:deadsnakes/ppa -y',
         'apt-get update',
         'apt-get install -y python3.7',
