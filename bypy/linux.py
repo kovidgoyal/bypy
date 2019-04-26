@@ -132,7 +132,8 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
         # Basic build environment
         'apt-get update',
         'apt-get install -y build-essential cmake software-properties-common'
-        ' nasm chrpath zsh git uuid-dev dh-autoreconf ninja-build python3-pip',
+        ' nasm chrpath zsh git uuid-dev libmount-dev'
+        ' dh-autoreconf ninja-build python3-pip',
         'pip3 install meson',
         'add-apt-repository ppa:deadsnakes/ppa -y',
         'apt-get update',

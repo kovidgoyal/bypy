@@ -218,6 +218,12 @@ def extract_source_and_chdir(source):
     return tdir
 
 
+def relocate_pkgconfig_files():
+    for path in walk(build_dir()):
+        if path.endswith('.pc'):
+            replace_in_file(path, build_dir(), PREFIX)
+
+
 def simple_build(
         configure_args=(), make_args=(), install_args=(),
         library_path=None, override_prefix=None, no_parallel=False,
@@ -234,6 +240,7 @@ def simple_build(
     run('make', *(make_opts + list(make_args)))
     mi = ['make'] + list(install_args) + ['install']
     run(*mi, library_path=library_path)
+    relocate_pkgconfig_files()
 
 
 def is_macho_binary(p):
@@ -529,6 +536,18 @@ def cmake_build(
     run('make', *(make_opts + list(make_args)), cwd='build')
     mi = ['make'] + list(install_args) + ['install']
     run(*mi, library_path=library_path, cwd='build')
+
+
+def meson_build(extra_cmdline='', library_path=None, **options):
+    cmd = ['meson', '--buildtype=release', f'--prefix={PREFIX}']
+    if extra_cmdline:
+        cmd += shlex.split(extra_cmdline)
+    cmd += [f'-D{k}={v}' for k, v in options.items()]
+    cmd.append('build')
+    run(*cmd)
+    run('ninja -C build', library_path=library_path)
+    run('ninja -C build install', library_path=library_path)
+    relocate_pkgconfig_files()
 
 
 class ModifiedEnv:

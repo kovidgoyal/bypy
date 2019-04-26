@@ -2,13 +2,10 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 
 import os
-import re
 
-from bypy.constants import PREFIX, build_dir, islinux, iswindows
+from bypy.constants import PREFIX, iswindows
 from bypy.utils import (install_binaries, install_tree, replace_in_file, run,
                         simple_build, walk)
 
@@ -31,8 +28,3 @@ def main(args):
     else:
         simple_build(
             '--disable-dependency-tracking --disable-static --enable-shared --without-python --without-debug')
-        if islinux:
-            replace_in_file(
-                os.path.join(build_dir(), 'lib/pkgconfig/libxslt.pc'),
-                re.compile(br'^prefix=.+$', re.M),
-                'prefix={PREFIX}')

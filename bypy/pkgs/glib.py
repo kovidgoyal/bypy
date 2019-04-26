@@ -2,16 +2,16 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
-import re
 import os
-
-from bypy.constants import LIBDIR, PREFIX, build_dir
-from bypy.utils import simple_build, ModifiedEnv, replace_in_file
+from bypy.constants import LIBDIR, PREFIX
+from bypy.utils import meson_build, ModifiedEnv
 
 
 def main(args):
-    with ModifiedEnv(LD_LIBRARY_PATH=LIBDIR):
-        simple_build('--disable-dependency-tracking --disable-static --disable-selinux --disable-fam --with-libiconv=gnu --with-pcre=internal')
-    replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/glib-2.0.pc'), re.compile(br'^prefix=.+$', re.M), b'prefix=%s' % PREFIX)
+    with ModifiedEnv(
+            LD_LIBRARY_PATH=LIBDIR,
+            PATH=f'{PREFIX}/bin:' + os.environ['PATH']
+    ):
+        meson_build(
+            force_posix_threads='true', internal_pcre='true', gtk_doc='false',
+            man='false', selinux='disabled', iconv='gnu')
