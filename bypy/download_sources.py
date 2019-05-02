@@ -132,7 +132,7 @@ def get_pypi_url(pkg):
     for m in re.finditer((
         r'href="([^"]+%s)#sha256=.+"' % pkg['filename']).encode('utf-8'), raw
     ):
-        return urljoin(base, m.group(1))
+        return urljoin(base, m.group(1).decode('utf-8'))
     raise ValueError('Failed to find PyPI URL for {}'.format(pkg))
 
 
