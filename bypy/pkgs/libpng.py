@@ -17,4 +17,4 @@ def main(args):
             binaries='libpng*.dll', libraries='libpng*.lib', headers='pnglibconf.h ../png.h ../pngconf.h'
         )
     else:
-        simple_build('--disable-dependency-tracking --disable-static')
+        simple_build('--disable-dependency-tracking --disable-static', relocate_pkgconfig=False)

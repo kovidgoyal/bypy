@@ -76,7 +76,7 @@ else:
             env['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
 
         with ModifiedEnv(**env):
-            simple_build(conf)
+            simple_build(conf, relocate_pkgconfig=False)
 
         bindir = os.path.join(build_dir(), 'bin')
         P = os.path.join(bindir, 'python')

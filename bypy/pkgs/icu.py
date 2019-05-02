@@ -35,7 +35,7 @@ def main(args):
         run('make install')
     else:
         simple_build('--prefix=/usr --sysconfdir=/etc --mandir=/usr/share/man --sbindir=/usr/bin',
-                     install_args='DESTDIR=' + build_dir())
+                     install_args='DESTDIR=' + build_dir(), relocate_pkgconfig=False)
         usr = os.path.join(build_dir(), 'usr')
         os.rename(os.path.join(usr, 'include'), os.path.join(build_dir(), 'include'))
         install_binaries(os.path.join(usr, 'lib', 'libicu*'))

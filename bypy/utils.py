@@ -227,7 +227,7 @@ def relocate_pkgconfig_files():
 def simple_build(
         configure_args=(), make_args=(), install_args=(),
         library_path=None, override_prefix=None, no_parallel=False,
-        configure_name='./configure'):
+        configure_name='./configure', relocate_pkgconfig=True):
     if isinstance(configure_args, str):
         configure_args = split(configure_args)
     if isinstance(make_args, str):
@@ -240,7 +240,8 @@ def simple_build(
     run('make', *(make_opts + list(make_args)))
     mi = ['make'] + list(install_args) + ['install']
     run(*mi, library_path=library_path)
-    relocate_pkgconfig_files()
+    if relocate_pkgconfig:
+        relocate_pkgconfig_files()
 
 
 def is_macho_binary(p):
