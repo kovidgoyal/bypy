@@ -15,7 +15,10 @@ def main(args):
         b = os.path.join(b, 'python/Python.framework/Versions/2.7')
     elif iswindows:
         b = os.path.join(b, 'private', 'python')
-    cmd = [PYTHON, 'configure.py', '--no-pyi', '--bindir=%s/bin' % build_dir()]
+    cmd = [
+        PYTHON, 'configure.py', '--no-pyi',
+        '--sip-module=PyQt5.sip',
+        '--bindir=%s/bin' % build_dir()]
     sp = 'Lib' if iswindows else 'lib/python2.7'
     inc = 'include' if iswindows else 'include/python2.7'
     cmd += ['--destdir=%s/%s/site-packages' % (b, sp),

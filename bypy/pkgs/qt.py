@@ -2,6 +2,7 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
+import glob
 import os
 import shutil
 
@@ -91,3 +92,12 @@ def main(args):
         run('make install')
     with open(os.path.join(build_dir(), 'qt', 'bin', 'qt.conf'), 'wb') as f:
         f.write(b"[Paths]\nPrefix = ..\n")
+    # for some reason these two files are not installed by make install as of
+    # Qt 5.12.3
+    os.chdir('..')
+    for cpp in glob.glob(os.path.join(
+        'qtbase', 'mkspecs', 'features', 'data', '*.cpp')
+    ):
+        shutil.copy2(cpp, os.path.join(
+            build_dir(), 'qt', 'mkspecs', 'features', 'data',
+            os.path.basename(cpp)))
