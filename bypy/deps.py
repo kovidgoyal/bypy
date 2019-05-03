@@ -18,11 +18,18 @@ def pkg_path(dep):
     return os.path.join(PKG, dep['name'])
 
 
+def make_build_dir(dep_name):
+    ans = None
+    if ans is None:
+        ans = mkdtemp(prefix=f'{dep_name}-')
+    return ans
+
+
 def build_dep(dep, args, dest_dir=PREFIX):
     dep_name = dep['name']
     set_title('Building ' + dep_name)
     owd = os.getcwd()
-    output_dir = todir = mkdtemp(prefix=f'{dep_name}-')
+    output_dir = todir = make_build_dir(dep_name)
     build_dir(output_dir)
     idep = dep_name.replace('-', '_')
     try:

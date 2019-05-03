@@ -43,7 +43,7 @@ def main(args):
     # For the list of modules and their dependencies, see .gitmodules
     skip_modules = set('''\
         qtactiveqt qtscript qttools qtxmlpatterns qttranslations qtdoc
-        qtrepotools qtqa qtlocation qtsensors qtsystems qtfeedback qtdocgallery
+        qtrepotools qtqa qtsystems qtfeedback qtdocgallery
         qtpim qtconnectivity qt3d qtgraphicaleffects qtquickcontrols
         qtserialbus qtserialport qtquickcontrols2 qtcanvas3d qtpurchasing
         qtcharts qtdatavis3d qtvirtualkeyboard qtgamepad qtscxml qtspeech

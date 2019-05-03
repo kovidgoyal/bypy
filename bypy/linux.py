@@ -215,23 +215,24 @@ def umount_all():
 
 
 def run(args):
-    tdir = tempfile.mkdtemp()
-    zshrc = os.path.realpath(os.path.expanduser('~/.zshrc'))
-    if os.path.exists(zshrc):
-        shutil.copy2(zshrc, os.path.join(tdir, '.zshrc'))
-    else:
-        open(os.path.join(tdir, '.zshrc'), 'wb').close()
-    try:
-        mount_all(tdir)
-        cmd = ['python3.7', '/bypy', 'main'] + args
-        os.environ.pop('LANG', None)
-        for k in tuple(os.environ):
-            if k.startswith('LC') or k.startswith('XAUTH'):
-                del os.environ[k]
-        chroot(cmd, as_root=False)
-    finally:
-        umount_all()
-        shutil.rmtree(tdir)
+    # dont use /tmp since it could be RAM mounted and therefore
+    # too small
+    with tempfile.TemporaryDirectory(prefix='tmp-', dir='bypy/b') as tdir:
+        zshrc = os.path.realpath(os.path.expanduser('~/.zshrc'))
+        if os.path.exists(zshrc):
+            shutil.copy2(zshrc, os.path.join(tdir, '.zshrc'))
+        else:
+            open(os.path.join(tdir, '.zshrc'), 'wb').close()
+        try:
+            mount_all(tdir)
+            cmd = ['python3.7', '/bypy', 'main'] + args
+            os.environ.pop('LANG', None)
+            for k in tuple(os.environ):
+                if k.startswith('LC') or k.startswith('XAUTH'):
+                    del os.environ[k]
+            chroot(cmd, as_root=False)
+        finally:
+            umount_all()
 
 
 def singleinstance():

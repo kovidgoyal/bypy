@@ -22,8 +22,9 @@ import zipfile
 from contextlib import contextmanager
 from functools import partial
 
-from .constants import (LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, build_dir,
-                        islinux, iswindows, mkdtemp, worker_env)
+from .constants import (LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, SW,
+                        build_dir, islinux, ismacos, iswindows, mkdtemp,
+                        worker_env)
 
 if iswindows:
     import msvcrt
@@ -333,6 +334,13 @@ def python_build(extra_args=()):
         extra_args = split(extra_args)
     run(PYTHON, 'setup.py', 'install', '--root', build_dir(),
         *extra_args, library_path=True)
+
+
+def python_install():
+    ddir = 'python' if ismacos else 'private' if iswindows else 'lib'
+    os.rename(os.path.join(build_dir(), os.path.basename(SW),
+              os.path.basename(PREFIX), ddir), os.path.join(build_dir(), ddir))
+    rmtree(os.path.join(build_dir(), os.path.basename(SW)))
 
 
 def create_package(module, src_dir, outpath):
