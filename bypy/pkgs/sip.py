@@ -2,12 +2,11 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
 import os
 
-from bypy.constants import PYTHON, MAKEOPTS, build_dir, ismacos, PREFIX, iswindows
-from bypy.utils import run, replace_in_file
+from bypy.constants import (MAKEOPTS, PREFIX, PYTHON, build_dir, ismacos,
+                            iswindows)
+from bypy.utils import replace_in_file, run
 
 
 def main(args):
@@ -27,7 +26,7 @@ def main(args):
         run('nmake'), run('nmake install')
     else:
         run('make ' + MAKEOPTS)
-        run('make install')
+        run('make install', library_path=True)
     q, r = build_dir(), PREFIX
     if iswindows:
         q = q.replace(os.sep, os.sep + os.sep)

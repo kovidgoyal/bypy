@@ -1,9 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
 import os
 
 from bypy.constants import PYTHON, MAKEOPTS, build_dir, PREFIX, ismacos, iswindows
