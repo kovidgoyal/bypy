@@ -128,11 +128,15 @@ def get_pypi_url(pkg):
     parts = pkg['filename'].split('-')
     pkg_name = '-'.join(parts[:-1])
     base = 'https://pypi.python.org/simple/%s/' % pkg_name
-    raw = urlopen(base).read()
+    raw = urlopen(base).read().decode('utf-8')
     for m in re.finditer((
-        r'href="([^"]+%s)#sha256=.+"' % pkg['filename']).encode('utf-8'), raw
+        r'href="([^"]+)#sha256=%s"' % pkg['hash'].split(':')[-1]), raw
     ):
-        return urljoin(base, m.group(1).decode('utf-8'))
+        return urljoin(base, m.group(1))
+    for m in re.finditer((
+        r'href="([^"]+%s)#sha256=.+"' % pkg['filename']), raw
+    ):
+        return urljoin(base, m.group(1))
     raise ValueError('Failed to find PyPI URL for {}'.format(pkg))
 
 
