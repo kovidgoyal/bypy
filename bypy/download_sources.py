@@ -40,7 +40,10 @@ def ok_dep(dep):
             return False
     py = dep.get('python')
     if py is not None:
-        return sys.version_info.major >= py
+        q = ok_dep.major_version
+        if isinstance(py, str):
+            return q < int(py[1:])
+        return q >= py
     return True
 
 
@@ -63,6 +66,11 @@ def decorate_dep(dep):
 def read_deps(only_buildable=True):
     with open(os.path.join(SRC, 'bypy', 'sources.json')) as f:
         data = json.load(f)
+    for dep in data:
+        if dep['name'] == 'python':
+            ok_dep.major_version = int(
+                dep['unix']['filename'].split('-')[-1].split('.')[0])
+            break
     if only_buildable:
         return tuple(filter(ok_dep, map(decorate_dep, data)))
     ans = {}
