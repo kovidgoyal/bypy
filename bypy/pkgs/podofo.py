@@ -41,3 +41,7 @@ def main(args):
             PODOFO_BUILD_SHARED='TRUE',
             PODOFO_BUILD_STATIC='FALSE',
         )
+
+
+def modify_excludes(excludes):
+    excludes.discard('doc')

@@ -345,8 +345,10 @@ def python_install():
 
 def create_package(module, src_dir, outpath):
 
-    exclude = getattr(module, 'pkg_exclude_names', frozenset(
+    exclude = getattr(module, 'pkg_exclude_names', set(
         'doc man info test tests gtk-doc README'.split()))
+    if hasattr(module, 'modify_excludes'):
+        module.modify_excludes(exclude)
     exclude_extensions = getattr(module, 'pkg_exclude_extensions', frozenset((
         'pyc', 'pyo', 'la', 'chm', 'cpp', 'rst', 'md')))
 
@@ -658,7 +660,7 @@ def get_dll_path(base, levels=1, loc=LIBDIR):
 
     for x in candidates:
         q = os.path.basename(x)
-        q = q[q.rfind('.so.'):][4:].split()
+        q = q[q.rfind('.so.'):][4:].split('.')
         if len(q) == levels:
             return x
     raise ValueError(f'Could not find library for base name: {base}')

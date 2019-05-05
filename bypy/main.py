@@ -7,10 +7,10 @@ import os
 import runpy
 import sys
 
-from .constants import OS_NAME, SRC
+from .constants import OS_NAME, SRC, build_dir
 from .deps import init_env
 from .deps import main as deps_main
-from .utils import run_shell, mkdtemp, rmtree
+from .utils import mkdtemp, rmtree, run_shell
 
 
 def option_parser():
@@ -62,7 +62,8 @@ def main(args):
             SRC, 'bypy', 'init_env.py'),
             run_name='program')
         os.chdir(SRC)
-        ext_dir, build_dir = mkdtemp('plugins-'), mkdtemp('build-')
+        ext_dir, bdir = mkdtemp('plugins-'), mkdtemp('build-')
+        build_dir(bdir)
         try:
             runpy.run_path(os.path.join(SRC, 'bypy', OS_NAME),
                            init_globals={
@@ -76,7 +77,7 @@ def main(args):
             traceback.print_exc()
             run_shell()
         finally:
-            rmtree(ext_dir), rmtree(build_dir)
+            rmtree(ext_dir), rmtree(bdir)
         return
 
     deps_main(args)
