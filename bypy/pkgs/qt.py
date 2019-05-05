@@ -11,6 +11,49 @@ from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, PREFIX,
 from bypy.utils import (ModifiedEnv, current_env, replace_in_file, run,
                         run_shell)
 
+QT_DLLS = [
+    'Qt5' + x for x in (
+        'Core',
+        'Gui',
+        'Network',
+        'PrintSupport',
+        'Positioning',
+        'Sensors',
+        'Sql',
+        'Svg',
+        'WebKit',
+        'WebKitWidgets',
+        'Widgets',
+        'Multimedia',
+        'OpenGL',
+        'MultimediaWidgets',
+        'Xml',
+        # 'XmlPatterns',
+    )
+]
+
+QT_PLUGINS = [
+    'imageformats',
+    'iconengines',
+    'mediaservice',
+    'platforms',
+    'playlistformats',
+    'sqldrivers',
+    # 'audio', 'printsupport', 'bearer', 'position',
+]
+
+PYQT_MODULES = (
+    'Qt',
+    'QtCore',
+    'QtGui',
+    'QtNetwork',  # 'QtMultimedia', 'QtMultimediaWidgets',
+    'QtPrintSupport',
+    'QtSensors',
+    'QtSvg',
+    'QtWebKit',
+    'QtWebKitWidgets',
+    'QtWidgets')
+
 
 def main(args):
     if islinux:
@@ -32,8 +75,7 @@ def main(args):
             'searchOrder << QFileInfo(qAppFileName()).path();',
             'searchOrder << (QFileInfo(qAppFileName()).path()'
             r".replace(QLatin1Char('/'), QLatin1Char('\\'))"
-            r'+ QString::fromLatin1("\\app\\DLLs\\"));'
-        )
+            r'+ QString::fromLatin1("\\app\\DLLs\\"));')
     cflags, ldflags = CFLAGS, LDFLAGS
     if ismacos:
         ldflags = '-L' + LIBDIR
@@ -55,9 +97,7 @@ def main(args):
         ' -nomake examples -nomake tests -no-sql-odbc -no-sql-psql'
         ' -icu -qt-harfbuzz -qt-doubleconversion').format(build_dir())
     if islinux:
-        conf += (
-            ' -qt-xcb -glib -openssl -qt-pcre -xkbcommon -libinput'
-        )
+        conf += (' -qt-xcb -glib -openssl -qt-pcre -xkbcommon -libinput')
     elif ismacos:
         conf += ' -no-pkg-config -framework -no-openssl -securetransport'
         ' -no-freetype -no-fontconfig '
@@ -65,10 +105,9 @@ def main(args):
         # Qt links incorrectly against libpng and libjpeg, so use the bundled
         # copy Use dynamic OpenGl, as per:
         # https://doc.qt.io/qt-5/windows-requirements.html#dynamically-loading-graphics-drivers
-        conf += (
-            ' -openssl -directwrite -ltcg -platform win32-msvc2015 -mp'
-            ' -no-plugin-manifests -no-freetype -no-fontconfig'
-            ' -no-angle -opengl dynamic -qt-libpng -qt-libjpeg ')
+        conf += (' -openssl -directwrite -ltcg -platform win32-msvc2015 -mp'
+                 ' -no-plugin-manifests -no-freetype -no-fontconfig'
+                 ' -no-angle -opengl dynamic -qt-libpng -qt-libjpeg ')
         # The following config items are not supported on windows
         conf = conf.replace('-v -silent ', ' ')
         cflags = '-I {}/include'.format(PREFIX).replace(os.sep, '/')
@@ -95,9 +134,12 @@ def main(args):
     # for some reason these two files are not installed by make install as of
     # Qt 5.12.3
     os.chdir('..')
-    for cpp in glob.glob(os.path.join(
-        'qtbase', 'mkspecs', 'features', 'data', '*.cpp')
-    ):
-        shutil.copy2(cpp, os.path.join(
-            build_dir(), 'qt', 'mkspecs', 'features', 'data',
-            os.path.basename(cpp)))
+    cpp_files = glob.glob(
+        os.path.join('qtbase', 'mkspecs', 'features', 'data', '*.cpp'))
+    if not cpp_files:
+        raise ValueError(f'Failed to find cpp files in {os.getcwd()}')
+    for cpp in cpp_files:
+        shutil.copy2(
+            cpp,
+            os.path.join(build_dir(), 'qt', 'mkspecs', 'features', 'data',
+                         os.path.basename(cpp)))
