@@ -19,12 +19,12 @@ import sys
 import tarfile
 import time
 import zipfile
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 from functools import partial
 
 from .constants import (LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, SW,
-                        build_dir, islinux, ismacos, iswindows, mkdtemp,
-                        worker_env)
+                        build_dir, cpu_count, islinux, ismacos, iswindows,
+                        mkdtemp, worker_env)
 
 if iswindows:
     import msvcrt
@@ -548,7 +548,7 @@ def cmake_build(
 
 
 def meson_build(extra_cmdline='', library_path=None, **options):
-    cmd = ['meson', '--buildtype=release', f'--prefix={PREFIX}']
+    cmd = ['meson', '--buildtype=release', f'--prefix={build_dir()}']
     if extra_cmdline:
         cmd += shlex.split(extra_cmdline)
     cmd += [f'-D{k}={v}' for k, v in options.items()]
@@ -599,3 +599,61 @@ def install_tree(src, dest_parent='include', ignore=None):
         rmtree(dst)
     shutil.copytree(src, dst, symlinks=True, ignore=ignore)
     return dst
+
+
+def run_worker(job, decorate=True):
+    cmd, human_text = job
+    human_text = human_text or ' '.join(cmd)
+    env = os.environ.copy()
+    env.update(worker_env)
+    env['LD_LIBRARY_PATH'] = LIBDIR
+    try:
+        p = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
+    except Exception as err:
+        return False, human_text, str(err)
+    stdout, stderr = p.communicate()
+    stdout = (stdout or b'').decode('utf-8', 'replace')
+    stderr = (stderr or b'').decode('utf-8', 'replace')
+    if decorate:
+        stdout = human_text + '\n' + stdout
+    ok = p.returncode == 0
+    return ok, stdout, stderr
+
+
+def create_job(cmd, human_text=None):
+    return (cmd, human_text)
+
+
+def parallel_build(jobs, log=print, verbose=True):
+    from multiprocessing.dummy import Pool
+    p = Pool(cpu_count())
+    with closing(p):
+        for ok, stdout, stderr in p.imap(run_worker, jobs):
+            if verbose or not ok:
+                log(stdout)
+                if stderr:
+                    log(stderr)
+            if not ok:
+                return False
+        return True
+
+
+def py_compile(basedir):
+    run(
+        PYTHON, '-OO', '-m', 'compileall', '-d', '', '-f', '-q',
+        basedir, library_path=True)
+
+    for f in walk(basedir):
+        ext = f.rpartition('.')[-1]
+        if ext in ('py', 'pyc'):
+            os.remove(f)
+
+
+def get_dll_path(base, levels=1):
+    for x in glob.glob(os.path.join(LIBDIR, f'lib{base}.so.*')):
+        q = os.path.basename(x)
+        q = q[q.rfind('.so.'):][4:].split()
+        if len(q) == levels:
+            return x
+    raise ValueError(f'Could not find library for base name: {base}')
