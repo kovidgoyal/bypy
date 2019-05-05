@@ -21,3 +21,5 @@ if subcommand == 'main':
 elif subcommand == 'linux':
     from bypy.linux import main
     main(args)
+else:
+    raise SystemExit(f'Unknown subcommand: {subcommand}')

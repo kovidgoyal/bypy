@@ -68,8 +68,10 @@ def read_deps(only_buildable=True):
         data = json.load(f)
     for dep in data:
         if dep['name'] == 'python':
-            ok_dep.major_version = int(
-                dep['unix']['filename'].split('-')[-1].split('.')[0])
+            vraw = dep['unix']['filename'].split('-')[-1]
+            parts = vraw.split('.')
+            ok_dep.major_version = int(parts[0])
+            ok_dep.minor_version = int(parts[1])
             break
     if only_buildable:
         return tuple(filter(ok_dep, map(decorate_dep, data)))

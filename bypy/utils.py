@@ -650,8 +650,13 @@ def py_compile(basedir):
             os.remove(f)
 
 
-def get_dll_path(base, levels=1):
-    for x in glob.glob(os.path.join(LIBDIR, f'lib{base}.so.*')):
+def get_dll_path(base, levels=1, loc=LIBDIR):
+    pat = f'lib{base}.so.*'
+    candidates = tuple(glob.glob(os.path.join(loc, pat)))
+    if not candidates:
+        candidates = glob.glob(os.path.join(loc, '*', pat))
+
+    for x in candidates:
         q = os.path.basename(x)
         q = q[q.rfind('.so.'):][4:].split()
         if len(q) == levels:

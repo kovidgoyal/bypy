@@ -101,3 +101,9 @@ def build_dir(newval=None):
     if newval is not None:
         build_dir.ans = newval
     return getattr(build_dir, 'ans', None)
+
+
+def python_major_minor_version():
+    from .download_sources import read_deps, ok_dep
+    read_deps()
+    return ok_dep.major_version, ok_dep.minor_version
