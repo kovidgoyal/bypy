@@ -10,12 +10,21 @@ from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, PREFIX,
 from bypy.utils import (ModifiedEnv, current_env, replace_in_file, run,
                         run_shell)
 
-QT_DLLS = [
+QT_DLLS = frozenset(
     'Qt5' + x for x in (
         'Core',
+        'Concurrent',
         'Gui',
         'Network',
+        'NetworkAuth',
+        'Location',
         'PrintSupport',
+        'WaylandClient',
+        'WebChannel',
+        'WebSockets',
+        'WebView',
+        'X11Extras',
+        'XcbQpa',
         'Positioning',
         'Sensors',
         'Sql',
@@ -29,15 +38,21 @@ QT_DLLS = [
         'Xml',
         # 'XmlPatterns',
     )
-]
+)
 
 QT_PLUGINS = [
     'imageformats',
     'iconengines',
     'mediaservice',
     'platforms',
+    'platforminputcontexts',
+    'platformthemes',
     'playlistformats',
     'sqldrivers',
+    'wayland-decoration-client',
+    'wayland-graphics-integration-client',
+    'wayland-shell-integration',
+    'xcbglintegrations',
     # 'audio', 'printsupport', 'bearer', 'position',
 ]
 
