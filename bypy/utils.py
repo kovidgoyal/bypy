@@ -349,8 +349,10 @@ def create_package(module, src_dir, outpath):
         'doc man info test tests gtk-doc README'.split()))
     if hasattr(module, 'modify_excludes'):
         module.modify_excludes(exclude)
-    exclude_extensions = getattr(module, 'pkg_exclude_extensions', frozenset((
+    exclude_extensions = getattr(module, 'pkg_exclude_extensions', set((
         'pyc', 'pyo', 'la', 'chm', 'cpp', 'rst', 'md')))
+    if hasattr(module, 'modify_exclude_extensions'):
+        module.modify_exclude_extensions(exclude_extensions)
 
     try:
         shutil.rmtree(outpath)

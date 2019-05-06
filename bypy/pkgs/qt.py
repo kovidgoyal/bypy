@@ -2,7 +2,6 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-import glob
 import os
 import shutil
 
@@ -131,15 +130,7 @@ def main(args):
         run('make install')
     with open(os.path.join(build_dir(), 'qt', 'bin', 'qt.conf'), 'wb') as f:
         f.write(b"[Paths]\nPrefix = ..\n")
-    # for some reason these two files are not installed by make install as of
-    # Qt 5.12.3
-    os.chdir('..')
-    cpp_files = glob.glob(
-        os.path.join('qtbase', 'mkspecs', 'features', 'data', '*.cpp'))
-    if not cpp_files:
-        raise ValueError(f'Failed to find cpp files in {os.getcwd()}')
-    for cpp in cpp_files:
-        shutil.copy2(
-            cpp,
-            os.path.join(build_dir(), 'qt', 'mkspecs', 'features', 'data',
-                         os.path.basename(cpp)))
+
+
+def modify_exclude_extensions(extensions):
+    extensions.discard('cpp')
