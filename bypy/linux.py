@@ -22,21 +22,34 @@ DEFAULT_BASE_IMAGE = (
 )
 
 arch = '64'
-img_path = sw_dir = sources_dir = None
+img_path = sw_dir = sources_dir = img_store_path = None
 conf = {}
 
 
 def initialize_env():
-    global img_path, sw_dir, sources_dir
+    global img_path, img_store_path, sw_dir, sources_dir
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
     os.makedirs(sources_dir, exist_ok=True)
     output_dir = os.path.join(base_dir(), 'b', 'linux', arch)
     os.makedirs(output_dir, exist_ok=True)
     img_path = os.path.abspath(
         os.path.realpath(os.path.join(output_dir, 'chroot')))
+    img_store_path = img_path + '.img'
     sw_dir = os.path.join(output_dir, 'sw')
     os.makedirs(sw_dir, exist_ok=True)
     conf.update(parse_conf_file(os.path.join(base_dir(), 'linux.conf')))
+
+
+def mount_image():
+    if not hasattr(mount_image, 'mounted'):
+        call('sudo', 'mount', img_store_path, img_path)
+    mount_image.mounted = True
+
+
+def unmount_image():
+    if hasattr(mount_image, 'mounted'):
+        call('sudo', 'umount', img_path)
+        del mount_image.mounted
 
 
 def cached_download(url):
@@ -89,7 +102,7 @@ def write_in_chroot(path, data):
     path = path.lstrip('/')
     p = subprocess.Popen([
         'sudo', 'tee', os.path.join(img_path, path)],
-        stdin=subprocess.PIPE, stdout=open(os.devnull, 'wb'))
+        stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
     if not isinstance(data, bytes):
         data = data.encode('utf-8')
     p.communicate(data)
@@ -102,7 +115,12 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
     archive = cached_download(url.format('amd64' if arch == '64' else 'i386'))
     if os.path.exists(img_path):
         call('sudo', 'rm', '-rf', img_path, echo=False)
-    os.makedirs(img_path, exist_ok=True)
+    if os.path.exists(img_store_path):
+        os.remove(img_store_path)
+    os.makedirs(img_path)
+    call('truncate', '-s', '2G', img_store_path)
+    call('mkfs.ext4', img_store_path)
+    mount_image()
     call('sudo tar -C "{}" -xpf "{}"'.format(img_path, archive), echo=False)
     if os.getegid() != 100:
         chroot('groupadd -f -g {} {}'.format(os.getegid(), 'crusers'))
@@ -144,7 +162,6 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
         'chsh -s /bin/zsh ' + user,
     ]:
         chroot(cmd)
-    call('sudo chown {}:{} "{}"'.format(os.getuid(), os.getgid(), img_path))
 
 
 def build_container():
@@ -152,17 +169,15 @@ def build_container():
     try:
         _build_container(url=url)
     except Exception:
-        failed_img_path = os.path.join(os.path.dirname(img_path), 'failed')
+        failed_img_path = img_store_path + '.failed'
         if os.path.exists(failed_img_path):
-            call('sudo rm -rf "{}"'.format(failed_img_path))
-        call('sudo mv "{}" "{}"'.format(img_path, failed_img_path))
-        call('sudo chown {}:{} "{}"'.format(
-            os.getuid(), os.getgid(), failed_img_path))
+            os.remove(failed_img_path)
+        os.rename(img_store_path, failed_img_path)
         raise
 
 
 def check_for_image(tag):
-    return os.path.exists(img_path)
+    return os.path.exists(img_store_path)
 
 
 def get_mounts():
@@ -212,6 +227,7 @@ def umount_all():
                 call('sudo', 'umount', '-l', mp, echo=False)
                 found = True
                 break
+    del mount_image.mounted
 
 
 def run(args):
@@ -249,15 +265,20 @@ def main(args=tuple(sys.argv)):
     if not singleinstance():
         raise SystemExit('Another instance of the linux container is running')
     initialize_env()
-    if len(args) > 1:
-        if args[1] == 'shutdown':
-            raise SystemExit(0)
-        if args[1] == 'container':
+    try:
+        if len(args) > 1:
+            if args[1] == 'shutdown':
+                raise SystemExit(0)
+            if args[1] == 'container':
+                build_container()
+                return
+        if not check_for_image(arch):
             build_container()
-            return
-    if not check_for_image(arch):
-        build_container()
-    run(args)
+        else:
+            mount_image()
+        run(args)
+    finally:
+        unmount_image()
 
 
 if __name__ == '__main__':
