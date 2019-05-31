@@ -6,9 +6,7 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import sys
-import tarfile
 import time
 from functools import lru_cache
 from operator import itemgetter
@@ -16,7 +14,6 @@ from urllib.parse import urljoin
 from urllib.request import urlopen, urlretrieve
 
 from .constants import OS_NAME, SOURCES, SRC, iswindows
-from .utils import run, tempdir, walk
 
 all_filenames = set()
 
@@ -102,12 +99,9 @@ def verify_hash(pkg):
         pass
     else:
         with f:
-            if alg == 'git':
-                matched = True
-            else:
-                h = getattr(hashlib, alg.lower())
-                fhash = h(f.read()).hexdigest()
-                matched = fhash == q
+            h = getattr(hashlib, alg.lower())
+            fhash = h(f.read()).hexdigest()
+            matched = fhash == q
     return matched
 
 
@@ -150,25 +144,9 @@ def get_pypi_url(pkg):
     raise ValueError('Failed to find PyPI URL for {}'.format(pkg))
 
 
-def get_git_clone(pkg, url, fname):
-    with tempdir('git-') as tdir:
-        run('git clone --depth=1 ' + url, cwd=tdir)
-        ddir = os.listdir(tdir)[0]
-        with open(os.path.join(tdir, ddir, '.git', 'HEAD'), 'rb') as f:
-            ref = f.read().decode('utf-8').partition(' ')[-1].strip()
-        with open(os.path.join(tdir, ddir, '.git', ref), 'rb') as f:
-            h = f.read().decode('utf-8').strip()
-        fhash = pkg['hash'].partition(':')[-1]
-        if h != fhash:
-            raise SystemExit(
-                f'The hash of HEAD for {pkg["name"]} has changed')
-        fdir = os.path.join(tdir, ddir)
-        for f in walk(os.path.join(fdir, '.git')):
-            os.chmod(f, 0o666)  # Needed to prevent shutil.rmtree from failing
-        shutil.rmtree(os.path.join(fdir, '.git'))
-        with tarfile.open(fname, 'w:bz2') as tf:
-            tf.add(fdir, arcname=ddir)
-        shutil.rmtree(fdir)
+def get_github_url(url):
+    ident = url.split(':', maxsplit=1)[-1]
+    return f'https://api.github.com/repos/{ident}/tarball'
 
 
 def try_once(pkg, url):
@@ -176,11 +154,10 @@ def try_once(pkg, url):
     fname = os.path.join(SOURCES, filename)
     if url == 'pypi':
         url = get_pypi_url(pkg)
+    elif url.startswith('github:'):
+        url = get_github_url(url)
     print('Downloading', filename, 'from', url)
-    if pkg['hash'].startswith('git:'):
-        get_git_clone(pkg, url, fname)
-    else:
-        urlretrieve(url, fname, reporthook())
+    urlretrieve(url, fname, reporthook())
     if not verify_hash(pkg):
         raise SystemExit(
             f'The hash of the downloaded file: {filename}'
