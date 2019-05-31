@@ -76,7 +76,12 @@ else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     LIBDIR = os.path.join(PREFIX, 'lib')
-    LDFLAGS = worker_env['LDFLAGS'] = f'-L{LIBDIR} -Wl,-rpath-link,{LIBDIR}'
+    if ismacos:
+        LDFLAGS = worker_env['LDFLAGS'] = \
+                f'-headerpad_max_install_names -L{LIBDIR}'
+    else:
+        LDFLAGS = worker_env['LDFLAGS'] = \
+                f'-L{LIBDIR} -Wl,-rpath-link,{LIBDIR}'
 
 
 def mkdtemp(prefix=''):
