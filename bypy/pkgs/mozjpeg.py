@@ -2,14 +2,12 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import os
+import re
 
-from bypy.constants import PREFIX, build_dir, ismacos
-from bypy.utils import (install_binaries, iswindows, simple_build,
-                        windows_cmake_build, run)
+from bypy.constants import BIN, build_dir, ismacos
+from bypy.utils import (ModifiedEnv, install_binaries, iswindows, run,
+                        simple_build, windows_cmake_build, replace_in_file)
 
 
 def main(args):
@@ -22,12 +20,21 @@ def main(args):
                          'bin',
                          fname_map=lambda x: 'cjpeg-calibre.exe')
     else:
+        env = {}
+        if ismacos:
+            env['PATH'] = BIN + os.pathsep + os.environ['PATH']
+            env['LIBTOOLIZE'] = 'glibtoolize'
+            env['LIBTOOL'] = 'glibtool'
+        with ModifiedEnv(**env):
+            run('autoreconf -fiv')
         conf = ('--disable-dependency-tracking --disable-shared --with-jpeg8'
                 ' --without-turbojpeg')
+        env = {}
         if ismacos:
-            conf += ' --host x86_64-apple-darwin NASM={}/bin/nasm'.format(
-                PREFIX)
-        run('autoreconf -fiv')
+            conf += f' --host x86_64-apple-darwin NASM={BIN}/nasm'
+            replace_in_file('configure', re.compile(
+                br'^PKG_CHECK_MODULES.libpng.+?\bfi\b', re.M | re.DOTALL),
+                'HAVE_LIBPNG=1\nHAVE_LIBPNG_TRUE="#"\n')
         simple_build(conf,
                      override_prefix=os.path.join(build_dir(), 'private',
                                                   'mozjpeg'))
