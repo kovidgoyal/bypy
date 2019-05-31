@@ -28,17 +28,17 @@ def base_dir():
     return ans
 
 
-ROOT = 'C:\\' if iswindows else '/'
+ROOT = os.environ.get('BYPY_ROOT', '/')
 is64bit = sys.maxsize > (1 << 32)
-SW = ROOT + 'sw'
+SW = os.path.join(ROOT, 'sw')
 PKG = os.path.join(SW, 'pkg')
 if iswindows:
     is64bit = os.environ['BUILD_ARCH'] == '64'
     SW += '64' if is64bit else '32'
-BYPY = ROOT + 'bypy'
-SRC = ROOT + 'src'
+BYPY = os.path.join(ROOT, 'bypy')
+SRC = os.path.join(ROOT, 'src')
 OS_NAME = 'windows' if iswindows else ('macos' if ismacos else 'linux')
-SOURCES = ROOT + 'sources'
+SOURCES = os.path.join(ROOT, 'sources')
 PATCHES = os.path.join(BYPY, 'patches')
 if iswindows:
     tempfile.tempdir = 'C:\\t\\t'
@@ -72,11 +72,6 @@ if iswindows:
     for k in env:
         if k != 'PATH':
             worker_env[k] = env[k]
-    # The windows build machine has a very old/incomplete certificate store
-    # In particular it is missing Let's Encrypt intermediate certs
-    q = os.path.join(SRC, 'resources', 'mozilla-ca-certs.pem')
-    if os.path.exists(q):
-        os.environ['SSL_CERT_FILE'] = q
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
