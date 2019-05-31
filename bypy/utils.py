@@ -19,10 +19,10 @@ import sys
 import tarfile
 import time
 import zipfile
-from contextlib import contextmanager, closing
+from contextlib import closing, contextmanager
 from functools import partial
 
-from .constants import (LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, SW,
+from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, SW,
                         build_dir, cpu_count, islinux, ismacos, iswindows,
                         mkdtemp, worker_env)
 
@@ -535,7 +535,7 @@ def cmake_build(
         'CMAKE_PREFIX_PATH': PREFIX,
         'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
-    cmd = ['cmake']
+    cmd = [CMAKE]
     for d, val in kw.items():
         if val is None:
             defs.pop(d, None)

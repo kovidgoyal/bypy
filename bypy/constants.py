@@ -53,6 +53,7 @@ worker_env = {}
 cygwin_paths = []
 PKG_CONFIG_PATH = worker_env['PKG_CONFIG_PATH'] = os.path.join(
         PREFIX, 'lib', 'pkgconfig')
+CMAKE = 'cmake'
 
 if iswindows:
     CFLAGS = CPPFLAGS = LIBDIR = LDFLAGS = ''
@@ -79,6 +80,7 @@ else:
     if ismacos:
         LDFLAGS = worker_env['LDFLAGS'] = \
                 f'-headerpad_max_install_names -L{LIBDIR}'
+        CMAKE = os.path.join(BIN, 'cmake')
     else:
         LDFLAGS = worker_env['LDFLAGS'] = \
                 f'-L{LIBDIR} -Wl,-rpath-link,{LIBDIR}'
