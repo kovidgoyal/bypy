@@ -475,7 +475,8 @@ def replace_in_file(path, old, new, missing_ok=False):
             nraw = raw.replace(old, new)
         else:
             if isinstance(old.pattern, str):
-                old = re.compile(old.pattern.encode('utf-8'), old.flags)
+                old = re.compile(
+                    old.pattern.encode('utf-8'), old.flags & ~re.UNICODE)
             nraw = old.sub(new, raw)
         if raw == nraw and not missing_ok:
             raise ValueError('Failed (pattern not found) to patch: ' + path)
