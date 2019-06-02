@@ -7,11 +7,11 @@ import os
 import sys
 from operator import itemgetter
 
-from .constants import PKG, PREFIX, SOURCES, SW, build_dir, ismacos, mkdtemp
+from .constants import PKG, PREFIX, SOURCES, build_dir, ismacos, mkdtemp
 from .download_sources import download, read_deps
 from .utils import (create_package, ensure_clear_dir, extract_source_and_chdir,
-                    fix_install_names, lcopy, python_build, rmtree, run_shell,
-                    set_title, simple_build)
+                    fix_install_names, lcopy, python_build, python_install,
+                    rmtree, run_shell, set_title, simple_build)
 
 
 def pkg_path(dep):
@@ -47,8 +47,7 @@ def build_dep(dep, args, dest_dir=PREFIX):
         else:
             if 'python' in dep:
                 python_build()
-                output_dir = os.path.join(
-                    output_dir, os.path.basename(SW), os.path.basename(PREFIX))
+                python_install()
             else:
                 simple_build()
         if ismacos:

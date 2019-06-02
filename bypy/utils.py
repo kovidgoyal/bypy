@@ -22,7 +22,7 @@ import zipfile
 from contextlib import closing, contextmanager
 from functools import partial
 
-from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, SW,
+from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON,
                         build_dir, cpu_count, islinux, ismacos, iswindows,
                         mkdtemp, worker_env)
 
@@ -336,11 +336,18 @@ def python_build(extra_args=()):
         *extra_args, library_path=True)
 
 
+def python_prefix():
+    current_output_dir = build_dir()
+    relpath = os.path.relpath(PREFIX, '/')
+    return os.path.join(current_output_dir, relpath)
+
+
 def python_install():
     ddir = 'python' if ismacos else 'private' if iswindows else 'lib'
-    os.rename(os.path.join(build_dir(), os.path.basename(SW),
-              os.path.basename(PREFIX), ddir), os.path.join(build_dir(), ddir))
-    rmtree(os.path.join(build_dir(), os.path.basename(SW)))
+    pp = python_prefix()
+    to_remove = os.listdir(build_dir())[0]
+    os.rename(os.path.join(pp, ddir), os.path.join(build_dir(), ddir))
+    rmtree(os.path.join(build_dir(), to_remove))
 
 
 def create_package(module, src_dir, outpath):
