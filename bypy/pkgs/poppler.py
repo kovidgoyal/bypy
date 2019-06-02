@@ -6,7 +6,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 
-from bypy.constants import iswindows
+from bypy.constants import iswindows, ismacos
 from bypy.utils import (cmake_build, install_binaries, replace_in_file,
                         windows_cmake_build)
 
@@ -26,6 +26,10 @@ def main(args):
     replace_in_file('CMakeLists.txt',
                     'macro_optional_find_package(Cairo ${CAIRO_VERSION})',
                     'set(CAIRO_FOUND false)')
+    if ismacos:
+        replace_in_file('CMakeLists.txt',
+                        'macro_optional_find_package(NSS3)',
+                        'set(NSS3_FOUND false)')
     if iswindows:
         windows_cmake_build(**cmake_args)
         install_binaries('build/utils/*.exe', 'bin')

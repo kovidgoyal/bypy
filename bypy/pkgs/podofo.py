@@ -7,7 +7,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import os
 
-from bypy.constants import PREFIX, iswindows
+from bypy.constants import PREFIX, iswindows, ismacos
 from bypy.utils import (cmake_build, copy_headers, install_binaries,
                         replace_in_file, walk, windows_cmake_build)
 
@@ -35,6 +35,15 @@ def main(args):
             elif f.endswith('.lib'):
                 install_binaries(f, 'lib')
     else:
+        if ismacos:
+            replace_in_file(
+                'CMakeLists.txt', 'FIND_PACKAGE(FREETYPE REQUIRED)',
+                (
+                    'SET(FREETYPE_FOUND "1")\n'
+                    'SET(FREETYPE_INCLUDE_DIR "{0}/include/freetype2")\n'
+                    'SET(FREETYPE_LIBRARIES "{0}/lib/libfreetype.dylib")'
+                ).format(PREFIX))
+
         cmake_build(
             make_args='podofo_shared',
             PODOFO_BUILD_LIB_ONLY='TRUE',
