@@ -10,34 +10,41 @@ from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, PREFIX,
 from bypy.utils import (ModifiedEnv, current_env, replace_in_file, run,
                         run_shell)
 
+dlls = [
+    'Core',
+    'Concurrent',
+    'Gui',
+    'Network',
+    'NetworkAuth',
+    'Location',
+    'PrintSupport',
+    'WebChannel',
+    'WebSockets',
+    'WebView',
+    'Positioning',
+    'Sensors',
+    'Sql',
+    'Svg',
+    'WebKit',
+    'WebKitWidgets',
+    'WebEngineCore',
+    'WebEngine',
+    'WebEngineWidgets',
+    'Widgets',
+    'Multimedia',
+    'OpenGL',
+    'MultimediaWidgets',
+    'Xml',
+    # 'XmlPatterns',
+]
+
+if islinux:
+    dlls += ['X11Extras', 'XcbQpa', 'WaylandClient']
+elif ismacos:
+    dlls += ['MacExtras']
+
 QT_DLLS = frozenset(
-    'Qt5' + x for x in (
-        'Core',
-        'Concurrent',
-        'Gui',
-        'Network',
-        'NetworkAuth',
-        'Location',
-        'PrintSupport',
-        'WaylandClient',
-        'WebChannel',
-        'WebSockets',
-        'WebView',
-        'X11Extras',
-        'XcbQpa',
-        'Positioning',
-        'Sensors',
-        'Sql',
-        'Svg',
-        'WebKit',
-        'WebKitWidgets',
-        'Widgets',
-        'Multimedia',
-        'OpenGL',
-        'MultimediaWidgets',
-        'Xml',
-        # 'XmlPatterns',
-    )
+    'Qt5' + x for x in dlls
 )
 
 QT_PLUGINS = [
@@ -45,16 +52,23 @@ QT_PLUGINS = [
     'iconengines',
     'mediaservice',
     'platforms',
-    'platforminputcontexts',
     'platformthemes',
     'playlistformats',
     'sqldrivers',
-    'wayland-decoration-client',
-    'wayland-graphics-integration-client',
-    'wayland-shell-integration',
-    'xcbglintegrations',
+    'styles', 'webview',
     # 'audio', 'printsupport', 'bearer', 'position',
 ]
+
+if not ismacos:
+    QT_PLUGINS.append('platforminputcontexts')
+
+if islinux:
+    QT_PLUGINS += [
+        'wayland-decoration-client',
+        'wayland-graphics-integration-client',
+        'wayland-shell-integration',
+        'xcbglintegrations',
+    ]
 
 PYQT_MODULES = (
     'Qt',
@@ -66,7 +80,9 @@ PYQT_MODULES = (
     'QtSvg',
     'QtWebKit',
     'QtWebKitWidgets',
-    'QtWidgets')
+    'QtWidgets',
+    # 'QtWebChannel',
+)
 
 
 def main(args):
