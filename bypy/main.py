@@ -5,6 +5,7 @@
 import argparse
 import os
 import runpy
+import subprocess
 import sys
 
 from .constants import OS_NAME, SRC, build_dir
@@ -48,6 +49,15 @@ def option_parser():
     return parser
 
 
+def run_tests(path_to_calibre_debug, cwd_on_failure):
+    p = subprocess.Popen([path_to_calibre_debug, '--test-build'])
+    if p.wait() != 0:
+        os.chdir(cwd_on_failure)
+        print('running calibre build tests failed', file=sys.stderr)
+        run_shell()
+        raise SystemExit(p.wait())
+
+
 def main(args):
     args = option_parser().parse_args(args[2:])
 
@@ -69,6 +79,7 @@ def main(args):
                            init_globals={
                                'args': args,
                                'ext_dir': ext_dir,
+                               'run_tests': run_tests,
                                'init_env': init_env_module
                            },
                            run_name='__main__')
