@@ -502,6 +502,16 @@ def current_dir(path):
     os.chdir(cwd)
 
 
+@contextmanager
+def timeit():
+    ' Usage: `with timeit() as times: whatever()` minutes, seconds = times '
+    times = [0, 0]
+    st = time.monotonic()
+    yield times
+    dt = int(time.monotonic() - st)
+    times[0], times[1] = dt // 60, dt % 60
+
+
 def windows_cmake_build(
         headers=None, binaries=None, libraries=None, header_dest='include',
         nmake_target='', make='nmake', **kw):
