@@ -24,10 +24,11 @@ def main(args):
             elif f.endswith('.lib'):
                 install_binaries(f)
     else:
+        # ICU is needed to use libxml2 in qt-webengine
         simple_build(
             '--disable-dependency-tracking --disable-static --enable-shared'
             ' --without-python --without-debug --with-iconv={0}'
-            ' --with-zlib={0}'.format(PREFIX))
+            ' --with-zlib={0} --with-icu'.format(PREFIX))
         for path in walk(build_dir()):
             if path.endswith('/xml2-config'):
                 replace_in_file(
