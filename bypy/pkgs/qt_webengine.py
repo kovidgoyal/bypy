@@ -6,4 +6,4 @@ from bypy.utils import qt_build
 
 
 def main(args):
-    qt_build('-spellchecker')
+    qt_build('-webp -spellchecker -webengine-icu')
