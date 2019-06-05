@@ -134,7 +134,7 @@ def main(args):
         ldflags = '-L {}/lib'.format(PREFIX).replace(os.sep, '/')
     conf += ' ' + cflags + ' ' + ldflags
     run(conf, library_path=True)
-    run_shell()
+    # run_shell()
     run_shell
     if iswindows:
         with ModifiedEnv(PATH=os.path.abspath('../gnuwin32/bin') + os.pathsep +
