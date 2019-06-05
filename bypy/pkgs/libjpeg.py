@@ -2,11 +2,9 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
-
 from bypy.constants import iswindows
-from bypy.utils import cmake_build, windows_cmake_build
+from bypy.utils import (cmake_build, relocate_pkgconfig_files,
+                        windows_cmake_build)
 
 
 def main(args):
@@ -19,3 +17,4 @@ def main(args):
         )
     else:
         cmake_build(WITH_JPEG8='1',)
+        relocate_pkgconfig_files()
