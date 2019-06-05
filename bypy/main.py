@@ -7,7 +7,7 @@ import os
 import runpy
 import sys
 
-from .constants import OS_NAME, SRC, build_dir
+from .constants import OS_NAME, SRC, build_dir, ROOT, OUTPUT_DIR
 from .deps import init_env
 from .deps import main as deps_main
 from .utils import mkdtemp, rmtree, run_shell
@@ -50,9 +50,11 @@ def option_parser():
 
 def main(args):
     args = option_parser().parse_args(args[2:])
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     if args.shell or args.deps == ['shell']:
         init_env()
+        os.chdir(ROOT)
         run_shell()
         return
 

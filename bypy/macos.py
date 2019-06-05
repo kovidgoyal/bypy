@@ -35,19 +35,21 @@ def main(args=tuple(sys.argv)):
             return
     ensure_vm(vm)
     rsync = Rsync(vm)
-    output_dir = os.path.join(base_dir(), 'b', 'macos')
+    output_dir = os.path.join(base_dir(), 'b', 'macos', 'dist')
+    pkg_dir = os.path.join(base_dir(), 'b', 'macos', 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
     os.makedirs(sources_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(pkg_dir, exist_ok=True)
 
-    to_vm(rsync, sources_dir, output_dir, prefix=prefix)
+    to_vm(rsync, sources_dir, pkg_dir, prefix=prefix)
     cmd = [
         python, os.path.join(prefix, 'bypy'), 'main',
         f'BYPY_ROOT={prefix}'] + list(args)
     try:
         run_main(vm, *cmd)
     finally:
-        from_vm(rsync, sources_dir, output_dir, prefix=prefix)
+        from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix=prefix)
 
 
 if __name__ == '__main__':

@@ -142,7 +142,7 @@ class Rsync(object):
             raise SystemExit(p.wait())
 
 
-def to_vm(rsync, sources_dir, output_dir, prefix='/', name='sw'):
+def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
     print('Mirroring data to the VM...')
     prefix = prefix.rstrip('/') + '/'
     src_dir = os.path.dirname(base_dir())
@@ -153,14 +153,15 @@ def to_vm(rsync, sources_dir, output_dir, prefix='/', name='sw'):
     base = os.path.dirname(os.path.abspath(__file__))
     rsync.to_vm(os.path.dirname(base), prefix + 'bypy')
     rsync.to_vm(sources_dir, prefix + 'sources')
-    rsync.to_vm(output_dir, prefix + name)
+    rsync.to_vm(pkg_dir, prefix + name + '/pkg')
 
 
-def from_vm(rsync, sources_dir, output_dir, prefix='/', name='sw'):
+def from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix='/', name='sw'):
     print('Mirroring data from VM...')
     prefix = prefix.rstrip('/') + '/'
-    rsync.from_vm(prefix + name, output_dir)
+    rsync.from_vm(prefix + name + '/dist', output_dir)
     rsync.from_vm(prefix + 'sources', sources_dir)
+    rsync.from_vm(prefix + name + '/pkg', pkg_dir)
 
 
 def run_main(name, *cmd):

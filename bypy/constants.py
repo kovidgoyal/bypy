@@ -31,6 +31,7 @@ def base_dir():
 ROOT = os.environ.get('BYPY_ROOT', '/')
 is64bit = sys.maxsize > (1 << 32)
 SW = os.path.join(ROOT, 'sw')
+OUTPUT_DIR = os.path.join(SW, 'dist')
 PKG = os.path.join(SW, 'pkg')
 if iswindows:
     is64bit = os.environ['BUILD_ARCH'] == '64'
