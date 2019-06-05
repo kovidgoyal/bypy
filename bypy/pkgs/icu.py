@@ -7,9 +7,10 @@ import os
 import re
 import shutil
 
-from bypy.constants import LIBDIR, MAKEOPTS, build_dir, ismacos, iswindows
-from bypy.utils import (ModifiedEnv, current_env, install_binaries, run,
-                        simple_build)
+from bypy.constants import (LIBDIR, MAKEOPTS, PREFIX, build_dir, ismacos,
+                            iswindows)
+from bypy.utils import (ModifiedEnv, current_env, replace_in_file, run,
+                        simple_build, walk)
 
 
 def main(args):
@@ -26,19 +27,33 @@ def main(args):
             run('C:/cygwin64/bin/make install')
             for dll in glob.glob(os.path.join(build_dir(), 'lib', '*.dll')):
                 if re.search(r'\d+', os.path.basename(dll)) is not None:
-                    os.rename(dll, os.path.join(build_dir(), 'bin', os.path.basename(dll)))
+                    os.rename(
+                        dll,
+                        os.path.join(build_dir(), 'bin',
+                                     os.path.basename(dll)))
             for dll in glob.glob(os.path.join(build_dir(), 'lib', '*.dll')):
                 os.remove(dll)
     elif ismacos:
-        run('./runConfigureICU MacOSX --disable-samples --prefix=' + build_dir())
+        run('./runConfigureICU MacOSX --disable-samples --prefix=' +
+            build_dir())
         run('make ' + MAKEOPTS)
         run('make install')
     else:
-        simple_build('--prefix=/usr --sysconfdir=/etc --mandir=/usr/share/man --sbindir=/usr/bin',
-                     install_args='DESTDIR=' + build_dir(), relocate_pkgconfig=False)
+        simple_build(
+            '--prefix=/usr --sysconfdir=/etc --mandir=/usr/share/man'
+            ' --sbindir=/usr/bin',
+            install_args='DESTDIR=' + build_dir(), relocate_pkgconfig=False)
         usr = os.path.join(build_dir(), 'usr')
-        os.rename(os.path.join(usr, 'include'), os.path.join(build_dir(), 'include'))
-        install_binaries(os.path.join(usr, 'lib', 'libicu*'))
+        os.rename(os.path.join(usr, 'include'),
+                  os.path.join(build_dir(), 'include'))
+        os.rename(os.path.join(usr, 'lib'),
+                  os.path.join(build_dir(), 'lib'))
+        for path in walk(build_dir()):
+            if path.endswith('.pc'):
+                replace_in_file(
+                    path,
+                    re.compile(br'^prefix\s*=\s*/usr', flags=re.M),
+                    f'prefix={PREFIX}')
         shutil.rmtree(usr)
 
 
@@ -46,6 +61,7 @@ def install_name_change(name, is_dependency):
     bn = os.path.basename(name)
     if bn.startswith('libicu'):
         parts = bn.split('.')
-        parts = parts[:2] + parts[-1:]  # We only want the major version in the install name
+        parts = parts[:2] + parts[
+            -1:]  # We only want the major version in the install name
         name = LIBDIR + '/' + '.'.join(parts)
     return name
