@@ -39,9 +39,9 @@ dlls = [
 ]
 
 if islinux:
-    dlls += ['X11Extras', 'XcbQpa', 'WaylandClient']
+    dlls += ['X11Extras', 'XcbQpa', 'WaylandClient', 'DBus']
 elif ismacos:
-    dlls += ['MacExtras']
+    dlls += ['MacExtras', 'DBus']
 
 QT_DLLS = frozenset(
     'Qt5' + x for x in dlls
