@@ -11,7 +11,7 @@ from .constants import PKG, PREFIX, SOURCES, build_dir, ismacos, mkdtemp
 from .download_sources import download, read_deps
 from .utils import (create_package, ensure_clear_dir, extract_source_and_chdir,
                     fix_install_names, lcopy, python_build, python_install,
-                    rmtree, run_shell, set_title, simple_build)
+                    qt_build, rmtree, run_shell, set_title, simple_build)
 
 
 def pkg_path(dep):
@@ -48,6 +48,8 @@ def build_dep(dep, args, dest_dir=PREFIX):
             if 'python' in dep:
                 python_build()
                 python_install()
+            elif dep['name'].startswith('qt-'):
+                qt_build()
             else:
                 simple_build()
         if ismacos:

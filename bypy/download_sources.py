@@ -59,17 +59,41 @@ def decorate_dep(dep):
     return dep
 
 
+def populate_qt_dep(dep, qt_version):
+    f = dep['name'].replace('-', '')
+    filename = f'{f}-everywhere-src-{qt_version}'
+    p = qt_version.rpartition('.')[0]
+    url = ('https://download.qt.io/official_releases/qt/'
+           f'{p}/{qt_version}/submodules/{{filename}}')
+    if 'unix' in dep['hashes']:
+        dep['unix'] = {
+            'filename': filename + '.tar.xz',
+            'hash': dep['hashes']['unix'],
+            'urls': [url],
+        }
+    if 'windows' in dep['hashes']:
+        dep['windows'] = {
+            'filename': filename + '.zip',
+            'hash': dep['hashes']['windows'],
+            'urls': [url],
+        }
+
+
 @lru_cache()
 def read_deps(only_buildable=True):
     with open(os.path.join(SRC, 'bypy', 'sources.json')) as f:
         data = json.load(f)
+    qt_version = None
     for dep in data:
+        if dep['name'].startswith('qt-'):
+            if dep['name'] == 'qt-base':
+                qt_version = dep['version']
+            populate_qt_dep(dep, qt_version)
         if dep['name'] == 'python':
             vraw = dep['unix']['filename'].split('-')[-1]
             parts = vraw.split('.')
             ok_dep.major_version = int(parts[0])
             ok_dep.minor_version = int(parts[1])
-            break
     if only_buildable:
         return tuple(filter(ok_dep, map(decorate_dep, data)))
     ans = {}

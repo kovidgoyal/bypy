@@ -22,7 +22,7 @@ import zipfile
 from contextlib import closing, contextmanager
 from functools import partial
 
-from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON,
+from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, ROOT,
                         build_dir, cpu_count, islinux, ismacos, iswindows,
                         mkdtemp, worker_env)
 
@@ -222,7 +222,10 @@ def extract_source_and_chdir(source):
 def relocate_pkgconfig_files():
     for path in walk(build_dir()):
         if path.endswith('.pc'):
-            replace_in_file(path, build_dir(), PREFIX)
+            if re.search(
+                    f'^prefix={PREFIX}$', open(path).read(),
+                    flags=re.M) is None:
+                replace_in_file(path, build_dir(), PREFIX)
 
 
 def simple_build(
@@ -243,6 +246,20 @@ def simple_build(
     run(*mi, library_path=library_path)
     if relocate_pkgconfig:
         relocate_pkgconfig_files()
+
+
+def qt_build(qmake_args=''):
+    os.mkdir('build')
+    os.chdir('build')
+    qmake_args = shlex.split(qmake_args)
+    run(
+        os.path.join(PREFIX, 'qt', 'bin', 'qmake'),
+        '..', '--', *qmake_args, library_path=True)
+    run('make ' + MAKEOPTS, library_path=True)
+    run(f'make INSTALL_ROOT={build_dir()} install')
+    base = os.path.relpath(PREFIX, ROOT)
+    os.rename(
+        os.path.join(build_dir(), base, 'qt'), os.path.join(build_dir(), 'qt'))
 
 
 def is_macho_binary(p):

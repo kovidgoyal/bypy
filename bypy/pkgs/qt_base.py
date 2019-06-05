@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # vim:fileencoding=utf-8
-# License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
+# License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
 import shutil
@@ -92,16 +92,16 @@ def main(args):
         # in Qt 4.x Dont know if it is still true for Qt 5 but since we dont
         # need bearers anyway, it cant hurt.
         replace_in_file(
-            'qtbase/src/network/bearer/qnetworkconfigmanager_p.cpp',
+            'src/network/bearer/qnetworkconfigmanager_p.cpp',
             b'/bearer"', b'/bearer-disabled-by-kovid"')
         # Change pointing_hand to hand2, see
         # https://bugreports.qt.io/browse/QTBUG-41151
-        replace_in_file('qtbase/src/plugins/platforms/xcb/qxcbcursor.cpp',
+        replace_in_file('src/plugins/platforms/xcb/qxcbcursor.cpp',
                         'pointing_hand"', 'hand2"')
     elif iswindows:
         # Enable loading of DLLs from the DLLs directory
         replace_in_file(
-            'qtbase/src/corelib/plugin/qsystemlibrary.cpp',
+            'src/corelib/plugin/qsystemlibrary.cpp',
             'searchOrder << QFileInfo(qAppFileName()).path();',
             'searchOrder << (QFileInfo(qAppFileName()).path()'
             r".replace(QLatin1Char('/'), QLatin1Char('\\'))"
@@ -112,16 +112,6 @@ def main(args):
     os.mkdir('build'), os.chdir('build')
     configure = os.path.abspath(
         '..\\configure.bat') if iswindows else '../configure'
-    # Slim down Qt
-    # For the list of modules and their dependencies, see .gitmodules
-    skip_modules = set('''\
-        qtactiveqt qtscript qttools qtxmlpatterns qttranslations qtdoc
-        qtrepotools qtqa qtsystems qtfeedback qtdocgallery
-        qtpim qtconnectivity qt3d qtgraphicaleffects qtquickcontrols
-        qtserialbus qtserialport qtquickcontrols2 qtcanvas3d qtpurchasing
-        qtcharts qtdatavis3d qtvirtualkeyboard qtgamepad qtscxml qtspeech
-        qtremoteobjects qtwebglplugin
-    '''.split())
     conf = configure + (
         ' -v -silent -opensource -confirm-license -prefix {}/qt -release'
         ' -nomake examples -nomake tests -no-sql-odbc -no-sql-psql'
@@ -142,17 +132,16 @@ def main(args):
         conf = conf.replace('-v -silent ', ' ')
         cflags = '-I {}/include'.format(PREFIX).replace(os.sep, '/')
         ldflags = '-L {}/lib'.format(PREFIX).replace(os.sep, '/')
-    skip_modules = ' '.join('-skip ' + x for x in skip_modules)
-    conf += ' ' + skip_modules + ' ' + cflags + ' ' + ldflags
+    conf += ' ' + cflags + ' ' + ldflags
     run(conf, library_path=True)
-    # run_shell()
+    run_shell()
     run_shell
     if iswindows:
         with ModifiedEnv(PATH=os.path.abspath('../gnuwin32/bin') + os.pathsep +
                          current_env()['PATH']):
             run('nmake')
         run('nmake install')
-        shutil.copy2('../qtbase/src/3rdparty/sqlite/sqlite3.c',
+        shutil.copy2('../src/3rdparty/sqlite/sqlite3.c',
                      os.path.join(build_dir(), 'qt'))
         shutil.copytree('../gnuwin32',
                         os.path.join(build_dir(), 'qt', 'gnuwin32'))
