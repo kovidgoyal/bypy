@@ -161,6 +161,7 @@ def run(*args, **kw):
     print(' '.join(shlex.quote(x) for x in cmd))
     sys.stdout.flush()
     env = current_env(library_path=kw.get('library_path'))
+    env.update(kw.get('env', {}))
     p = subprocess.Popen(cmd, env=env, cwd=kw.get('cwd'))
     rc = p.wait()
     if kw.get('no_check'):
