@@ -564,6 +564,7 @@ def windows_cmake_build(
 def cmake_build(
         make_args=(), install_args=(),
         library_path=None, override_prefix=None, no_parallel=False,
+        relocate_pkgconfig=True,
         **kw
 ):
     if isinstance(make_args, str):
@@ -588,6 +589,8 @@ def cmake_build(
     run('make', *(make_opts + list(make_args)), cwd='build')
     mi = ['make'] + list(install_args) + ['install']
     run(*mi, library_path=library_path, cwd='build')
+    if relocate_pkgconfig:
+        relocate_pkgconfig_files()
 
 
 def meson_build(extra_cmdline='', library_path=None, **options):
