@@ -10,6 +10,7 @@ from bypy.utils import qt_build
 
 
 def main(args):
+    conf = '-spellchecker'
     if islinux:
         # workaround for bug in build system, not adding include path for
         # libjpeg when building iccjpeg, and mjpeg_decoder
@@ -23,4 +24,5 @@ def main(args):
                 header,
                 os.path.join('src/3rdparty/chromium',
                              os.path.basename(header)))
-    qt_build('-webp -spellchecker -webengine-icu')
+        conf += ' -webp -webengine-icu'
+    qt_build(conf)
