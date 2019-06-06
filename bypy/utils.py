@@ -22,7 +22,7 @@ import zipfile
 from contextlib import closing, contextmanager
 from functools import partial
 
-from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON, ROOT,
+from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON,
                         build_dir, cpu_count, islinux, ismacos, iswindows,
                         mkdtemp, worker_env)
 
@@ -258,7 +258,7 @@ def qt_build(qmake_args=''):
         '..', '--', *qmake_args, library_path=True)
     run('make ' + MAKEOPTS, library_path=True)
     run(f'make INSTALL_ROOT={build_dir()} install')
-    base = os.path.relpath(PREFIX, ROOT)
+    base = os.path.relpath(PREFIX, '/')
     os.rename(
         os.path.join(build_dir(), base, 'qt'), os.path.join(build_dir(), 'qt'))
 
