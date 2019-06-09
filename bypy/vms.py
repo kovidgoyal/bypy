@@ -76,7 +76,7 @@ def shutdown_vm(name, max_wait=15):
     start_time = monotonic()
     if not is_vm_running(name):
         return
-    isosx = name.startswith('osx-')
+    isosx = 'macos' in name.split('-')
     cmd = 'sudo shutdown -h now' if isosx else 'shutdown.exe -s -f -t 0'
     shp = run_in_vm(name, cmd, is_async=True)
     shutdown_time = monotonic()
