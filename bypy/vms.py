@@ -79,7 +79,6 @@ def shutdown_vm(name, max_wait=15):
     isosx = 'macos' in name.split('-')
     cmd = 'sudo shutdown -h now' if isosx else 'shutdown.exe -s -f -t 0'
     shp = run_in_vm(name, cmd, is_async=True)
-    shutdown_time = monotonic()
 
     try:
         while is_host_reachable(name) and monotonic() - start_time <= max_wait:
@@ -93,10 +92,6 @@ def shutdown_vm(name, max_wait=15):
                 ('VBoxManage controlvm %s poweroff' % name).split())
             return
         print('SSH server shutdown, now waiting for VM to poweroff...')
-        if isosx:
-            # OS X VM hangs on shutdown, so just give it at most 5 seconds to
-            # shutdown cleanly.
-            max_wait = 5 + shutdown_time - start_time
         while is_vm_running(name) and monotonic() - start_time <= max_wait:
             sleep(0.1)
         if is_vm_running(name):
