@@ -7,7 +7,7 @@ import sys
 import tempfile
 
 _plat = sys.platform.lower()
-iswindows = 'win32' in _plat or 'win64' in _plat
+iswindows = hasattr(sys, 'getwindowsversion')
 ismacos = 'darwin' in _plat
 islinux = not iswindows and not ismacos
 del _plat
@@ -31,11 +31,11 @@ def base_dir():
 ROOT = os.environ.get('BYPY_ROOT', '/')
 is64bit = sys.maxsize > (1 << 32)
 SW = os.path.join(ROOT, 'sw')
-OUTPUT_DIR = os.path.join(SW, 'dist')
-PKG = os.path.join(SW, 'pkg')
 if iswindows:
     is64bit = os.environ['BUILD_ARCH'] == '64'
     SW += '64' if is64bit else '32'
+OUTPUT_DIR = os.path.join(SW, 'dist')
+PKG = os.path.join(SW, 'pkg')
 BYPY = os.path.join(ROOT, 'bypy')
 SRC = os.path.join(ROOT, 'src')
 OS_NAME = 'windows' if iswindows else ('macos' if ismacos else 'linux')
@@ -52,13 +52,11 @@ cpu_count = os.cpu_count
 MAKEOPTS = f'-j{cpu_count()}'
 worker_env = {}
 cygwin_paths = []
-PKG_CONFIG_PATH = worker_env['PKG_CONFIG_PATH'] = os.path.join(
-        PREFIX, 'lib', 'pkgconfig')
 CMAKE = 'cmake'
 
 if iswindows:
     CFLAGS = CPPFLAGS = LIBDIR = LDFLAGS = ''
-    from vcvars import query_vcvarsall
+    from bypy.vcvars import query_vcvarsall
     env = query_vcvarsall(is64bit)
     # Remove cygwin paths from environment
     paths = [p.replace('/', os.sep) for p in env['PATH'].split(os.pathsep)]
@@ -78,6 +76,8 @@ else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     LIBDIR = os.path.join(PREFIX, 'lib')
+    PKG_CONFIG_PATH = worker_env['PKG_CONFIG_PATH'] = os.path.join(
+            PREFIX, 'lib', 'pkgconfig')
     if ismacos:
         LDFLAGS = worker_env['LDFLAGS'] = \
                 f'-headerpad_max_install_names -L{LIBDIR}'

@@ -6,7 +6,6 @@
 import atexit
 import ctypes
 import errno
-import fcntl
 import glob
 import os
 import re
@@ -81,6 +80,7 @@ def call(*cmd, echo=True):
 
 
 def single_instance(name):
+    import fcntl
     address = '\0' + name.replace(' ', '_')
     sock = socket.socket(family=socket.AF_UNIX)
     try:
