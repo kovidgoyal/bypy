@@ -57,9 +57,10 @@ CMAKE = 'cmake'
 if iswindows:
     CFLAGS = CPPFLAGS = LIBDIR = LDFLAGS = ''
     from bypy.vcvars import query_vcvarsall
-    env = query_vcvarsall(is64bit)
+    vcvars_env = query_vcvarsall(is64bit)
     # Remove cygwin paths from environment
-    paths = [p.replace('/', os.sep) for p in env['PATH'].split(os.pathsep)]
+    paths = [
+        p.replace('/', os.sep) for p in vcvars_env['PATH'].split(os.pathsep)]
     cygwin_paths = [p for p in paths if 'cygwin64' in p.split(os.sep)]
     paths = [p for p in paths if 'cygwin64' not in p.split(os.sep)]
     # Add the bindir to the PATH, needed for loading DLLs
@@ -68,10 +69,9 @@ if iswindows:
     # Needed for pywintypes27.dll which is used by the win32api module
     paths.insert(0, os.path.join(
         PREFIX, r'private\python\Lib\site-packages\pywin32_system32'))
-    os.environ['PATH'] = os.pathsep.join(uniq(paths))
-    for k in env:
-        if k != 'PATH':
-            worker_env[k] = env[k]
+    for k in vcvars_env:
+        worker_env[k] = vcvars_env[k]
+    worker_env['PATH'] = os.pathsep.join(uniq(paths))
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')

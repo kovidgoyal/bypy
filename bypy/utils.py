@@ -22,8 +22,8 @@ from contextlib import closing, contextmanager
 from functools import partial
 
 from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON,
-                        build_dir, cpu_count, islinux, ismacos, iswindows,
-                        mkdtemp, worker_env)
+                        build_dir, cpu_count, is64bit, islinux, ismacos,
+                        iswindows, mkdtemp, worker_env)
 
 if iswindows:
     import msvcrt
@@ -559,6 +559,26 @@ def windows_cmake_build(
         if libraries:
             for pat in libraries.split():
                 install_binaries(pat)
+
+
+def msbuild(proj):
+    global worker_env
+    from bypy.vcvars import find_msbuild
+    from bypy.constants import vcvars_env
+    PL = 'x64' if is64bit else 'Win32'
+    tools = 'v' + vcvars_env['VCTOOLSVERSION'].replace('.', '')[:3]
+    sdk = vcvars_env['WINDOWSSDKVERSION'].strip('\\')
+    orig_worker_env = worker_env.copy()
+    for k in vcvars_env:
+        worker_env.pop(k, None)
+    try:
+        run(
+            find_msbuild(), proj, '/t:Build', f'/p:Platform={PL}',
+            '/p:Configuration=Release', f'/p:PlatformToolset={tools}',
+            f'/p:WindowsTargetPlatformVersion={sdk}'
+        )
+    finally:
+        worker_env = orig_worker_env
 
 
 def cmake_build(

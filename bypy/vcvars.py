@@ -7,6 +7,9 @@ import os
 import subprocess
 from functools import lru_cache
 
+VS_VERSION = '15.0'
+COMN_TOOLS_VERSION = '150'
+
 CSIDL_PROGRAM_FILES = 38
 CSIDL_PROGRAM_FILESX86 = 42
 
@@ -20,32 +23,50 @@ def get_program_files_location(which=CSIDL_PROGRAM_FILESX86):
     return buf.value
 
 
-def find_vs2017():
+@lru_cache()
+def find_vswhere():
     for which in (CSIDL_PROGRAM_FILESX86, CSIDL_PROGRAM_FILES):
         root = get_program_files_location(which)
         vswhere = os.path.join(root, "Microsoft Visual Studio", "Installer",
                                "vswhere.exe")
-        if not os.path.exists(vswhere):
-            continue
-        path = subprocess.check_output([
-            vswhere,
-            "-latest",
-            "-prerelease",
-            "-requires",
-            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-            "-property",
-            "installationPath",
-            "-products",
-            "*",
-        ],
-                                       encoding="mbcs",
-                                       errors="strict").strip()
-        return os.path.join(path, "VC", "Auxiliary", "Build")
-    raise SystemExit('Could not find VisualStudio 2017')
+        if os.path.exists(vswhere):
+            return vswhere
+    raise SystemExit('Could not find vswhere.exe')
 
 
-def find_vcvarsall(version=15.0):
-    productdir = find_vs2017()
+def get_output(*cmd):
+    return subprocess.check_output(cmd, encoding='mbcs', errors='strict')
+
+
+@lru_cache()
+def find_visual_studio(version=VS_VERSION):
+    path = get_output(
+        find_vswhere(),
+        "-version", version,
+        "-requires",
+        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "-property",
+        "installationPath",
+        "-products",
+        "*"
+    ).strip()
+    return os.path.join(path, "VC", "Auxiliary", "Build")
+
+
+@lru_cache()
+def find_msbuild(version=VS_VERSION):
+    return get_output(
+        find_vswhere(),
+        "-version", version,
+        "-requires",
+        "Microsoft.Component.MSBuild",
+        "-find",
+        r"MSBuild\**\Bin\MSBuild.exe"
+    ).strip()
+
+
+def find_vcvarsall():
+    productdir = find_visual_studio()
     vcvarsall = os.path.join(productdir, "vcvarsall.bat")
     if os.path.isfile(vcvarsall):
         return vcvarsall
@@ -93,6 +114,7 @@ def query_process(cmd, is64bit):
     return result
 
 
+@lru_cache()
 def query_vcvarsall(is64bit=True):
     plat = 'amd64' if is64bit else 'amd64_x86'
     vcvarsall = find_vcvarsall()
@@ -106,6 +128,11 @@ def query_vcvarsall(is64bit=True):
 
     return {
         k: g(k)
-        for k in ('PATH LIB INCLUDE LIBPATH WINDOWSSDKDIR'
-                  ' VS150COMNTOOLS UCRTVERSION UNIVERSALCRTSDKDIR').split()
+        for k in (
+            'PATH LIB INCLUDE LIBPATH WINDOWSSDKDIR'
+            f' VS{COMN_TOOLS_VERSION}COMNTOOLS'
+            ' UCRTVERSION UNIVERSALCRTSDKDIR VCTOOLSVERSION'
+            ' WINDOWSSDKVERSION WINDOWSSDKVERBINPATH WINDOWSSDKBINPATH'
+            ' VISUALSTUDIOVERSION VSCMD_ARG_HOST_ARCH VSCMD_ARG_TGT_ARCH'
+        ).split()
     }

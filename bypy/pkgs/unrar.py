@@ -2,16 +2,15 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from bypy.constants import is64bit, ismacos, iswindows
-from bypy.utils import copy_headers, install_binaries, replace_in_file, run
+from bypy.constants import ismacos, iswindows
+from bypy.utils import (copy_headers, install_binaries, msbuild,
+                        replace_in_file, run)
 
 
 def main(args):
     replace_in_file('dll.cpp', 'WideToChar', 'WideToUtf')
     if iswindows:
-        PL = 'x64' if is64bit else 'Win32'
-        run('msbuild.exe', 'UnRARDll.vcxproj', '/t:Build', '/p:Platform=' + PL,
-            '/p:Configuration=Release')
+        msbuild('UnRARDll.vcxproj')
         install_binaries('./build/*/Release/unrar.dll', 'bin')
         install_binaries('./build/*/Release/UnRAR.lib', 'lib')
         # from bypy.utils import run_shell
