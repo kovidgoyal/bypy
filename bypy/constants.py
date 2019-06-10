@@ -77,6 +77,9 @@ if iswindows:
     for k in vcvars_env:
         worker_env[k] = vcvars_env[k]
     worker_env['PATH'] = os.pathsep.join(uniq(paths))
+    # needed for python 2 tests
+    worker_env['NUMBER_OF_PROCESSORS'] = '{}'.format(os.cpu_count())
+
     NMAKE = shutil.which('nmake', path=worker_env['PATH'])
     CMAKE = shutil.which('cmake', path=worker_env['PATH'])
     NASM = shutil.which('nasm', path=worker_env['PATH'])

@@ -570,12 +570,17 @@ def get_platform_toolset():
     return 'v' + vcvars_env['VCTOOLSVERSION'].replace('.', '')[:3]
 
 
+def get_windows_sdk():
+    from bypy.constants import vcvars_env
+    return vcvars_env['WINDOWSSDKVERSION'].strip('\\')
+
+
 def msbuild(proj):
     global worker_env
     from bypy.vcvars import find_msbuild
     from bypy.constants import vcvars_env
     PL = 'x64' if is64bit else 'Win32'
-    sdk = vcvars_env['WINDOWSSDKVERSION'].strip('\\')
+    sdk = get_windows_sdk()
     orig_worker_env = worker_env.copy()
     for k in vcvars_env:
         worker_env.pop(k, None)
