@@ -56,6 +56,7 @@ cygwin_paths = []
 CMAKE = 'cmake'
 NMAKE = 'nmake'
 PERL = 'perl'
+NASM = 'nasm'
 
 
 if iswindows:
@@ -68,7 +69,7 @@ if iswindows:
     cygwin_paths = [p for p in paths if 'cygwin64' in p.split(os.sep)]
     paths = [p for p in paths if 'cygwin64' not in p.split(os.sep)]
     # Add the bindir to the PATH, needed for loading DLLs
-    paths.insert(0, os.path.join(PREFIX, 'bin'))
+    paths.insert(0, BIN)
     paths.insert(0, os.path.join(PREFIX, 'qt', 'bin'))
     # Needed for pywintypes27.dll which is used by the win32api module
     paths.insert(0, os.path.join(
@@ -78,6 +79,7 @@ if iswindows:
     worker_env['PATH'] = os.pathsep.join(uniq(paths))
     NMAKE = shutil.which('nmake', path=worker_env['PATH'])
     CMAKE = shutil.which('cmake', path=worker_env['PATH'])
+    NASM = shutil.which('nasm', path=worker_env['PATH'])
     PERL = os.environ['PERL']
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
