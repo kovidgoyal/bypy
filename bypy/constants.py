@@ -79,6 +79,8 @@ if iswindows:
     worker_env['PATH'] = os.pathsep.join(uniq(paths))
     # needed for python 2 tests
     worker_env['NUMBER_OF_PROCESSORS'] = '{}'.format(os.cpu_count())
+    # needed to bypass distutils broken compiler finding code
+    worker_env['DISTUTILS_USE_SDK'] = worker_env['MSSDK'] = '1'
 
     NMAKE = shutil.which('nmake', path=worker_env['PATH'])
     CMAKE = shutil.which('cmake', path=worker_env['PATH'])

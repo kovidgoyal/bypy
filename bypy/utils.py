@@ -575,6 +575,15 @@ def get_windows_sdk():
     return vcvars_env['WINDOWSSDKVERSION'].strip('\\')
 
 
+def windows_sdk_paths():
+    sd = worker_env['WINDOWSSDKDIR']
+    sdv = worker_env['WINDOWSSDKVERSION']
+    return {
+        'include': os.path.join(sd, 'Include', sdv).rstrip(os.sep),
+        'lib': os.path.join(sd, 'Lib', sdv, 'um'),
+    }
+
+
 def msbuild(proj):
     global worker_env
     from bypy.vcvars import find_msbuild
