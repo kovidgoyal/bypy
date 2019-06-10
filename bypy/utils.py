@@ -565,12 +565,16 @@ def windows_cmake_build(
                 install_binaries(pat)
 
 
+def get_platform_toolset():
+    from bypy.constants import vcvars_env
+    return 'v' + vcvars_env['VCTOOLSVERSION'].replace('.', '')[:3]
+
+
 def msbuild(proj):
     global worker_env
     from bypy.vcvars import find_msbuild
     from bypy.constants import vcvars_env
     PL = 'x64' if is64bit else 'Win32'
-    tools = 'v' + vcvars_env['VCTOOLSVERSION'].replace('.', '')[:3]
     sdk = vcvars_env['WINDOWSSDKVERSION'].strip('\\')
     orig_worker_env = worker_env.copy()
     for k in vcvars_env:
@@ -578,7 +582,8 @@ def msbuild(proj):
     try:
         run(
             find_msbuild(), proj, '/t:Build', f'/p:Platform={PL}',
-            '/p:Configuration=Release', f'/p:PlatformToolset={tools}',
+            '/p:Configuration=Release',
+            f'/p:PlatformToolset={get_platform_toolset()}',
             f'/p:WindowsTargetPlatformVersion={sdk}'
         )
     finally:
