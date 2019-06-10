@@ -30,6 +30,7 @@ def main(args=tuple(sys.argv)):
             'Another instance of the windows container is running')
     conf = get_conf()
     vm, win_prefix, python = conf['vm_name'], conf['root'], conf['python']
+    perl = conf['perl']
     if len(args) > 1:
         if args[1] == 'shutdown':
             shutdown_vm(vm)
@@ -54,7 +55,8 @@ def main(args=tuple(sys.argv)):
     to_vm(rsync, sources_dir, pkg_dir, prefix=prefix, name=f'sw{arch}')
     cmd = [
         python, os.path.join(win_prefix, 'bypy'), 'main',
-        f'BYPY_ROOT={win_prefix}', f'BUILD_ARCH={arch}'] + list(args)
+        f'BYPY_ROOT={win_prefix}', f'BUILD_ARCH={arch}', f'PERL={perl}'
+    ] + list(args)
     try:
         run_main(vm, *cmd)
     finally:

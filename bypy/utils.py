@@ -157,11 +157,15 @@ def run(*args, **kw):
     if len(args) == 1 and isinstance(args[0], str):
         cmd = split(args[0])
     else:
-        cmd = args
+        cmd = list(args)
     print(' '.join(shlex.quote(x) for x in cmd))
     sys.stdout.flush()
     env = current_env(library_path=kw.get('library_path'))
     env.update(kw.get('env', {}))
+    append_to_path = kw.get('append_to_path')
+    if append_to_path:
+        env['PATH'] = os.pathsep.join(
+            env['PATH'].split(os.pathsep) + append_to_path.split(os.pathsep))
     p = subprocess.Popen(cmd, env=env, cwd=kw.get('cwd'))
     rc = p.wait()
     if kw.get('no_check'):

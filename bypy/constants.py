@@ -3,6 +3,7 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
+import shutil
 import sys
 import tempfile
 
@@ -28,7 +29,7 @@ def base_dir():
     return ans
 
 
-ROOT = os.environ.get('BYPY_ROOT', '/')
+ROOT = os.environ.get('BYPY_ROOT', '/').replace('/', os.sep)
 is64bit = sys.maxsize > (1 << 32)
 SW = os.path.join(ROOT, 'sw')
 if iswindows:
@@ -53,6 +54,9 @@ MAKEOPTS = f'-j{cpu_count()}'
 worker_env = {}
 cygwin_paths = []
 CMAKE = 'cmake'
+NMAKE = 'nmake'
+PERL = 'perl'
+
 
 if iswindows:
     CFLAGS = CPPFLAGS = LIBDIR = LDFLAGS = ''
@@ -72,6 +76,9 @@ if iswindows:
     for k in vcvars_env:
         worker_env[k] = vcvars_env[k]
     worker_env['PATH'] = os.pathsep.join(uniq(paths))
+    NMAKE = shutil.which('nmake', path=worker_env['PATH'])
+    CMAKE = shutil.which('cmake', path=worker_env['PATH'])
+    PERL = os.environ['PERL']
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
