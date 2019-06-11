@@ -5,7 +5,7 @@
 
 import os
 
-from bypy.constants import BIN, PREFIX, iswindows, ismacos
+from bypy.constants import BIN, PREFIX, iswindows, ismacos, NMAKE
 from bypy.utils import (ModifiedEnv, install_binaries, install_tree,
                         replace_in_file, run, simple_build, walk)
 
@@ -20,7 +20,7 @@ def main(args):
         for f in walk('.'):
             if os.path.basename(f).startswith('Makefile'):
                 replace_in_file(f, '/OPT:NOWIN98', '', missing_ok=True)
-        run('nmake /f Makefile.msvc', cwd='win32')
+        run(f'"{NMAKE}" /f Makefile.msvc', cwd='win32')
         install_tree('libxslt', 'include')
         install_tree('libexslt', 'include')
         for f in walk('.'):

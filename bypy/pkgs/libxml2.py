@@ -6,7 +6,7 @@
 import os
 import re
 
-from bypy.constants import PREFIX, build_dir, iswindows
+from bypy.constants import PREFIX, build_dir, iswindows, NMAKE
 from bypy.utils import (install_binaries, install_tree, replace_in_file, run,
                         simple_build, walk)
 
@@ -16,7 +16,7 @@ def main(args):
         run(*('cscript.exe configure.js include={0}/include'
             ' lib={0}/lib prefix={0} zlib=yes iconv=no'.format(
                 PREFIX.replace(os.sep, '/')).split()), cwd='win32')
-        run('nmake /f Makefile.msvc', cwd='win32')
+        run(f'"{NMAKE}" /f Makefile.msvc', cwd='win32')
         install_tree('include/libxml', 'include/libxml2')
         for f in walk('.'):
             if f.endswith('.dll'):
