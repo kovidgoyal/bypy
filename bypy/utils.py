@@ -491,6 +491,7 @@ def install_binaries(
             shutil.copy(f + '.manifest', dst + '.manifest')
     if do_symlinks:
         library_symlinks(files[0], destdir=destdir)
+    return files
 
 
 def replace_in_file(path, old, new, missing_ok=False):
@@ -539,7 +540,7 @@ def windows_cmake_build(
         nmake_target='', make='nmake', **kw):
     os.mkdir('build')
     defs = {'CMAKE_BUILD_TYPE': 'Release'}
-    cmd = ['cmake', '-G', "NMake Makefiles"]
+    cmd = [CMAKE, '-G', "NMake Makefiles"]
     for d, val in kw.items():
         if val is None:
             defs.pop(d, None)
@@ -584,7 +585,7 @@ def windows_sdk_paths():
     }
 
 
-def msbuild(proj):
+def msbuild(proj, *args, **env):
     global worker_env
     from bypy.vcvars import find_msbuild
     from bypy.constants import vcvars_env
@@ -598,7 +599,7 @@ def msbuild(proj):
             find_msbuild(), proj, '/t:Build', f'/p:Platform={PL}',
             '/p:Configuration=Release',
             f'/p:PlatformToolset={get_platform_toolset()}',
-            f'/p:WindowsTargetPlatformVersion={sdk}'
+            f'/p:WindowsTargetPlatformVersion={sdk}', *args, **env
         )
     finally:
         worker_env = orig_worker_env
@@ -751,3 +752,10 @@ def get_dll_path(base, levels=1, loc=LIBDIR):
         if len(q) == levels:
             return x
     raise ValueError(f'Could not find library for base name: {base}')
+
+
+def dos2unix(path):
+    with open(path, 'rb') as f:
+        raw = f.read().replace(b'\r\n', b'\n')
+    with open(path, 'wb') as f:
+        f.write(raw)
