@@ -1,43 +1,45 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
+import glob
 import os
 import shutil
-import glob
 
-from bypy.constants import iswindows, is64bit, build_dir
-from bypy.utils import simple_build, replace_in_file, run, install_binaries
+from bypy.constants import build_dir, iswindows
+from bypy.utils import install_binaries, msbuild, replace_in_file, simple_build
 
 
 def main(args):
     if iswindows:
-        for f in './devel/ftoption.h ./include/freetype/config/ftoption.h'.split():
-            replace_in_file(f, 'FT_BEGIN_HEADER',
-                            'FT_BEGIN_HEADER\n#define FT_EXPORT(x) __declspec(dllexport) x\n#define FT_EXPORT_DEF(x) __declspec(dllexport) x\n')
-        vxproj = 'builds/windows/vc2010/freetype.vcxproj'
-        # Upgrade the project file to build with VS 2015 devenv does not work,
-        # probably because the Visual Studio Community edition is expired
-        replace_in_file(vxproj, 'v100', 'v140')
-        PL = 'x64' if is64bit else 'Win32'
+        for f in (
+            './devel/ftoption.h ./include/freetype/config/ftoption.h'.split()
+        ):
+            replace_in_file(
+                f, 'FT_BEGIN_HEADER',
+                'FT_BEGIN_HEADER\n#define FT_EXPORT(x) __declspec(dllexport) x\n#define FT_EXPORT_DEF(x) __declspec(dllexport) x\n'  # noqa
+            )
 
-        def build():
-            run('msbuild.exe', 'builds/windows/vc2010/freetype.sln', '/t:Build', '/p:Platform=' + PL, '/p:Configuration=Release Multithreaded')
+        def build(static=False):
+            conf = 'Release'
+            if static:
+                conf += ' Static'
+            msbuild('builds/windows/vc2010/freetype.sln',
+                    configuration=conf)
 
         # Build the static library
-        build()
-        install_binaries('objs/vc2010/*/freetype*MT.lib')
-        shutil.copytree('include', os.path.join(build_dir(), 'include', 'freetype2'))
-        shutil.rmtree(os.path.join(build_dir(), 'include', 'freetype2', 'freetype', 'internal'))
+        # build(static=True)
+        # install_binaries('objs/freetype.lib')
         # Build the dynamic library
-        replace_in_file(vxproj, 'StaticLibrary', 'DynamicLibrary')
         build()
-        install_binaries('objs/vc2010/*/freetype*MT.dll', 'bin')
+        install_binaries('objs/freetype.dll', 'bin')
+        install_binaries('objs/*/Release/*.lib')
         for f in glob.glob('objs/vc2010/*/freetype*MT.lib'):
             shutil.copy2(f, os.path.join(build_dir(), 'lib', 'freetype.lib'))
-        # from bypy.utils import run_shell
-        # run_shell()
+        shutil.copytree('include',
+                        os.path.join(build_dir(), 'include', 'freetype2'))
+        shutil.rmtree(
+            os.path.join(build_dir(), 'include', 'freetype2', 'freetype',
+                         'internal'))
     else:
         simple_build('--disable-dependency-tracking --disable-static')

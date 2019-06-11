@@ -585,19 +585,21 @@ def windows_sdk_paths():
     }
 
 
-def msbuild(proj, *args, **env):
+def msbuild(proj, *args, configuration='Release', **env):
     global worker_env
     from bypy.vcvars import find_msbuild
     from bypy.constants import vcvars_env
     PL = 'x64' if is64bit else 'Win32'
     sdk = get_windows_sdk()
     orig_worker_env = worker_env.copy()
+    # MSBuild should not run in the vcvars environment as it
+    # sets up its own tools and paths
     for k in vcvars_env:
         worker_env.pop(k, None)
     try:
         run(
             find_msbuild(), proj, '/t:Build', f'/p:Platform={PL}',
-            '/p:Configuration=Release',
+            f'/p:Configuration={configuration}',
             f'/p:PlatformToolset={get_platform_toolset()}',
             f'/p:WindowsTargetPlatformVersion={sdk}', *args, **env
         )
