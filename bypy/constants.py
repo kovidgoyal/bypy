@@ -57,6 +57,8 @@ CMAKE = 'cmake'
 NMAKE = 'nmake'
 PERL = 'perl'
 NASM = 'nasm'
+CL = 'cl.exe'
+LIB = 'lib.exe'
 
 
 if iswindows:
@@ -85,6 +87,8 @@ if iswindows:
     NMAKE = shutil.which('nmake', path=worker_env['PATH'])
     CMAKE = shutil.which('cmake', path=worker_env['PATH'])
     NASM = shutil.which('nasm', path=worker_env['PATH'])
+    CL = shutil.which('cl', path=worker_env['PATH'])
+    LIB = shutil.which('lib', path=worker_env['PATH'])
     PERL = os.environ['PERL']
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
