@@ -21,9 +21,9 @@ import zipfile
 from contextlib import closing, contextmanager
 from functools import partial
 
-from .constants import (CMAKE, LIBDIR, MAKEOPTS, PATCHES, PREFIX, PYTHON,
-                        build_dir, cpu_count, is64bit, islinux, ismacos,
-                        iswindows, mkdtemp, worker_env)
+from .constants import (CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX,
+                        PYTHON, build_dir, cpu_count, is64bit, islinux,
+                        ismacos, iswindows, mkdtemp, worker_env)
 
 if iswindows:
     import msvcrt
@@ -537,7 +537,7 @@ def timeit():
 
 def windows_cmake_build(
         headers=None, binaries=None, libraries=None, header_dest='include',
-        nmake_target='', make='nmake', **kw):
+        nmake_target='', make=NMAKE, **kw):
     os.mkdir('build')
     defs = {'CMAKE_BUILD_TYPE': 'Release'}
     cmd = [CMAKE, '-G', "NMake Makefiles"]
