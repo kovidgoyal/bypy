@@ -1,20 +1,16 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
-
 import os
-from bypy.constants import iswindows, is64bit
-from bypy.utils import walk, run, install_binaries
+from bypy.constants import iswindows
+from bypy.utils import walk, run, install_binaries, msbuild
 
 
 def main(args):
     if iswindows:
-        plat = 'x64' if is64bit else 'Win32'
         sln = r'jxrencoderdecoder\JXRDecApp_vc14.vcxproj'
-        run('MSBuild.exe', sln, '/t:Build', '/p:Platform=' + plat, '/p:Configuration=Release', '/p:PlatformToolset=v140')
+        msbuild(sln)
 
         def fname_map(x):
             return os.path.basename(x).rpartition('.')[0] + '-calibre.exe'
