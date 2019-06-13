@@ -2,10 +2,6 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 from bypy.constants import iswindows, ismacos
 from bypy.utils import (cmake_build, install_binaries, replace_in_file,
                         windows_cmake_build)

@@ -4,8 +4,8 @@
 
 import os
 
-from bypy.constants import (MAKEOPTS, PREFIX, PYTHON, build_dir, ismacos,
-                            iswindows)
+from bypy.constants import (MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir,
+                            ismacos, iswindows)
 from bypy.utils import replace_in_file, run
 
 
@@ -54,8 +54,8 @@ def run_build():
         # statement
         replace_in_file('QtGui/sipQtGuipart2.cpp',
                         'return new  ::QPicture[sipNrElem]', 'return NULL')
-        run('nmake')
-        run('nmake install')
+        run(f'"{NMAKE}"')
+        run(f'"{NMAKE}" install')
     else:
         lp = os.path.join(PREFIX, 'qt', 'lib')
         run('make ' + MAKEOPTS, library_path=lp)

@@ -4,8 +4,8 @@
 
 import os
 
-from bypy.constants import (MAKEOPTS, PREFIX, PYTHON, build_dir, ismacos,
-                            iswindows)
+from bypy.constants import (MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir,
+                            ismacos, iswindows)
 from bypy.utils import replace_in_file, run
 
 
@@ -26,7 +26,7 @@ def main(args):
             '--incdir=%s/%s' % (b, inc)]
     run(*cmd, library_path=True)
     if iswindows:
-        run('nmake'), run('nmake install')
+        run(f'"{NMAKE}"'), run(f'"{NMAKE}" install')
     else:
         run('make ' + MAKEOPTS)
         run('make install', library_path=True)

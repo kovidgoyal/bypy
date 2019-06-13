@@ -61,10 +61,19 @@ CL = 'cl.exe'
 LIB = 'lib.exe'
 
 
+def normpath(a):
+    return os.path.normcase(os.path.abspath(a))
+
+
+def patheq(a, b):
+    return normpath(a) == normpath(b)
+
+
 if iswindows:
     CFLAGS = CPPFLAGS = LIBDIR = LDFLAGS = ''
     from bypy.vcvars import query_vcvarsall
     vcvars_env = query_vcvarsall(is64bit)
+    PERL = os.environ['PERL']
     # Remove cygwin paths from environment
     paths = [
         p.replace('/', os.sep) for p in vcvars_env['PATH'].split(os.pathsep)]
@@ -76,6 +85,8 @@ if iswindows:
     # Needed for pywintypes27.dll which is used by the win32api module
     paths.insert(0, os.path.join(
         PREFIX, r'private\python\Lib\site-packages\pywin32_system32'))
+    # The PERL bin directory contains all manner of crap
+    paths = [p for p in paths if not patheq(p, os.path.dirname(PERL))]
     for k in vcvars_env:
         worker_env[k] = vcvars_env[k]
     worker_env['PATH'] = os.pathsep.join(uniq(paths))
@@ -89,7 +100,6 @@ if iswindows:
     NASM = shutil.which('nasm', path=worker_env['PATH'])
     CL = shutil.which('cl', path=worker_env['PATH'])
     LIB = shutil.which('lib', path=worker_env['PATH'])
-    PERL = os.environ['PERL']
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')

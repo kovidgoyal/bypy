@@ -5,7 +5,7 @@
 import os
 import shutil
 
-from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, PREFIX,
+from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, NMAKE, PREFIX,
                             build_dir, islinux, ismacos, iswindows)
 from bypy.utils import (ModifiedEnv, current_env, replace_in_file, run,
                         run_shell)
@@ -51,22 +51,22 @@ def main(args):
         # Qt links incorrectly against libpng and libjpeg, so use the bundled
         # copy Use dynamic OpenGl, as per:
         # https://doc.qt.io/qt-5/windows-requirements.html#dynamically-loading-graphics-drivers
-        conf += (' -openssl -directwrite -ltcg -platform win32-msvc2015 -mp'
+        conf += (' -openssl -directwrite -ltcg -platform win32-msvc2017 -mp'
                  ' -no-plugin-manifests -no-freetype -no-fontconfig'
-                 ' -no-angle -opengl dynamic -qt-libpng -qt-libjpeg ')
+                 ' -angle -opengl dynamic -qt-libpng -qt-libjpeg ')
         # The following config items are not supported on windows
         conf = conf.replace('-v -silent ', ' ')
         cflags = '-I {}/include'.format(PREFIX).replace(os.sep, '/')
         ldflags = '-L {}/lib'.format(PREFIX).replace(os.sep, '/')
     conf += ' ' + cflags + ' ' + ldflags
     run(conf, library_path=True)
-    # run_shell()
+    run_shell()
     run_shell
     if iswindows:
         with ModifiedEnv(PATH=os.path.abspath('../gnuwin32/bin') + os.pathsep +
                          current_env()['PATH']):
-            run('nmake')
-        run('nmake install')
+            run(f'"{NMAKE}"')
+        run(f'"{NMAKE}" install')
         shutil.copy2('../src/3rdparty/sqlite/sqlite3.c',
                      os.path.join(build_dir(), 'qt'))
         shutil.copytree('../gnuwin32',
