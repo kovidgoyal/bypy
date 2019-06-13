@@ -7,8 +7,7 @@ import shutil
 
 from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, NMAKE, PREFIX,
                             build_dir, islinux, ismacos, iswindows)
-from bypy.utils import (ModifiedEnv, current_env, replace_in_file, run,
-                        run_shell)
+from bypy.utils import replace_in_file, run, run_shell
 
 
 def main(args):
@@ -60,17 +59,13 @@ def main(args):
         ldflags = '-L {}/lib'.format(PREFIX).replace(os.sep, '/')
     conf += ' ' + cflags + ' ' + ldflags
     run(conf, library_path=True)
-    run_shell()
+    # run_shell()
     run_shell
     if iswindows:
-        with ModifiedEnv(PATH=os.path.abspath('../gnuwin32/bin') + os.pathsep +
-                         current_env()['PATH']):
-            run(f'"{NMAKE}"')
+        run(f'"{NMAKE}"', append_to_path=f'{PREFIX}/private/gnuwin32/bin')
         run(f'"{NMAKE}" install')
         shutil.copy2('../src/3rdparty/sqlite/sqlite3.c',
                      os.path.join(build_dir(), 'qt'))
-        shutil.copytree('../gnuwin32',
-                        os.path.join(build_dir(), 'qt', 'gnuwin32'))
     else:
         run('make ' + MAKEOPTS, library_path=True)
         run('make install')
