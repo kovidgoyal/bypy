@@ -260,8 +260,13 @@ def qt_build(qmake_args=''):
     run(
         os.path.join(PREFIX, 'qt', 'bin', 'qmake'),
         '..', '--', *qmake_args, library_path=True)
-    run('make ' + MAKEOPTS, library_path=True)
-    run(f'make INSTALL_ROOT={build_dir()} install')
+    if iswindows:
+        run(f'"{NMAKE}"')
+        iroot = build_dir()[2:]
+        run(f'"{NMAKE}" INSTALL_ROOT={iroot} install')
+    else:
+        run('make ' + MAKEOPTS, library_path=True)
+        run(f'make INSTALL_ROOT={build_dir()} install')
     base = os.path.relpath(PREFIX, '/')
     os.rename(
         os.path.join(build_dir(), base, 'qt'), os.path.join(build_dir(), 'qt'))
