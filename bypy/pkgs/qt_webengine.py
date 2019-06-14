@@ -5,12 +5,13 @@
 import glob
 import os
 
-from bypy.constants import PREFIX, islinux
-from bypy.utils import qt_build
+from bypy.constants import PREFIX, islinux, iswindows
+from bypy.utils import qt_build, replace_in_file
 
 
 def main(args):
     conf = '-spellchecker'
+    append_to_path = None
     if islinux:
         # workaround for bug in build system, not adding include path for
         # libjpeg when building iccjpeg, and mjpeg_decoder
@@ -25,4 +26,9 @@ def main(args):
                 os.path.join('src/3rdparty/chromium',
                              os.path.basename(header)))
         conf += ' -webp -webengine-icu'
-    qt_build(conf)
+    if iswindows:
+        append_to_path = f'{PREFIX}/private/gnuwin32/bin'
+        # broken test for 64-bit ness needs to be disabled
+        replace_in_file(
+            'mkspecs/features/platform.prf', 'ProgramW6432', 'PROGRAMFILES')
+    qt_build(conf, append_to_path=append_to_path)

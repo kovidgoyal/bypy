@@ -253,19 +253,29 @@ def simple_build(
         relocate_pkgconfig_files()
 
 
-def qt_build(qmake_args=''):
+def qt_build(qmake_args='', append_to_path=None, **env):
     os.mkdir('build')
     os.chdir('build')
     qmake_args = shlex.split(qmake_args)
+    # At the moment the Qt build system needs python2,
+    # so use our own python which is 2 for the nonce
+    append_to_path = append_to_path
+    if iswindows:
+        if append_to_path:
+            append_to_path += os.pathsep
+        else:
+            append_to_path = ''
+        append_to_path += os.path.dirname(PYTHON)
     run(
         os.path.join(PREFIX, 'qt', 'bin', 'qmake'),
-        '..', '--', *qmake_args, library_path=True)
+        '..', '--', *qmake_args,
+        library_path=True, append_to_path=append_to_path, **env)
     if iswindows:
-        run(f'"{NMAKE}"')
+        run(f'"{NMAKE}"', append_to_path=append_to_path, **env)
         iroot = build_dir()[2:]
         run(f'"{NMAKE}" INSTALL_ROOT={iroot} install')
     else:
-        run('make ' + MAKEOPTS, library_path=True)
+        run('make ' + MAKEOPTS, library_path=True, **env)
         run(f'make INSTALL_ROOT={build_dir()} install')
     base = os.path.relpath(PREFIX, '/')
     os.rename(
