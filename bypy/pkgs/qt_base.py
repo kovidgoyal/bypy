@@ -50,7 +50,7 @@ def main(args):
         # Qt links incorrectly against libpng and libjpeg, so use the bundled
         # copy Use dynamic OpenGl, as per:
         # https://doc.qt.io/qt-5/windows-requirements.html#dynamically-loading-graphics-drivers
-        conf += (' -openssl -directwrite -ltcg -platform win32-msvc2017 -mp'
+        conf += (' -openssl -directwrite -ltcg -mp'
                  ' -no-plugin-manifests -no-freetype -no-fontconfig'
                  ' -angle -opengl dynamic -qt-libpng -qt-libjpeg ')
         # The following config items are not supported on windows
