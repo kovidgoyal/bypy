@@ -625,9 +625,10 @@ def msbuild(proj, *args, configuration='Release', **env):
 def cmake_build(
         make_args=(), install_args=(),
         library_path=None, override_prefix=None, no_parallel=False,
-        relocate_pkgconfig=True,
+        relocate_pkgconfig=True, append_to_path=None, env=None,
         **kw
 ):
+    make = NMAKE if iswindows else 'make'
     if isinstance(make_args, str):
         make_args = shlex.split(make_args)
     os.mkdir('build')
@@ -636,7 +637,10 @@ def cmake_build(
         'CMAKE_PREFIX_PATH': PREFIX,
         'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
-    cmd = [CMAKE]
+    if iswindows:
+        cmd = [CMAKE, '-G', "NMake Makefiles"]
+    else:
+        cmd = [CMAKE]
     for d, val in kw.items():
         if val is None:
             defs.pop(d, None)
@@ -645,10 +649,13 @@ def cmake_build(
     for k, v in defs.items():
         cmd.append('-D' + k + '=' + v)
     cmd.append('..')
-    run(*cmd, cwd='build')
-    make_opts = [] if no_parallel else split(MAKEOPTS)
-    run('make', *(make_opts + list(make_args)), cwd='build')
-    mi = ['make'] + list(install_args) + ['install']
+    env = env or {}
+    run(*cmd, cwd='build', append_to_path=append_to_path, env=env)
+    make_opts = []
+    if not iswindows:
+        make_opts = [] if no_parallel else split(MAKEOPTS)
+    run(make, *(make_opts + list(make_args)), cwd='build', env=env)
+    mi = [make] + list(install_args) + ['install']
     run(*mi, library_path=library_path, cwd='build')
     if relocate_pkgconfig:
         relocate_pkgconfig_files()

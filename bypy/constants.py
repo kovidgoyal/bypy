@@ -56,6 +56,7 @@ cygwin_paths = []
 CMAKE = 'cmake'
 NMAKE = 'nmake'
 PERL = 'perl'
+RUBY = 'ruby'
 NASM = 'nasm'
 CL = 'cl.exe'
 LIB = 'lib.exe'
@@ -73,7 +74,7 @@ if iswindows:
     CFLAGS = CPPFLAGS = LIBDIR = LDFLAGS = ''
     from bypy.vcvars import query_vcvarsall
     vcvars_env = query_vcvarsall(is64bit)
-    PERL = os.environ['PERL']
+    PERL, RUBY = os.environ['PERL'], os.environ['RUBY']
     # Remove cygwin paths from environment
     paths = [
         p.replace('/', os.sep) for p in vcvars_env['PATH'].split(os.pathsep)]
@@ -87,11 +88,14 @@ if iswindows:
         PREFIX, r'private\python\Lib\site-packages\pywin32_system32'))
     # The PERL bin directory contains all manner of crap
     paths = [p for p in paths if not patheq(p, os.path.dirname(PERL))]
+    paths = [p for p in paths if not patheq(p, os.path.dirname(RUBY))]
     for k in vcvars_env:
         worker_env[k] = vcvars_env[k]
     worker_env['PATH'] = os.pathsep.join(uniq(paths))
     # needed for python 2 tests
     worker_env['NUMBER_OF_PROCESSORS'] = '{}'.format(os.cpu_count())
+    # needed for CMake
+    worker_env['PROCESSOR_ARCHITECTURE'] = 'amd64'
     # needed to bypass distutils broken compiler finding code
     worker_env['DISTUTILS_USE_SDK'] = worker_env['MSSDK'] = '1'
 
