@@ -30,7 +30,7 @@ def main(args=tuple(sys.argv)):
             'Another instance of the windows container is running')
     conf = get_conf()
     vm, win_prefix, python = conf['vm_name'], conf['root'], conf['python']
-    perl, ruby = conf['perl'], conf['ruby']
+    perl, ruby = conf.get('perl', 'perl.exe'), conf.get('ruby', 'ruby.exe')
     if len(args) > 1:
         if args[1] == 'shutdown':
             shutdown_vm(vm)
