@@ -178,8 +178,7 @@ def run(*args, **kw):
     if kw.get('no_check'):
         return rc
     if rc != 0:
-        cmd = ' '.join(shlex.quote(x) for x in cmd)
-        raise RunFailure(rc, cmd, env, kw.get('cwd'))
+        raise RunFailure(rc, str(cmd), env, kw.get('cwd'))
 
 
 def lcopy(src, dst, no_hardlinks=False):
@@ -205,13 +204,29 @@ def ensure_clear_dir(path):
     os.makedirs(path)
 
 
-def extract(source):
+def install_package(pkg_path, dest_dir):
+    for dirpath, dirnames, filenames in os.walk(pkg_path):
+        for x in tuple(dirnames):
+            d = os.path.join(dirpath, x)
+            if os.path.islink(d):
+                filenames.append(x)
+                dirnames.remove(x)
+                continue
+            name = os.path.relpath(d, pkg_path)
+            os.makedirs(os.path.join(dest_dir, name), exist_ok=True)
+        for x in filenames:
+            f = os.path.join(dirpath, x)
+            name = os.path.relpath(f, pkg_path)
+            lcopy(f, os.path.join(dest_dir, name))
+
+
+def extract(source, path='.'):
     if source.lower().endswith('.zip'):
         with zipfile.ZipFile(source) as zf:
-            zf.extractall()
+            zf.extractall(path)
     else:
         with tarfile.open(source, encoding='utf-8') as tf:
-            tf.extractall()
+            tf.extractall(path)
 
 
 def chdir_for_extract(name):

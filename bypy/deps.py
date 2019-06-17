@@ -10,9 +10,9 @@ from operator import itemgetter
 from .constants import PKG, PREFIX, SOURCES, build_dir, ismacos, mkdtemp
 from .download_sources import download, read_deps
 from .utils import (RunFailure, create_package, ensure_clear_dir,
-                    extract_source_and_chdir, fix_install_names, lcopy,
-                    python_build, python_install, qt_build, rmtree, run_shell,
-                    set_title, simple_build)
+                    extract_source_and_chdir, fix_install_names,
+                    install_package, python_build, python_install, qt_build,
+                    rmtree, run_shell, set_title, simple_build)
 
 
 def pkg_path(dep):
@@ -88,22 +88,6 @@ def build_dep(dep, args, dest_dir=PREFIX):
 
 def unbuilt(dep):
     return not os.path.exists(pkg_path(dep))
-
-
-def install_package(pkg_path, dest_dir):
-    for dirpath, dirnames, filenames in os.walk(pkg_path):
-        for x in tuple(dirnames):
-            d = os.path.join(dirpath, x)
-            if os.path.islink(d):
-                filenames.append(x)
-                dirnames.remove(x)
-                continue
-            name = os.path.relpath(d, pkg_path)
-            os.makedirs(os.path.join(dest_dir, name), exist_ok=True)
-        for x in filenames:
-            f = os.path.join(dirpath, x)
-            name = os.path.relpath(f, pkg_path)
-            lcopy(f, os.path.join(dest_dir, name))
 
 
 def install_packages(which_deps, dest_dir=PREFIX):
