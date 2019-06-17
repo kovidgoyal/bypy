@@ -140,17 +140,24 @@ def set_title(x):
         print('''\033]2;%s\007''' % x)
 
 
-def run_shell(library_path=False):
+def run_shell(library_path=False, cwd=None, env=None):
     if not isatty():
         raise SystemExit('STDOUT is not a tty, aborting...')
     sh = 'C:/cygwin64/bin/zsh' if iswindows else '/bin/zsh'
-    env = current_env(library_path=library_path)
+    env = env or current_env(library_path=library_path)
     if iswindows:
         from .constants import cygwin_paths
         paths = env['PATH'].split(os.pathsep)
-        paths = cygwin_paths + paths
+        paths = paths + cygwin_paths
         env['PATH'] = os.pathsep.join(paths)
-    return subprocess.Popen([sh, '-i'], env=env).wait()
+    return subprocess.Popen([sh, '-i'], env=env, cwd=cwd).wait()
+
+
+class RunFailure(subprocess.CalledProcessError):
+
+    def __init__(self, rc, cmd, env, cwd):
+        subprocess.CalledProcessError.__init__(self, rc, cmd)
+        self.env, self.cwd = env, cwd
 
 
 def run(*args, **kw):
@@ -172,7 +179,7 @@ def run(*args, **kw):
         return rc
     if rc != 0:
         cmd = ' '.join(shlex.quote(x) for x in cmd)
-        raise subprocess.CalledProcessError(rc, cmd)
+        raise RunFailure(rc, cmd, env, kw.get('cwd'))
 
 
 def lcopy(src, dst, no_hardlinks=False):
@@ -220,7 +227,9 @@ def extract_source_and_chdir(source):
     extract(source)
     x = os.listdir('.')
     if len(x) == 1:
-        os.chdir(x[0])
+        for y in os.listdir(x[0]):
+            os.rename(os.path.join(x[0], y), y)
+        os.rmdir(x[0])
     return tdir
 
 

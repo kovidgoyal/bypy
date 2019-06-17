@@ -9,9 +9,10 @@ from operator import itemgetter
 
 from .constants import PKG, PREFIX, SOURCES, build_dir, ismacos, mkdtemp
 from .download_sources import download, read_deps
-from .utils import (create_package, ensure_clear_dir, extract_source_and_chdir,
-                    fix_install_names, lcopy, python_build, python_install,
-                    qt_build, rmtree, run_shell, set_title, simple_build)
+from .utils import (RunFailure, create_package, ensure_clear_dir,
+                    extract_source_and_chdir, fix_install_names, lcopy,
+                    python_build, python_install, qt_build, rmtree, run_shell,
+                    set_title, simple_build)
 
 
 def pkg_path(dep):
@@ -54,6 +55,13 @@ def build_dep(dep, args, dest_dir=PREFIX):
                 simple_build()
         if ismacos:
             fix_install_names(m, output_dir)
+    except RunFailure as e:
+        print('\nRunning the following command failed:', file=sys.stderr)
+        print(e.cmd)
+        print('Dropping you into a shell', file=sys.stderr)
+        sys.stdout.flush(), sys.stderr.flush()
+        run_shell(env=e.env, cwd=e.cwd)
+        raise SystemExit(1)
     except (Exception, SystemExit):
         import traceback
         traceback.print_exc()
