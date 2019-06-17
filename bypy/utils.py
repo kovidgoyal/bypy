@@ -654,7 +654,8 @@ def cmake_build(
     make_opts = []
     if not iswindows:
         make_opts = [] if no_parallel else split(MAKEOPTS)
-    run(make, *(make_opts + list(make_args)), cwd='build', env=env)
+    run(make, *(make_opts + list(make_args)),
+        cwd='build', env=env, append_to_path=append_to_path)
     mi = [make] + list(install_args) + ['install']
     run(*mi, library_path=library_path, cwd='build')
     if relocate_pkgconfig:
