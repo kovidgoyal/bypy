@@ -237,6 +237,7 @@ def chdir_for_extract(name):
 
 def extract_source_and_chdir(source):
     tdir = chdir_for_extract(source)
+    st = time.monotonic()
     print('Extracting source:', source)
     sys.stdout.flush()
     extract(source)
@@ -245,6 +246,7 @@ def extract_source_and_chdir(source):
         for y in os.listdir(x[0]):
             os.rename(os.path.join(x[0], y), y)
         os.rmdir(x[0])
+    print('Extracted in', int(time.monotonic() - st), 'seconds')
     return tdir
 
 
