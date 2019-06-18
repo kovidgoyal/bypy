@@ -1,21 +1,17 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
 import os
-import shutil
 
-from bypy.constants import iswindows, PYTHON, build_dir, SW, PREFIX
-from bypy.utils import run
+from bypy.constants import iswindows, PYTHON, build_dir, PREFIX
+from bypy.utils import run, python_install
 
 
 if iswindows:
     def main(args):
         run(PYTHON, 'setup.py', 'fetch', '--all', '--missing-checksum-ok', 'build', 'install', '--root', build_dir())
-        os.rename(os.path.join(build_dir(), os.path.basename(SW), os.path.basename(PREFIX), 'private'), os.path.join(build_dir(), 'private'))
-        shutil.rmtree(os.path.join(build_dir(), os.path.basename(SW)))
+        python_install()
 
 
 def install_name_change_predicate(x):
