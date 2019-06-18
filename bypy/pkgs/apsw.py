@@ -7,7 +7,6 @@ import os
 from bypy.constants import iswindows, PYTHON, build_dir, PREFIX
 from bypy.utils import run, python_install
 
-
 if iswindows:
     def main(args):
         run(PYTHON, 'setup.py', 'fetch', '--all', '--missing-checksum-ok', 'build', 'install', '--root', build_dir())

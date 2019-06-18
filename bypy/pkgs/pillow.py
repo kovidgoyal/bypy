@@ -13,7 +13,13 @@ from bypy.utils import replace_in_file, python_build, python_install
 
 if iswindows:
     def main(args):
-        root = repr((os.path.join(PREFIX, 'lib'), os.path.join(PREFIX, 'include')))
-        replace_in_file('setup.py', re.compile(r'^(JPEG|ZLIB|FREETYPE)_ROOT = None', re.M), r'\1_ROOT = %s' % root)
+        root = (
+            os.path.join(PREFIX, 'lib').replace('\\', '/'),
+            os.path.join(PREFIX, 'include').replace('\\', '/')
+        )
+        replace_in_file(
+            'setup.py',
+            re.compile(r'^(JPEG|ZLIB|FREETYPE)_ROOT = None', re.M),
+            fr'\1_ROOT = {root}')
         python_build()
         python_install()
