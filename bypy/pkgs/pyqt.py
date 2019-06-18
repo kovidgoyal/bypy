@@ -6,7 +6,7 @@ import os
 
 from bypy.constants import (MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir,
                             ismacos, iswindows)
-from bypy.utils import replace_in_file, run
+from bypy.utils import run
 
 
 def run_configure(for_webengine=False):
@@ -43,17 +43,16 @@ def run_configure(for_webengine=False):
         '--no-docstrings',
     ]
     if iswindows:
-        cmd.append('--spec=win32-msvc2015')
+        cmd.append('--spec=win32-msvc')
         cmd.append('--sip-incdir=%s/private/python/include' % PREFIX)
+        if for_webengine:
+            cmd.append(
+                f'--pyqt-sipdir={PREFIX}/private/python/share/sip/PyQt5')
     run(*cmd, library_path=lp)
 
 
 def run_build():
     if iswindows:
-        # In VisualStudio 15 Update 3 the compiler crashes on the below
-        # statement
-        replace_in_file('QtGui/sipQtGuipart2.cpp',
-                        'return new  ::QPicture[sipNrElem]', 'return NULL')
         run(f'"{NMAKE}"')
         run(f'"{NMAKE}" install')
     else:
@@ -70,5 +69,5 @@ def main(args):
 def post_install_check():
     run(PYTHON,
         '-c',
-        'from PyQt5 import sip, QtCore, QtGui, QtWebKit',
+        'from PyQt5 import sip, QtCore, QtGui',
         library_path=os.path.join(PREFIX, 'qt', 'lib'))
