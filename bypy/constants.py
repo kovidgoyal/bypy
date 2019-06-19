@@ -106,6 +106,7 @@ if iswindows:
     CMAKE = shutil.which('cmake', path=worker_env['PATH'])
     NASM = shutil.which('nasm', path=worker_env['PATH'])
     CL = shutil.which('cl', path=worker_env['PATH'])
+    LINK = shutil.which('link', path=worker_env['PATH'])
     LIB = shutil.which('lib', path=worker_env['PATH'])
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')

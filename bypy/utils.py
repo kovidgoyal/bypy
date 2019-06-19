@@ -141,6 +141,7 @@ def set_title(x):
 
 
 def run_shell(library_path=False, cwd=None, env=None):
+    sys.stderr.flush(), sys.stdout.flush()
     if not isatty():
         raise SystemExit('STDOUT is not a tty, aborting...')
     sh = 'C:/cygwin64/bin/zsh' if iswindows else '/bin/zsh'
