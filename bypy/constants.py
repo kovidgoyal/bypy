@@ -108,6 +108,7 @@ if iswindows:
     CL = shutil.which('cl', path=worker_env['PATH'])
     LINK = shutil.which('link', path=worker_env['PATH'])
     LIB = shutil.which('lib', path=worker_env['PATH'])
+    RC = shutil.which('rc', path=worker_env['PATH'])
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
