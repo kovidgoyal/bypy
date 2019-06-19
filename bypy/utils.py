@@ -99,7 +99,7 @@ def single_instance(name):
 def current_env(library_path=False):
     env = os.environ.copy()
     env.update(worker_env)
-    if library_path:
+    if library_path and islinux:
         if library_path is True:
             library_path = LIBDIR
         else:
@@ -748,7 +748,8 @@ def run_worker(job, decorate=True):
     human_text = human_text or ' '.join(cmd)
     env = os.environ.copy()
     env.update(worker_env)
-    env['LD_LIBRARY_PATH'] = LIBDIR
+    if islinux:
+        env['LD_LIBRARY_PATH'] = LIBDIR
     try:
         p = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
