@@ -43,7 +43,7 @@ OS_NAME = 'windows' if iswindows else ('macos' if ismacos else 'linux')
 SOURCES = os.path.join(ROOT, 'sources')
 PATCHES = os.path.join(BYPY, 'patches')
 if iswindows:
-    tempfile.tempdir = 'C:\\t\\t'
+    os.environ['TMPDIR'] = os.environ['TEMP'] = os.environ['TMP'] = tempfile.tempdir = r'C:\t\t'  # noqa
 PREFIX = os.path.join(SW, 'sw')
 BIN = os.path.join(PREFIX, 'bin')
 PYTHON = os.path.join(

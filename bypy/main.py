@@ -81,6 +81,7 @@ def main(args):
             traceback.print_exc()
             run_shell()
         finally:
+            os.chdir(SRC)
             rmtree(ext_dir), rmtree(bdir)
         return
 
