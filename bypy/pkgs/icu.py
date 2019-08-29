@@ -60,17 +60,11 @@ def main(args):
     if iswindows:
         solution_build()
     elif ismacos:
-        replace_in_file(
-            'source/common/unicode/utypes.h',
-            'define U_CHARSET_IS_UTF8 0', 'define U_CHARSET_IS_UTF8 1')
         run('./runConfigureICU MacOSX --disable-samples --prefix=' +
             build_dir())
         run('make ' + MAKEOPTS)
         run('make install')
     else:
-        replace_in_file(
-            'source/common/unicode/utypes.h',
-            'define U_CHARSET_IS_UTF8 0', 'define U_CHARSET_IS_UTF8 1')
         simple_build(
             '--prefix=/usr --sysconfdir=/etc --mandir=/usr/share/man'
             ' --sbindir=/usr/bin',
