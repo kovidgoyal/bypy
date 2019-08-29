@@ -23,6 +23,14 @@ def main(args):
         # https://bugreports.qt.io/browse/QTBUG-41151
         replace_in_file('src/plugins/platforms/xcb/qxcbcursor.cpp',
                         'pointing_hand"', 'hand2"')
+        # Let Qt setup its paths based on runtime location
+        # this is needed because we want Qt to be able to
+        # find its plugins etc before QApplication is constructed
+        replace_in_file(
+            'src/corelib/global/qlibraryinfo.cpp',
+            'QT_CONFIGURE_PREFIX_PATH',
+            '(getenv("CALIBRE_QT_PREFIX") ?'
+            ' getenv("CALIBRE_QT_PREFIX") : QT_CONFIGURE_PREFIX_PATH)')
     elif iswindows:
         # Enable loading of DLLs from the DLLs directory
         replace_in_file(
