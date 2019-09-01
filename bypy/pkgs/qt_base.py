@@ -63,9 +63,9 @@ def main(args):
         # https://doc.qt.io/qt-5/windows-requirements.html#dynamically-loading-graphics-drivers
         conf += (' -openssl -directwrite -ltcg -mp'
                  ' -no-plugin-manifests -no-freetype -no-fontconfig'
-                 ' -angle -opengl dynamic -qt-libpng -qt-libjpeg ')
+                 ' -qt-libpng -qt-libjpeg ')
         # The following config items are not supported on windows
-        conf = conf.replace('-v -silent ', ' ')
+        conf = conf.replace('-v -silent ', '-v ')
         cflags = '-I {}/include'.format(PREFIX).replace(os.sep, '/')
         ldflags = '-L {}/lib'.format(PREFIX).replace(os.sep, '/')
     conf += ' ' + cflags + ' ' + ldflags
