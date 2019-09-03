@@ -23,6 +23,7 @@ def main(args):
         # https://bugreports.qt.io/browse/QTBUG-41151
         replace_in_file('src/plugins/platforms/xcb/qxcbcursor.cpp',
                         'pointing_hand"', 'hand2"')
+    if iswindows or islinux:
         # Let Qt setup its paths based on runtime location
         # this is needed because we want Qt to be able to
         # find its plugins etc before QApplication is constructed
@@ -31,14 +32,19 @@ def main(args):
             'QT_CONFIGURE_PREFIX_PATH',
             '(getenv("CALIBRE_QT_PREFIX") ?'
             ' getenv("CALIBRE_QT_PREFIX") : QT_CONFIGURE_PREFIX_PATH)')
-    elif iswindows:
-        # Enable loading of DLLs from the DLLs directory
+    if iswindows:
+        # Enable loading of DLLs from the bin directory
+        replace_in_file(
+            'src/corelib/global/qlibraryinfo.cpp',
+            '{ "Libraries", "lib" }',
+            '{ "Libraries", "bin" }'
+        )
         replace_in_file(
             'src/corelib/plugin/qsystemlibrary.cpp',
             'searchOrder << QFileInfo(qAppFileName()).path();',
             'searchOrder << (QFileInfo(qAppFileName()).path()'
             r".replace(QLatin1Char('/'), QLatin1Char('\\'))"
-            r'+ QString::fromLatin1("\\app\\DLLs\\"));')
+            r'+ QString::fromLatin1("\\app\\bin\\"));')
     cflags, ldflags = CFLAGS, LDFLAGS
     if ismacos:
         ldflags = '-L' + LIBDIR
