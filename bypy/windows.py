@@ -31,6 +31,7 @@ def main(args=tuple(sys.argv)):
     conf = get_conf()
     vm, win_prefix, python = conf['vm_name'], conf['root'], conf['python']
     perl, ruby = conf.get('perl', 'perl.exe'), conf.get('ruby', 'ruby.exe')
+    mesa = conf.get('mesa', 'C:/mesa')
     if len(args) > 1:
         if args[1] == 'shutdown':
             shutdown_vm(vm)
@@ -56,7 +57,7 @@ def main(args=tuple(sys.argv)):
     cmd = [
         python, os.path.join(win_prefix, 'bypy'), 'main',
         f'BYPY_ROOT={win_prefix}', f'BUILD_ARCH={arch}',
-        f'PERL={perl}', f'RUBY={ruby}',
+        f'PERL={perl}', f'RUBY={ruby}', f'MESA={mesa}',
     ] + list(args)
     try:
         run_main(vm, *cmd)
