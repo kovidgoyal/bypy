@@ -5,9 +5,10 @@
 import argparse
 import os
 import runpy
+import shutil
 import sys
 
-from .constants import OS_NAME, SRC, build_dir, ROOT, OUTPUT_DIR
+from .constants import OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, build_dir
 from .deps import init_env
 from .deps import main as deps_main
 from .utils import mkdtemp, rmtree, run_shell
@@ -45,6 +46,9 @@ def option_parser():
       default=False,
       action='store_true',
       help='Assume stdout is not a tty regardless of isatty()')
+    a('--build-only',
+      help='Build only a single extension module when building'
+      ' program, useful for development')
     return parser
 
 
@@ -67,13 +71,20 @@ def main(args):
         ext_dir, bdir = mkdtemp('plugins-'), mkdtemp('build-')
         build_dir(bdir)
         if 'build_c_extensions' in init_env_module:
-            init_env_module['build_c_extensions'](ext_dir)
+            bdir = init_env_module['build_c_extensions'](ext_dir, args)
+            if args.build_only:
+                dest = os.path.join(SW, 'dist', os.path.basename(bdir))
+                if os.path.exists(dest):
+                    shutil.rmtree(dest)
+                shutil.copytree(bdir, dest)
+                print('C extensions built in', dest)
+                return
         try:
             runpy.run_path(os.path.join(SRC, 'bypy', OS_NAME),
                            init_globals={
                                'args': args,
                                'ext_dir': ext_dir,
-                               'init_env': init_env_module
+                               'init_env': init_env_module,
                            },
                            run_name='__main__')
         except Exception:
