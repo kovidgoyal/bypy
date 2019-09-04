@@ -71,12 +71,13 @@ def main(args):
         ext_dir, bdir = mkdtemp('plugins-'), mkdtemp('build-')
         build_dir(bdir)
         if 'build_c_extensions' in init_env_module:
-            bdir = init_env_module['build_c_extensions'](ext_dir, args)
+            extensions_dir = init_env_module['build_c_extensions'](
+                    ext_dir, args)
             if args.build_only:
-                dest = os.path.join(SW, 'dist', os.path.basename(bdir))
+                dest = os.path.join(SW, 'dist', 'c-extensions')
                 if os.path.exists(dest):
                     shutil.rmtree(dest)
-                shutil.copytree(bdir, dest)
+                shutil.copytree(extensions_dir, dest)
                 print('C extensions built in', dest)
                 return
         try:
