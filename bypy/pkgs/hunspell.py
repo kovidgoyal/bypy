@@ -7,15 +7,23 @@ import os
 from bypy.constants import BIN, ismacos
 from bypy.utils import (ModifiedEnv, copy_headers, current_dir,
                         install_binaries, iswindows, msbuild, run,
-                        simple_build)
+                        simple_build, walk)
 
 
 def main(args):
     if iswindows:
         with current_dir('msvc'):
             msbuild('Hunspell.sln', configuration='Release_dll')
-            install_binaries('./*/Release_dll/libhunspell.dll', 'bin')
-            install_binaries('./*/Release_dll/libhunspell.lib', 'lib')
+            dll = lib = False
+            for f in walk('.'):
+                if os.path.basename(f) == 'libhunspell.dll':
+                    install_binaries(f, 'bin')
+                    dll = True
+                elif os.path.basename(f) == 'libhunspell.lib':
+                    install_binaries(f, 'lib')
+                    lib = True
+            if not dll or not lib:
+                raise Exception('Failed to find the hunspell dlls')
         # from bypy.utils import run_shell
         # run_shell()
         copy_headers('src/hunspell/*.hxx', destdir='include/hunspell')
