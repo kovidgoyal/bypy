@@ -46,5 +46,8 @@ elif subcommand == 'macos':
 elif subcommand == 'windows':
     from bypy.windows import main
     main(args)
+elif subcommand == 'export':
+    from bypy.export import main
+    main(args)
 else:
     raise SystemExit(f'Unknown subcommand: {subcommand}')
