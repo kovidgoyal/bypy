@@ -2,7 +2,9 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from bypy.constants import iswindows, ismacos
+import os
+
+from bypy.constants import iswindows, ismacos, PREFIX
 from bypy.utils import (cmake_build, install_binaries, replace_in_file,
                         windows_cmake_build)
 
@@ -31,3 +33,10 @@ def main(args):
         install_binaries('build/utils/*.exe', 'bin')
     else:
         cmake_build(**cmake_args)
+
+
+def install_name_change(old_name, is_dep):
+    bn = os.path.basename(old_name)
+    if bn.startswith('libpoppler'):
+        return os.path.join(PREFIX, 'lib', bn)
+    return old_name

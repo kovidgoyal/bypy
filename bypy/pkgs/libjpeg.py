@@ -2,8 +2,10 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from bypy.constants import iswindows, is64bit
-from bypy.utils import cmake_build, windows_cmake_build, replace_in_file
+import os
+
+from bypy.constants import PREFIX, is64bit, iswindows
+from bypy.utils import cmake_build, replace_in_file, windows_cmake_build
 
 
 def main(args):
@@ -21,3 +23,10 @@ def main(args):
         libraries='jpeg.lib',
         headers='jconfig.h ../jerror.h ../jpeglib.h ../jmorecfg.h',
     )
+
+
+def install_name_change(old_name, is_dep):
+    bn = os.path.basename(old_name)
+    if bn.startswith('libjpeg'):
+        return os.path.join(PREFIX, 'lib', bn)
+    return old_name
