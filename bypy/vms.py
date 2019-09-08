@@ -6,6 +6,7 @@ import os
 import shlex
 import socket
 import subprocess
+import sys
 import tempfile
 from time import monotonic, sleep
 
@@ -76,8 +77,8 @@ def shutdown_vm(name, max_wait=15):
     start_time = monotonic()
     if not is_vm_running(name):
         return
-    isosx = 'macos' in name.split('-')
-    cmd = 'sudo shutdown -h now' if isosx else 'shutdown.exe -s -f -t 0'
+    ismacos = 'macos' in name.split('-')
+    cmd = 'sudo shutdown -h now' if ismacos else 'shutdown.exe -s -f -t 0'
     shp = run_in_vm(name, cmd, is_async=True)
 
     try:
@@ -88,8 +89,13 @@ def shutdown_vm(name, max_wait=15):
             wait = '%.1f' % (monotonic() - start_time)
             print(f'Timed out waiting for {name} to shutdown'
                   f' cleanly after {wait} seconds, forcing shutdown')
-            subprocess.check_call(
-                ('VBoxManage controlvm %s poweroff' % name).split())
+            sys.stdout.flush()
+            kp = subprocess.Popen(
+                    f'VBoxManage controlvm {name} poweroff'.split())
+            try:
+                kp.wait(30)
+            except subprocess.TimeoutExpired:
+                kp.kill()
             return
         print('SSH server shutdown, now waiting for VM to poweroff...')
         while is_vm_running(name) and monotonic() - start_time <= max_wait:
