@@ -73,6 +73,15 @@ def ensure_vm(name):
     print('SSH server started in', '%.1f' % (monotonic() - st), 'seconds')
 
 
+def kill_vm(name):
+    kp = subprocess.Popen(
+            f'VBoxManage controlvm {name} poweroff'.split())
+    try:
+        kp.wait(30)
+    except subprocess.TimeoutExpired:
+        kp.kill()
+
+
 def shutdown_vm(name, max_wait=15):
     start_time = monotonic()
     if not is_vm_running(name):
@@ -90,12 +99,7 @@ def shutdown_vm(name, max_wait=15):
             print(f'Timed out waiting for {name} to shutdown'
                   f' cleanly after {wait} seconds, forcing shutdown')
             sys.stdout.flush()
-            kp = subprocess.Popen(
-                    f'VBoxManage controlvm {name} poweroff'.split())
-            try:
-                kp.wait(30)
-            except subprocess.TimeoutExpired:
-                kp.kill()
+            kill_vm(name)
             return
         print('SSH server shutdown, now waiting for VM to poweroff...')
         while is_vm_running(name) and monotonic() - start_time <= max_wait:
@@ -104,8 +108,8 @@ def shutdown_vm(name, max_wait=15):
             wait = '%.1f' % (monotonic() - start_time)
             print(f'Timed out waiting for {name} to shutdown'
                   f' cleanly after {wait} seconds, forcing shutdown')
-            subprocess.check_call(
-                ('VBoxManage controlvm %s poweroff' % name).split())
+            sys.stdout.flush()
+            kill_vm(name)
     finally:
         if shp.poll() is None:
             shp.kill()
