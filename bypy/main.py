@@ -42,6 +42,10 @@ def option_parser():
       default=False,
       action='store_true',
       help='Sign the binary installer, needs signing keys in the VMs')
+    a('--notarize',
+      default=False,
+      action='store_true',
+      help='Send the app for notarization to the platform vendor')
     a('--no-tty',
       default=False,
       action='store_true',
