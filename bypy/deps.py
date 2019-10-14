@@ -115,7 +115,12 @@ def init_env(which_deps=None):
 
 def accept_func_from_names(names):
     names = frozenset(names)
-    return lambda dep: dep['name'] in names
+    wants_qt = 'qt' in names
+
+    def ffunc(dep):
+        return dep['name'] in names or (
+                wants_qt and dep['name'].startswith('qt-'))
+    return ffunc
 
 
 def main(parsed_args):
@@ -124,7 +129,7 @@ def main(parsed_args):
     all_dep_names = frozenset(map(itemgetter('name'), all_deps))
     if parsed_args.deps:
         accept_func = accept_func_from_names(parsed_args.deps)
-        if frozenset(parsed_args.deps) - all_dep_names:
+        if (frozenset(parsed_args.deps) - {'qt'}) - all_dep_names:
             raise SystemExit('Unknown dependencies: {}'.format(
                 frozenset(parsed_args.deps) - all_dep_names))
     deps_to_build = tuple(filter(accept_func, all_deps))
