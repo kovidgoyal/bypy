@@ -52,7 +52,7 @@ def main(args):
         groups = [(which, bitness)]
     else:
         groups = [('macos', '64')]
-        for osname in 'linux win'.split():
+        for osname in 'linux windows'.split():
             for bitness in '64 32'.split():
                 groups.append((osname, bitness))
 
