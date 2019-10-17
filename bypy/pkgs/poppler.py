@@ -11,7 +11,6 @@ from bypy.utils import (cmake_build, install_binaries, replace_in_file,
 
 def main(args):
     cmake_args = dict(ENABLE_CPP='0',
-                      ENABLE_LIBOPENJPEG='none',
                       ENABLE_GLIB='OFF',
                       ENABLE_GOBJECT_INTROSPECTION='OFF',
                       ENABLE_CMS='none',
@@ -29,6 +28,20 @@ def main(args):
                         'macro_optional_find_package(NSS3)',
                         'set(NSS3_FOUND false)')
     if iswindows:
+        opjinc = f'{PREFIX}/include/openjpeg'.replace('\\', '/')
+        opjlib = f'{PREFIX}/lib/openjp2.lib'.replace('\\', '/')
+        replace_in_file(
+            'CMakeLists.txt',
+            'find_package(OpenJPEG)',
+            'set(OpenJPEG_FOUND true)\n'
+            'set(OPENJPEG_MAJOR_VERSION 2)\n'
+            f'set(OPENJPEG_INCLUDE_DIRS {opjinc})\n'
+        )
+        replace_in_file(
+            'CMakeLists.txt',
+            'set(poppler_LIBS ${poppler_LIBS} openjp2)',
+            'set(poppler_LIBS ${poppler_LIBS} %s)' % opjlib
+        )
         windows_cmake_build(**cmake_args)
         install_binaries('build/utils/*.exe', 'bin')
     else:
