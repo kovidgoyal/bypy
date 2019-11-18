@@ -8,7 +8,8 @@ import re
 import shutil
 
 from bypy.constants import (CFLAGS, LIBDIR, PREFIX, PYTHON, build_dir, is64bit,
-                            islinux, ismacos, iswindows)
+                            islinux, ismacos, iswindows,
+                            python_major_minor_version)
 from bypy.utils import (ModifiedEnv, copy_headers, get_platform_toolset,
                         get_windows_sdk, install_binaries, replace_in_file,
                         run, simple_build, walk)
@@ -197,6 +198,8 @@ def post_install_check():
         run(PYTHON, '-c',
             "import sys; 'MSC v.1916' not in sys.version and sys.exit(1)")
     mods = '_ssl zlib bz2 ctypes sqlite3'.split()
+    if python_major_minor_version()[0] > 2:
+        mods.append('lzma')
     if not iswindows:
         mods.extend('readline _curses'.split())
     run(PYTHON, '-c', 'import ' + ','.join(mods), library_path=True)
