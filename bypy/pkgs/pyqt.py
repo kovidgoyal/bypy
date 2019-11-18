@@ -5,14 +5,16 @@
 import os
 
 from bypy.constants import (MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir,
-                            ismacos, iswindows)
+                            ismacos, iswindows, python_major_minor_version)
 from bypy.utils import run
 
 
 def run_configure(for_webengine=False):
+    pyver = python_major_minor_version()
     b = build_dir()
     if ismacos:
-        b = os.path.join(b, 'python/Python.framework/Versions/2.7')
+        b = os.path.join(
+            b, 'python/Python.framework/Versions/{}.{}'.format(*pyver))
     elif iswindows:
         b = os.path.join(b, 'private', 'python')
     lp = os.path.join(PREFIX, 'qt', 'lib')
@@ -20,7 +22,7 @@ def run_configure(for_webengine=False):
     if iswindows:
         sip += '.exe'
         qmake += '.exe'
-    sp = 'Lib' if iswindows else 'lib/python2.7'
+    sp = 'Lib' if iswindows else 'lib/python{}.{}'.format(*pyver)
     sip_dir = f'{b}/share/sip/PyQt5'
     dest_dir = f'{b}/{sp}/site-packages'
     if for_webengine:
