@@ -109,13 +109,17 @@ def unix_python2(args):
 def get_python_version():
     with open('Include/patchlevel.h', 'rb') as f:
         raw = f.read().decode('utf-8')
-    return int(re.search(
-        r'^#define\s+PY_MAJOR_VERSION\s+(\d)', raw,
-        flags=re.MULTILINE).group(1))
+    return int(
+        re.search(r'^#define\s+PY_MAJOR_VERSION\s+(\d)',
+                  raw,
+                  flags=re.MULTILINE).group(1))
 
 
 def unix_python(args):
-    env = {'CFLAGS': CFLAGS + ' -DHAVE_LOAD_EXTENSION'}
+    env = {
+        'CFLAGS': CFLAGS +
+        f' -DHAVE_LOAD_EXTENSION -I{PREFIX}/include/ncursesw'
+    }
     replace_in_file('setup.py', re.compile(b'def detect_tkinter.+:'),
                     lambda m: m.group() + b'\n' + b' ' * 8 + b'return 0')
     conf = (f'--prefix={build_dir()} --with-threads --enable-ipv6'
@@ -135,12 +139,11 @@ def unix_python(args):
         simple_build(conf, relocate_pkgconfig=False)
 
     bindir = os.path.join(build_dir(), 'bin')
-    P = os.path.join(bindir, 'python3')
-    replace_in_file(
-            P + '-config', re.compile(br'^prefix=".+?"', re.MULTILINE),
-            f'prefix="{PREFIX}"')
+    os.symlink('python3', os.path.join(bindir, 'python'))
+    replace_in_file(os.path.join(bindir, 'python3-config'),
+                    re.compile(br'^prefix=".+?"', re.MULTILINE),
+                    f'prefix="{PREFIX}"')
     if ismacos:
-        bindir = os.path.join(build_dir(), 'bin')
         for f in os.listdir(bindir):
             link = os.path.join(bindir, f)
             if os.path.islink(link):
@@ -149,8 +152,6 @@ def unix_python(args):
                 if nfp != fp:
                     os.unlink(link)
                     os.symlink(nfp, link)
-    else:
-        os.symlink('python3', os.path.join(bindir, 'python'))
 
 
 def windows_python3(args):
