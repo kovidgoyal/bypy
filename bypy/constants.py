@@ -6,6 +6,8 @@ import os
 import shutil
 import sys
 import tempfile
+from functools import lru_cache
+
 
 _plat = sys.platform.lower()
 iswindows = hasattr(sys, 'getwindowsversion')
@@ -145,6 +147,7 @@ def build_dir(newval=None):
     return getattr(build_dir, 'ans', None)
 
 
+@lru_cache()
 def python_major_minor_version():
     from .download_sources import read_deps, ok_dep
     read_deps()

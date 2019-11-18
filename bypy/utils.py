@@ -23,7 +23,8 @@ from functools import partial
 
 from .constants import (CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX,
                         PYTHON, build_dir, cpu_count, is64bit, islinux,
-                        ismacos, iswindows, mkdtemp, worker_env)
+                        ismacos, iswindows, mkdtemp,
+                        python_major_minor_version, worker_env)
 
 if iswindows:
     import msvcrt
@@ -783,13 +784,22 @@ def parallel_build(jobs, log=print, verbose=True):
 
 
 def py_compile(basedir):
-    run(
-        PYTHON, '-OO', '-m', 'compileall', '-d', '', '-f', '-q',
-        basedir, library_path=True)
+    version = python_major_minor_version()[0]
+    if version < 3:
+        run(
+            PYTHON, '-OO', '-m', 'compileall', '-d', '', '-f', '-q',
+            basedir, library_path=True)
+        clean_exts = ('py', 'pyc')
+    else:
+        run(
+            PYTHON, '-OO', '-m', 'compileall', '-d', '', '-f', '-q',
+            '-b', '-j', '0', '--invalidation-mode=unchecked-hash',
+            basedir, library_path=True)
+        clean_exts = ('py',)
 
     for f in walk(basedir):
-        ext = f.rpartition('.')[-1]
-        if ext in ('py', 'pyc'):
+        ext = f.rpartition('.')[-1].lower()
+        if ext in clean_exts:
             os.remove(f)
 
 
