@@ -176,7 +176,7 @@ else:
 
 
 def filter_pkg(parts):
-    if ('idlelib' in parts or 'lib2to3' in parts or 'lib-tk' in parts
+    if ('idlelib' in parts or 'lib-tk' in parts
             or 'ensurepip' in parts or 'config' in parts
             or 'pydoc_data' in parts or 'Icons' in parts):
         return True
