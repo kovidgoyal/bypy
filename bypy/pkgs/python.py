@@ -124,7 +124,7 @@ def unix_python(args):
     replace_in_file('setup.py', re.compile(b'def detect_tkinter.+:'),
                     lambda m: m.group() + b'\n' + b' ' * 8 + b'return 0')
     conf = (f'--enable-ipv6 --with-system-expat --with-pymalloc'
-            # ' --with-lto --enable-optimizations'
+            ' --with-lto --enable-optimizations'
             ' --without-ensurepip --with-c-locale-coercion')
     if islinux:
         conf += f' --with-system-ffi --enable-shared --prefix={build_dir()}'
@@ -141,26 +141,45 @@ def unix_python(args):
         replace_in_file(
             'configure',
             "PYTHON_FOR_BUILD='./$(BUILDPYTHON) -E'",
-            f"PYTHON_FOR_BUILD='PYTHONEXECUTABLE={cwd}/$(BUILDPYTHON) PYTHONPATH={cwd}/Lib ./$(BUILDPYTHON)'")  # noqa
+            f"PYTHON_FOR_BUILD='PYTHONEXECUTABLE={cwd}/$(BUILDPYTHON) PYTHONPATH={cwd}/Lib ./$(BUILDPYTHON)'"  # noqa
+        )
 
     with ModifiedEnv(**env):
         simple_build(conf, relocate_pkgconfig=False)
 
     bindir = os.path.join(build_dir(), 'bin')
-    os.symlink('python3', os.path.join(bindir, 'python'))
     if ismacos:
         for f in os.listdir(bindir):
             link = os.path.join(bindir, f)
+            with open(link, 'r+b') as f:
+                raw = f.read()
+                if raw.startswith(b'#!/'):
+                    f.truncate(0)
+                    f.write(raw.replace(f'{build_dir()}'.encode(
+                        'utf-8'), PREFIX.encode('utf-8')))
             if os.path.islink(link):
                 fp = os.readlink(link)
                 nfp = fp.replace(build_dir(), PREFIX)
                 if nfp != fp:
                     os.unlink(link)
                     os.symlink(nfp, link)
+        libdir = glob.glob(
+            f'{build_dir()}/python/Python.framework/'
+            'Versions/Current/lib/python*')[0]
+        for x in (
+            'config-*-darwin/python-config.py',
+            '_sysconfigdata__darwin_darwin.py'
+        ):
+            with open(glob.glob(f'{libdir}/{x}')[0], 'r+b') as f:
+                raw = f.read()
+                f.truncate(0)
+                f.write(raw.replace(f'{build_dir()}'.encode(
+                    'utf-8'), PREFIX.encode('utf-8')))
     else:
         replace_in_file(os.path.join(bindir, 'python3-config'),
                         re.compile(br'^prefix=".+?"', re.MULTILINE),
                         f'prefix="{PREFIX}"')
+    os.symlink('python3', os.path.join(bindir, 'python'))
 
 
 def windows_python3(args):
