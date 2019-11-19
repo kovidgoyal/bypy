@@ -7,8 +7,8 @@ import os
 import re
 import shutil
 
-from bypy.constants import (CFLAGS, LIBDIR, PREFIX, PYTHON, build_dir, is64bit,
-                            islinux, ismacos, iswindows,
+from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, PREFIX, PYTHON, build_dir,
+                            is64bit, islinux, ismacos, iswindows,
                             python_major_minor_version)
 from bypy.utils import (ModifiedEnv, copy_headers, get_platform_toolset,
                         get_windows_sdk, install_binaries, replace_in_file,
@@ -123,27 +123,31 @@ def unix_python(args):
     }
     replace_in_file('setup.py', re.compile(b'def detect_tkinter.+:'),
                     lambda m: m.group() + b'\n' + b' ' * 8 + b'return 0')
-    conf = (f'--prefix={build_dir()} --with-threads --enable-ipv6'
-            ' --with-lto --without-docstrings --with-system-expat'
-            ' --with-pymalloc --without-ensurepip --with-c-locale-coercion')
+    conf = (f'--enable-ipv6 --with-system-expat --with-pymalloc'
+            # ' --with-lto --enable-optimizations'
+            ' --without-ensurepip --with-c-locale-coercion')
     if islinux:
-        conf += ' --with-system-ffi --enable-shared'
+        conf += f' --with-system-ffi --enable-shared --prefix={build_dir()}'
         # Needed as the system openssl is too old, causing the _ssl module
         # to fail
         env['LD_LIBRARY_PATH'] = LIBDIR
     elif ismacos:
         conf += f' --enable-framework={build_dir()}/python'
+        conf += f' --with-openssl={PREFIX}'
         # Needed for readline detection
-        env['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
+        env['MACOSX_DEPLOYMENT_TARGET'] = '10.14'
+        env['LDFLAGS'] = LDFLAGS.replace('-headerpad_max_install_names', '')
+        cwd = os.getcwd()
+        replace_in_file(
+            'configure',
+            "PYTHON_FOR_BUILD='./$(BUILDPYTHON) -E'",
+            f"PYTHON_FOR_BUILD='PYTHONEXECUTABLE={cwd}/$(BUILDPYTHON) PYTHONPATH={cwd}/Lib ./$(BUILDPYTHON)'")  # noqa
 
     with ModifiedEnv(**env):
         simple_build(conf, relocate_pkgconfig=False)
 
     bindir = os.path.join(build_dir(), 'bin')
     os.symlink('python3', os.path.join(bindir, 'python'))
-    replace_in_file(os.path.join(bindir, 'python3-config'),
-                    re.compile(br'^prefix=".+?"', re.MULTILINE),
-                    f'prefix="{PREFIX}"')
     if ismacos:
         for f in os.listdir(bindir):
             link = os.path.join(bindir, f)
@@ -153,6 +157,10 @@ def unix_python(args):
                 if nfp != fp:
                     os.unlink(link)
                     os.symlink(nfp, link)
+    else:
+        replace_in_file(os.path.join(bindir, 'python3-config'),
+                        re.compile(br'^prefix=".+?"', re.MULTILINE),
+                        f'prefix="{PREFIX}"')
 
 
 def windows_python3(args):
