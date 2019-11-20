@@ -10,16 +10,17 @@ from bypy.utils import replace_in_file, run
 
 
 def main(args):
+    pyver = python_major_minor_version()
     b = build_dir()
     if ismacos:
-        b = os.path.join(b, 'python/Python.framework/Versions/2.7')
+        b = os.path.join(
+            b, 'python/Python.framework/Versions/{}.{}'.format(*pyver))
     elif iswindows:
         b = os.path.join(b, 'private', 'python')
     cmd = [
         PYTHON, 'configure.py', '--no-pyi',
         '--sip-module=PyQt5.sip',
         '--bindir=%s/bin' % build_dir()]
-    pyver = python_major_minor_version()
     sp = 'Lib' if iswindows else 'lib/python{}.{}'.format(*pyver)
     inc = 'include' if iswindows else 'include/python{}.{}'.format(*pyver)
     cmd += ['--destdir=%s/%s/site-packages' % (b, sp),
