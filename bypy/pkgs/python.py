@@ -148,15 +148,21 @@ def unix_python(args):
         simple_build(conf, relocate_pkgconfig=False)
 
     bindir = os.path.join(build_dir(), 'bin')
+
+    def replace_bdir(f, raw=None):
+        if raw is None:
+            raw = f.read()
+        f.seek(0), f.truncate()
+        f.write(raw.replace(
+            f'{build_dir()}'.encode('utf-8'), PREFIX.encode('utf-8')))
+
     if ismacos:
         for f in os.listdir(bindir):
             link = os.path.join(bindir, f)
             with open(link, 'r+b') as f:
                 raw = f.read()
                 if raw.startswith(b'#!/'):
-                    f.truncate(0)
-                    f.write(raw.replace(f'{build_dir()}'.encode(
-                        'utf-8'), PREFIX.encode('utf-8')))
+                    replace_bdir(f, raw)
             if os.path.islink(link):
                 fp = os.readlink(link)
                 nfp = fp.replace(build_dir(), PREFIX)
@@ -171,10 +177,7 @@ def unix_python(args):
             '_sysconfigdata__darwin_darwin.py'
         ):
             with open(glob.glob(f'{libdir}/{x}')[0], 'r+b') as f:
-                raw = f.read()
-                f.truncate(0)
-                f.write(raw.replace(f'{build_dir()}'.encode(
-                    'utf-8'), PREFIX.encode('utf-8')))
+                replace_bdir(f)
     else:
         replace_in_file(os.path.join(bindir, 'python3-config'),
                         re.compile(br'^prefix=".+?"', re.MULTILINE),
