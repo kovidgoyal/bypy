@@ -442,7 +442,9 @@ def create_package(module, src_dir, outpath):
         def is_ok(name):
             parts = name.split('/')
             for p in parts:
-                if p in exclude or p.rpartition('.')[-1] in exclude_extensions:
+                if p in exclude or (
+                    '.' in p and p.rpartition('.')[-1] in exclude_extensions
+                ):
                     return False
             if hasattr(module, 'filter_pkg') and module.filter_pkg(parts):
                 return False
