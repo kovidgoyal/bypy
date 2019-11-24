@@ -69,7 +69,7 @@ def main(args):
 
 
 def post_install_check():
-    run(PYTHON,
-        '-c',
-        'from PyQt5 import sip, QtCore, QtGui',
-        library_path=os.path.join(PREFIX, 'qt', 'lib'))
+    q = 'from PyQt5 import sip, QtCore, QtGui'
+    if iswindows:
+        q += ', QtWinExtras'
+    run(PYTHON, '-c', q, library_path=os.path.join(PREFIX, 'qt', 'lib'))
