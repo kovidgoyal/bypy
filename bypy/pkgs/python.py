@@ -15,6 +15,7 @@ from bypy.utils import (ModifiedEnv, copy_headers, get_platform_toolset,
                         run, simple_build, walk)
 
 
+# python2 {{{
 def windows_python2(args):
     replace_in_file(
         'PCbuild\\build.bat', re.compile(r'^\s*%1\s+%2', re.MULTILINE),
@@ -105,6 +106,7 @@ def unix_python2(args):
                 if nfp != fp:
                     os.unlink(link)
                     os.symlink(nfp, link)
+# }}}
 
 
 def get_python_version():
@@ -185,25 +187,63 @@ def unix_python(args):
     os.symlink('python3', os.path.join(bindir, 'python'))
 
 
-def windows_python3(args):
-    raise NotImplementedError('TODO: Implement this')
+def windows_python(args):
+    with open('PCbuild/msbuild.rsp', 'w') as f:
+        print(f'/p:PlatformToolset={get_platform_toolset()}', file=f)
+        print(f'/p:WindowsTargetPlatformVersion={get_windows_sdk()}', file=f)
+
+    # dont need python 3 to get externals, use git instead
+    replace_in_file('PCbuild\\get_externals.bat',
+                    re.compile(br'^call.+find_python.bat.+$', re.MULTILINE),
+                    '')
+    env = {}
+    if is64bit:
+        env['PROCESSOR_ARCHITECTURE'] = env['PROCESSOR_ARCHITEW6432'] = 'AMD64'
+    try:
+        run(
+            'PCbuild\\build.bat', '-e', '--no-tkinter', '-c',
+            'Release', '-m', '-p', ('x64' if is64bit else 'Win32'), '-v',
+            '-t', 'Build',
+            '--pgo',
+            env=env
+        )
+        # Run the tests
+        # run('PCbuild\\amd64\\python.exe', 'Lib/test/regrtest.py', '-u',
+        #     'network,cpu,subprocess,urlfetch')
+
+        # Do not read mimetypes from the registry
+        replace_in_file(
+            'Lib\\mimetypes.py',
+            re.compile(br'try:.*?import\s+winreg.*?None', re.DOTALL),
+            r'_winreg = None')
+
+        bindir = 'PCbuild\\amd64' if is64bit else 'PCbuild'
+        install_binaries(bindir + os.sep + '*.exe', 'private\\python')
+        install_binaries(bindir + os.sep + 'python*.dll', 'private\\python')
+        install_binaries(bindir + os.sep + '*.pyd', 'private\\python\\DLLs')
+        install_binaries(bindir + os.sep + '*.dll', 'private\\python\\DLLs')
+        for x in glob.glob(
+                os.path.join(build_dir(),
+                             'private\\python\\DLLs\\python*.dll')):
+            os.remove(x)
+        install_binaries(bindir + os.sep + '*.lib', 'private\\python\\libs')
+        copy_headers('PC\\pyconfig.h', 'private\\python\\include')
+        copy_headers('Include\\*.h', 'private\\python\\include')
+        shutil.copytree('Lib', os.path.join(build_dir(),
+                                            'private\\python\\Lib'))
+    finally:
+        # bloody git creates files with no write permission
+        import stat
+        for path in walk('externals'):
+            os.chmod(path, stat.S_IWRITE)
+            os.remove(path)
 
 
-if iswindows:
-
-    def main(args):
-        if get_python_version() < 3:
-            windows_python2(args)
-        else:
-            windows_python3(args)
-
-else:
-
-    def main(args):
-        if get_python_version() < 3:
-            unix_python2(args)
-        else:
-            unix_python(args)
+def main(args):
+    if get_python_version() < 3:
+        (windows_python2 if iswindows else unix_python2)(args)
+    else:
+        (windows_python if iswindows else unix_python)(args)
 
 
 def filter_pkg(parts):
