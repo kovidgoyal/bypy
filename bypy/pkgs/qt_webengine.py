@@ -27,8 +27,9 @@ def main(args):
                              os.path.basename(header)))
         conf += ' -webp -webengine-icu'
     if iswindows:
-        append_to_path = f'{PREFIX}/private/gnuwin32/bin'
+        python2 = os.path.dirname(os.environ['PYTHON_TWO'])
+        append_to_path = f'{PREFIX}/private/gnuwin32/bin;{python2}'
         # broken test for 64-bit ness needs to be disabled
         replace_in_file(
             'mkspecs/features/platform.prf', 'ProgramW6432', 'PROGRAMFILES')
-    qt_build(conf, append_to_path=append_to_path)
+    qt_build(conf, append_to_path=append_to_path, for_webengine=True)

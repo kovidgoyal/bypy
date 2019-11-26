@@ -285,15 +285,6 @@ def qt_build(qmake_args='', append_to_path=None, **env):
     os.mkdir('build')
     os.chdir('build')
     qmake_args = shlex.split(qmake_args)
-    # At the moment the Qt build system needs python2,
-    # so use our own python which is 2 for the nonce
-    append_to_path = append_to_path
-    if iswindows:
-        if append_to_path:
-            append_to_path += os.pathsep
-        else:
-            append_to_path = ''
-        append_to_path += os.path.dirname(PYTHON)
     run(
         os.path.join(PREFIX, 'qt', 'bin', 'qmake'),
         '..', '--', *qmake_args,
