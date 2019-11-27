@@ -38,8 +38,10 @@ def main(args):
     # CLSID_PropertyChangeArray is not useable
     replace_in_file('com/win32comext/propsys/src/propsys.cpp',
                     '#ifndef CLSID_PropertyChangeArray', '#if 0')
-    replace_in_file('com/win32comext/propsys/src/propsys.cpp',
-                    'PYCOM_INTERFACE_CLSID_ONLY (PropertyChangeArray),', '')
+    replace_in_file(
+        'com/win32comext/propsys/src/propsys.cpp',
+        re.compile(r'PYCOM_INTERFACE_CLSID_ONLY\s*\(PropertyChangeArray\),'),
+        '')
     # Undefined symbol
     replace_in_file(
         'win32/src/win32job.i',
