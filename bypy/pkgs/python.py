@@ -230,6 +230,12 @@ def windows_python(args):
         copy_headers('PC\\pyconfig.h', 'private\\python\\include')
         copy_headers('Include\\*.h', 'private\\python\\include')
         copy_headers('Include\\cpython', 'private\\python\\include')
+        with open('Lib/sitecustomize.py', 'w') as f:
+            f.write((
+                'import os; os.add_dll_directory("{p}/bin");'
+                'os.add_dll_directory("{p}/qt/bin");'
+                ).format(p=PREFIX.replace('\\', '/')))
+
         shutil.copytree('Lib', os.path.join(build_dir(),
                                             'private\\python\\Lib'))
     finally:
