@@ -17,6 +17,11 @@ if iswindows:
         shutil.copy(os.path.join(PREFIX, 'src', 'lzx.h'), 'chm')
         shutil.copy(os.path.join(PREFIX, 'include', 'chm_lib.h'), 'chm')
         replace_in_file(
+            "chm/_chmlib.c",
+            '"Search the CHM"},',
+            '"Search the CHM"}, {NULL}'
+        )
+        replace_in_file(
             'setup.py',
             'search.c"',
             'search.c", "chm/chm_lib.c", "chm/lzx.c"'
