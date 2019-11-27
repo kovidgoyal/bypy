@@ -229,6 +229,7 @@ def windows_python(args):
         install_binaries(bindir + os.sep + '*.lib', 'private\\python\\libs')
         copy_headers('PC\\pyconfig.h', 'private\\python\\include')
         copy_headers('Include\\*.h', 'private\\python\\include')
+        copy_headers('Include\\cpython', 'private\\python\\include')
         shutil.copytree('Lib', os.path.join(build_dir(),
                                             'private\\python\\Lib'))
     finally:
