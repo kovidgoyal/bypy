@@ -546,11 +546,13 @@ def replace_in_file(path, old, new, missing_ok=False):
                     old.pattern.encode('utf-8'), old.flags & ~re.UNICODE)
             nraw = old.sub(new, raw)
             pat_repr = old.pattern.decode('utf-8')
-        if raw == nraw and not missing_ok:
+        replaced = raw != nraw
+        if not replaced and not missing_ok:
             raise ValueError(
                 f'Failed (pattern "{pat_repr}" not found) to patch: {path}')
         f.seek(0), f.truncate()
         f.write(nraw)
+        return replaced
 
 
 @contextmanager
