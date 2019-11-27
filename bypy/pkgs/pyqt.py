@@ -3,10 +3,11 @@
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
+import re
 
 from bypy.constants import (MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir,
                             ismacos, iswindows, python_major_minor_version)
-from bypy.utils import run
+from bypy.utils import replace_in_file, run
 
 
 def run_configure(for_webengine=False):
@@ -51,6 +52,7 @@ def run_configure(for_webengine=False):
             cmd.append(
                 f'--pyqt-sipdir={PREFIX}/private/python/share/sip/PyQt5')
     run(*cmd, library_path=lp)
+    return dest_dir
 
 
 def run_build():
@@ -64,8 +66,11 @@ def run_build():
 
 
 def main(args):
-    run_configure()
+    dest_dir = run_configure()
     run_build()
+    replace_in_file(
+            f'{dest_dir}/PyQt5/__init__.py',
+            re.compile(r'^find_qt\(\)', re.M), '')
 
 
 def post_install_check():
