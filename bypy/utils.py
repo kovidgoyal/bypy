@@ -281,10 +281,15 @@ def simple_build(
         relocate_pkgconfig_files()
 
 
-def qt_build(qmake_args='', append_to_path=None, **env):
+def qt_build(qmake_args='', for_webengine=False, **env):
     os.mkdir('build')
     os.chdir('build')
     qmake_args = shlex.split(qmake_args)
+    append_to_path = None
+    if iswindows:
+        append_to_path = os.path.dirname(os.environ['PYTHON_TWO'])
+        if for_webengine:
+            append_to_path = f'{PREFIX}/private/gnuwin32/bin;{append_to_path}'
     run(
         os.path.join(PREFIX, 'qt', 'bin', 'qmake'),
         '..', '--', *qmake_args,
