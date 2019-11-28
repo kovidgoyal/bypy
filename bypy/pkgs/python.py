@@ -217,7 +217,7 @@ def windows_python(args):
             re.compile(br'try:.*?import\s+winreg.*?None', re.DOTALL),
             r'_winreg = None')
 
-        bindir = 'PCbuild\\amd64' if is64bit else 'PCbuild'
+        bindir = 'PCbuild\\amd64' if is64bit else 'PCbuild\\win32'
         install_binaries(bindir + os.sep + '*.exe', 'private\\python')
         install_binaries(bindir + os.sep + 'python*.dll', 'private\\python')
         install_binaries(bindir + os.sep + '*.pyd', 'private\\python\\DLLs')
