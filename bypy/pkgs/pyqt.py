@@ -68,9 +68,10 @@ def run_build():
 def main(args):
     dest_dir = run_configure()
     run_build()
-    replace_in_file(
-            f'{dest_dir}/PyQt5/__init__.py',
-            re.compile(r'^find_qt\(\)', re.M), '')
+    if iswindows:
+        replace_in_file(
+                f'{dest_dir}/PyQt5/__init__.py',
+                re.compile(r'^find_qt\(\)', re.M), '')
 
 
 def post_install_check():
