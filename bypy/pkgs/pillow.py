@@ -21,5 +21,9 @@ if iswindows:
             'setup.py',
             re.compile(r'^(JPEG|ZLIB|FREETYPE)_ROOT = None', re.M),
             fr'\1_ROOT = {root}')
+        # dont link against static zlib
+        replace_in_file(
+            'setup.py', 'feature.zlib = "zlib"', 'feature.zlib = "zdll"')
+
         python_build()
         python_install()
