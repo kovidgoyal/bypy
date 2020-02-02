@@ -10,6 +10,10 @@ from bypy.utils import (copy_headers, install_binaries, msbuild,
 def main(args):
     replace_in_file('dll.cpp', 'WideToChar', 'WideToUtf')
     if iswindows:
+        # see https://github.com/microsoft/vcpkg/pull/8053
+        replace_in_file(
+            'UnRARDll.vcxproj',
+            '<StructMemberAlignment>4Bytes</StructMemberAlignment>', '')
         msbuild('UnRARDll.vcxproj')
         install_binaries('./build/*/Release/unrar.dll', 'bin')
         install_binaries('./build/*/Release/UnRAR.lib', 'lib')
