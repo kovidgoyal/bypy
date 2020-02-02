@@ -28,5 +28,5 @@ def main(args):
     if iswindows:
         # broken test for 64-bit ness needs to be disabled
         replace_in_file(
-            'mkspecs/features/platform.prf', 'ProgramW6432', 'PROGRAMFILES')
+            'configure.pri', 'ProgramW6432', 'PROGRAMFILES')
     qt_build(conf, for_webengine=True)
