@@ -4,12 +4,16 @@
 
 import os
 
-from bypy.constants import iswindows, PYTHON, build_dir, PREFIX
-from bypy.utils import run, python_install
+from bypy.constants import PREFIX, PYTHON, build_dir, iswindows
+from bypy.utils import python_install, replace_in_file, run
 
 if iswindows:
     def main(args):
-        run(PYTHON, 'setup.py', 'fetch', '--all', '--missing-checksum-ok', 'build', 'install', '--root', build_dir())
+        replace_in_file('setup.py', '2019', '2020')
+        run(
+            PYTHON, 'setup.py', 'fetch', '--all',
+            '--missing-checksum-ok', 'build', 'install', '--root', build_dir()
+        )
         python_install()
 
 
