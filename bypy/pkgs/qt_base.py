@@ -29,9 +29,9 @@ def main(args):
         # find its plugins etc before QApplication is constructed
         replace_in_file(
             'src/corelib/global/qlibraryinfo.cpp',
-            'QT_CONFIGURE_PREFIX_PATH',
-            '(getenv("CALIBRE_QT_PREFIX") ?'
-            ' getenv("CALIBRE_QT_PREFIX") : QT_CONFIGURE_PREFIX_PATH)')
+            '= getPrefix',
+            '= getenv("CALIBRE_QT_PREFIX") ?'
+            ' getenv("CALIBRE_QT_PREFIX") : getPrefix')
     if iswindows:
         # Enable loading of DLLs from the bin directory
         replace_in_file(
