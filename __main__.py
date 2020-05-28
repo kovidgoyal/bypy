@@ -2,9 +2,10 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
+import importlib
 import os
-import sys
 import re
+import sys
 
 if len(sys.argv) < 2:
     raise SystemExit('Must provide a sub-command')
@@ -34,20 +35,19 @@ else:
     os.environ['SSL_CERT_FILE'] = certifi.where()
 
 
-if subcommand == 'main':
-    from bypy.main import main
-    main(args)
-elif subcommand == 'linux':
-    from bypy.linux import main
-    main(args)
-elif subcommand == 'macos':
-    from bypy.macos import main
-    main(args)
-elif subcommand == 'windows':
-    from bypy.windows import main
-    main(args)
-elif subcommand == 'export':
-    from bypy.export import main
-    main(args)
+if subcommand == 'vm':
+    try:
+        main = importlib.import_module(f'virtual_machine.{args[1]}').main
+    except (ImportError, AttributeError):
+        raise SystemExit(f'Unknown virtual machine sub-command: {subcommand}')
+    del args[1]
+    sys.argv = args
+    main()
+    sys.exit(0)
 else:
-    raise SystemExit(f'Unknown subcommand: {subcommand}')
+    try:
+        main = importlib.import_module(f'bypy.{subcommand}').main
+    except (ImportError, AttributeError):
+        raise SystemExit(f'Unknown sub-command: {subcommand}')
+    main(args)
+    sys.exit(0)
