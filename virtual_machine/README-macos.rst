@@ -1,6 +1,19 @@
 Create a VM using https://github.com/foxlet/macOS-Simple-KVM
+With a SystemDisk::
+
+    qemu-img create -f qcow2 SystemDisk.qcow2 240G
 
 After the OS is installed:
+
+* Change the two network related lines in the launch script, which use an obsolete
+  syntax to::
+
+    -nic user,model=e1000-82545em,mac=52:54:00:0e:0d:20,hostfwd=tcp:0.0.0.0:22001-:22
+
+* Change the number of CPUS and RAM to::
+
+    -smp 4,cores=2
+    -m 4G
 
 * turn on SSH, change shell to zsh, install vimrc and zshrc and ssh authorized_keys.
 

@@ -19,7 +19,7 @@ def all_vm_names():
 def ssh_port_for_vm(name):
     for line in open(os.path.join(base_dir, name, 'machine-spec')):
         line = line.strip()
-        if line.startswith('-netdev '):
+        if line.startswith('-netdev ') or line.startswith('-nic '):
             return int(line.split(':')[-2].rstrip('-'))
     raise KeyError(f'Failed to find SSH port for {name}')
 
