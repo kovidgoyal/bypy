@@ -2,16 +2,59 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
+import atexit
+import json
 import os
 import shlex
 import socket
 import subprocess
-import sys
-import tempfile
-from time import monotonic, sleep
+from functools import lru_cache
+from time import sleep
 
 from .conf import parse_conf_file
 from .constants import base_dir
+
+BUILD_SERVER = os.environ.get('BYPY_BUILD_SERVER')
+if BUILD_SERVER:
+    BUILD_SERVER, bsc = BUILD_SERVER.split(',', 1)
+    BUILD_SERVER_VM_CD = shlex.split(bsc)
+    del bsc
+else:
+    BUILD_SERVER = 'localhost'
+    BUILD_SERVER_VM_CD = [
+        'python', os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), 'vm']
+ssh_masters = set()
+
+
+def end_ssh_master(address, socket, process):
+    server, port = address
+    subprocess.run(['ssh', '-O', 'exit', '-S', socket, '-p', port, server])
+    if process.poll() is None:
+        process.terminate()
+    if process.poll() is None:
+        sleep(0.1)
+        process.kill()
+    ssh_masters.discard(address)
+
+
+def ssh_to(port=22, server=BUILD_SERVER):
+    socket = os.path.expanduser(
+        f'~/.ssh/controlmasters/bypy-{server}-{port}')
+    os.makedirs(os.path.dirname(socket), exist_ok=True)
+    port = str(port)
+    address = server, port
+    if address not in ssh_masters:
+        ssh_masters.add(address)
+        atexit.register(end_ssh_master, address, socket, subprocess.Popen([
+            'ssh', '-M', '-S', socket, '-N', '-p', port, server]))
+    return ['ssh', '-S', socket, '-p', port]
+
+
+def ssh_to_vm(name):
+    m = vm_metadata(name)
+    port = m['ssh_port']
+    return ssh_to(port=int(port))
 
 
 def get_rsync_conf():
@@ -22,40 +65,38 @@ def get_rsync_conf():
     return ans
 
 
-def is_host_reachable(name, timeout=1):
+def is_host_reachable(port=22, timeout=1):
     try:
-        socket.create_connection((name, 22), timeout).close()
+        socket.create_connection((BUILD_SERVER, int(port)), timeout).close()
         return True
     except Exception:
         return False
 
 
-def is_vm_running(name):
-    qname = '"%s"' % name
-    try:
-        lines = subprocess.check_output(
-            'VBoxManage list runningvms'.split()).decode('utf-8').splitlines()
-    except Exception:
-        sleep(1)
-        lines = subprocess.check_output(
-            'VBoxManage list runningvms'.split()).decode('utf-8').splitlines()
-    for line in lines:
-        if line.startswith(qname):
-            return True
-    return False
+def vm_cmd(name, *args, get_output=False):
+    if len(args) == 1:
+        args = shlex.split(args[0])
+    cmd = ssh_to() + [BUILD_SERVER] + list(BUILD_SERVER_VM_CD) + list(args)
+    kw = {}
+    if get_output:
+        kw['stdout'] = subprocess.PIPE
+    p = subprocess.run(cmd, **kw)
+    if p.returncode != 0:
+        q = shlex.join(args)
+        raise SystemExit(
+            f'The command: {q} failed with error code: {p.returncode}')
+    return p.stdout
 
 
-SSH = [
-    'ssh', '-o', 'User=kovid',
-    '-o', 'ControlMaster=auto', '-o', 'ControlPersist=yes',
-    '-o', 'ControlPath={}/%r@%h:%p'.format(tempfile.gettempdir())
-]
+@lru_cache(maxsize=2)
+def vm_metadata(name):
+    return json.loads(vm_cmd(name, 'status', name, get_output=True))
 
 
 def run_in_vm(name, *args, **kw):
     if len(args) == 1:
         args = shlex.split(args[0])
-    p = subprocess.Popen(SSH + ['-t', name] + list(args))
+    p = subprocess.Popen(ssh_to_vm(name) + ['-t', BUILD_SERVER] + list(args))
     if kw.get('is_async'):
         return p
     if p.wait() != 0:
@@ -63,56 +104,16 @@ def run_in_vm(name, *args, **kw):
 
 
 def ensure_vm(name):
-    if not is_vm_running(name):
-        subprocess.Popen(['VBoxHeadless', '--startvm', name])
-        sleep(2)
+    m = vm_metadata(name)
+    port = m['ssh_port']
+    vm_cmd(name, 'run', name)
     print('Waiting for SSH server to start...')
-    st = monotonic()
-    while not is_host_reachable(name):
+    while not is_host_reachable(port=port):
         sleep(0.1)
-    print('SSH server started in', '%.1f' % (monotonic() - st), 'seconds')
 
 
-def kill_vm(name):
-    kp = subprocess.Popen(
-            f'VBoxManage controlvm {name} poweroff'.split())
-    try:
-        kp.wait(30)
-    except subprocess.TimeoutExpired:
-        kp.kill()
-
-
-def shutdown_vm(name, max_wait=15):
-    start_time = monotonic()
-    if not is_vm_running(name):
-        return
-    ismacos = 'macos' in name.split('-')
-    cmd = 'sudo shutdown -h now' if ismacos else 'shutdown.exe -s -f -t 0'
-    shp = run_in_vm(name, cmd, is_async=True)
-
-    try:
-        while is_host_reachable(name) and monotonic() - start_time <= max_wait:
-            sleep(0.1)
-        subprocess.Popen(SSH + ['-O', 'exit', name])
-        if is_host_reachable(name):
-            wait = '%.1f' % (monotonic() - start_time)
-            print(f'Timed out waiting for {name} to shutdown'
-                  f' cleanly after {wait} seconds, forcing shutdown')
-            sys.stdout.flush()
-            kill_vm(name)
-            return
-        print('SSH server shutdown, now waiting for VM to poweroff...')
-        while is_vm_running(name) and monotonic() - start_time <= max_wait:
-            sleep(0.1)
-        if is_vm_running(name):
-            wait = '%.1f' % (monotonic() - start_time)
-            print(f'Timed out waiting for {name} to shutdown'
-                  f' cleanly after {wait} seconds, forcing shutdown')
-            sys.stdout.flush()
-            kill_vm(name)
-    finally:
-        if shp.poll() is None:
-            shp.kill()
+def shutdown_vm(name):
+    vm_cmd(name, 'shutdown', name)
 
 
 class Rsync(object):
@@ -124,15 +125,17 @@ class Rsync(object):
         self.name = name
 
     def from_vm(self, from_, to, excludes=frozenset()):
-        f = self.name + ':' + from_
+        f = BUILD_SERVER + ':' + from_
         self(f, to, excludes)
 
     def to_vm(self, from_, to, excludes=frozenset()):
-        t = self.name + ':' + to
+        t = BUILD_SERVER + ':' + to
+        subprocess.check_call(
+            ssh_to_vm(self.name) + [BUILD_SERVER, 'mkdir', '-p', to])
         self(from_, t, excludes)
 
     def __call__(self, from_, to, excludes=frozenset()):
-        ssh = ' '.join(SSH)
+        ssh = shlex.join(ssh_to_vm(self.name))
         if isinstance(excludes, type('')):
             excludes = excludes.split()
         excludes = frozenset(excludes) | self.excludes
@@ -144,7 +147,9 @@ class Rsync(object):
         print('Syncing', from_)
         p = subprocess.Popen(cmd)
         if p.wait() != 0:
-            raise SystemExit(p.wait())
+            q = shlex.join(cmd)
+            raise SystemExit(
+                f'The cmd {q} failed with error code: {p.returncode}')
 
 
 def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
