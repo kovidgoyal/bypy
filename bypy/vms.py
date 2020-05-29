@@ -14,17 +14,16 @@ from time import sleep
 from .conf import parse_conf_file
 from .constants import base_dir
 
-BUILD_SERVER = os.environ.get('BYPY_BUILD_SERVER')
-if BUILD_SERVER:
-    BUILD_SERVER, bsc = BUILD_SERVER.split(',', 1)
-    BUILD_SERVER_VM_CD = shlex.split(bsc)
-    del bsc
-else:
+ssh_masters = set()
+try:
+    with open(os.path.expanduser('~/.config/bypy.conf')) as f:
+        BUILD_SERVER, bsc = f.read().splitlines()[:2]
+        BUILD_SERVER_VM_CD = shlex.split(bsc)
+except FileNotFoundError:
     BUILD_SERVER = 'localhost'
     BUILD_SERVER_VM_CD = [
         'python', os.path.dirname(os.path.dirname(
             os.path.abspath(__file__))), 'vm']
-ssh_masters = set()
 
 
 def end_ssh_master(address, socket, process):
