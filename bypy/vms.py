@@ -8,7 +8,7 @@ import os
 import shlex
 import subprocess
 from functools import lru_cache
-from time import sleep
+from time import monotonic, sleep
 
 from .conf import parse_conf_file
 from .constants import base_dir
@@ -64,10 +64,13 @@ def get_rsync_conf():
 
 
 def wait_for_ssh(name):
+    st = monotonic()
+    print('Waiting for SSH server to start...')
     cmd = ssh_to_vm(name) + [BUILD_SERVER, 'date']
     cp = subprocess.run(cmd)
     if cp.returncode != 0:
         raise SystemExit(f'Failed to run date command in {name}')
+    print('SSH server started in {:.1f} seconds'.format(monotonic() - st))
 
 
 def vm_cmd(name, *args, get_output=False):
@@ -102,7 +105,6 @@ def run_in_vm(name, *args, **kw):
 
 def ensure_vm(name):
     vm_cmd(name, 'run', name)
-    print('Waiting for SSH server to start...')
     wait_for_ssh(name)
 
 
