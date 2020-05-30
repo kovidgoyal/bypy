@@ -39,7 +39,8 @@ def read_build_server():
     with f:
         server = cmd = None
         for line in f:
-            if line.startswith('#'):
+            line = line.strip()
+            if line.startswith('#') or not line:
                 continue
             if server is None:
                 server = line
