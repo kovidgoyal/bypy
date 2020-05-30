@@ -66,10 +66,14 @@ def get_rsync_conf():
 def wait_for_ssh(name):
     st = monotonic()
     print('Waiting for SSH server to start...')
-    cmd = ssh_to_vm(name) + [BUILD_SERVER, 'date']
-    cp = subprocess.run(cmd)
-    if cp.returncode != 0:
-        raise SystemExit(f'Failed to run date command in {name}')
+    m = vm_metadata(name)
+    port = m['ssh_port']
+    cmd = ['ssh', '-p', str(port), BUILD_SERVER, 'date']
+    while True:
+        cp = subprocess.run(cmd)
+        if cp.returncode == 0:
+            break
+        sleep(0.2)
     print('SSH server started in {:.1f} seconds'.format(monotonic() - st))
 
 
