@@ -3,6 +3,7 @@
 # License: GPLv3 Copyright: 2020, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
+import shlex
 
 if os.path.exists('/vms'):
     base_dir = os.path.realpath('/vms')
@@ -26,3 +27,27 @@ def ssh_port_for_vm(name):
 
 def vm_platform(name):
     return 'macos' if 'macos' in name.split('-') else 'windows'
+
+
+def read_build_server():
+    try:
+        f = open(os.path.expanduser('~/.config/bypy.conf'))
+    except FileNotFoundError:
+        return 'localhost', [
+            'python', os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__))), 'vm']
+    with f:
+        server = cmd = None
+        for line in f:
+            if line.startswith('#'):
+                continue
+            if server is None:
+                server = line
+                continue
+            if cmd is None:
+                cmd = shlex.split(line)
+                break
+        if server is None or cmd is None:
+            raise ValueError(
+                f'Failed to parse build server config file: {f.name}')
+        return server, cmd

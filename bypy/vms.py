@@ -12,17 +12,10 @@ from time import monotonic, sleep
 
 from .conf import parse_conf_file
 from .constants import base_dir
+from ..virtual_machine.utils import read_build_server
 
 ssh_masters = set()
-try:
-    with open(os.path.expanduser('~/.config/bypy.conf')) as f:
-        BUILD_SERVER, bsc = f.read().splitlines()[:2]
-        BUILD_SERVER_VM_CD = shlex.split(bsc)
-except FileNotFoundError:
-    BUILD_SERVER = 'localhost'
-    BUILD_SERVER_VM_CD = [
-        'python', os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), 'vm']
+BUILD_SERVER, BUILD_SERVER_VM_CD = read_build_server()
 
 
 def end_ssh_master(address, socket, process):
