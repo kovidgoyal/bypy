@@ -65,7 +65,7 @@ def get_rsync_conf():
 
 def wait_for_ssh(name):
     st = monotonic()
-    print('Waiting for SSH server to start...')
+    print('Waiting for SSH server to start...', flush=True)
     m = vm_metadata(name)
     port = m['ssh_port']
     cmd = ['ssh', '-p', str(port), BUILD_SERVER, 'date']
@@ -74,7 +74,9 @@ def wait_for_ssh(name):
         if cp.returncode == 0:
             break
         sleep(0.2)
-    print('SSH server started in {:.1f} seconds'.format(monotonic() - st))
+    print(
+        'SSH server started in {:.1f} seconds'.format(monotonic() - st),
+        flush=True)
 
 
 def vm_cmd(name, *args, get_output=False):
@@ -144,7 +146,7 @@ class Rsync(object):
             'rsync', '-a', '-e', ssh, '--delete', '--delete-excluded'
         ] + excludes + [from_ + '/', to]
         # print(' '.join(cmd))
-        print('Syncing', from_)
+        print('Syncing', from_, flush=True)
         p = subprocess.Popen(cmd)
         if p.wait() != 0:
             q = shlex.join(cmd)
@@ -153,7 +155,7 @@ class Rsync(object):
 
 
 def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
-    print('Mirroring data to the VM...')
+    print('Mirroring data to the VM...', flush=True)
     prefix = prefix.rstrip('/') + '/'
     src_dir = os.path.dirname(base_dir())
     if os.path.exists(os.path.join(src_dir, 'setup.py')):
@@ -172,7 +174,7 @@ def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
 
 
 def from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix='/', name='sw'):
-    print('Mirroring data from VM...')
+    print('Mirroring data from VM...', flush=True)
     run_in_vm(rsync.name, 'rm', '-rf', '~/code-signing')
     prefix = prefix.rstrip('/') + '/'
     rsync.from_vm(prefix + name + '/dist', output_dir)
