@@ -6,7 +6,6 @@ import atexit
 import json
 import os
 import shlex
-import socket
 import subprocess
 from functools import lru_cache
 from time import sleep
@@ -64,12 +63,11 @@ def get_rsync_conf():
     return ans
 
 
-def is_host_reachable(port=22, timeout=1):
-    try:
-        socket.create_connection((BUILD_SERVER, int(port)), timeout).close()
-        return True
-    except Exception:
-        return False
+def wait_for_ssh(name):
+    cmd = ssh_to_vm(name) + [BUILD_SERVER, 'date']
+    cp = subprocess.run(cmd)
+    if cp.returncode != 0:
+        raise SystemExit(f'Failed to run date command in {name}')
 
 
 def vm_cmd(name, *args, get_output=False):
@@ -103,12 +101,9 @@ def run_in_vm(name, *args, **kw):
 
 
 def ensure_vm(name):
-    m = vm_metadata(name)
-    port = m['ssh_port']
     vm_cmd(name, 'run', name)
     print('Waiting for SSH server to start...')
-    while not is_host_reachable(port=port):
-        sleep(0.1)
+    wait_for_ssh(name)
 
 
 def shutdown_vm(name):
@@ -163,10 +158,16 @@ def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
     rsync.to_vm(os.path.dirname(base), prefix + 'bypy')
     rsync.to_vm(sources_dir, prefix + 'sources')
     rsync.to_vm(pkg_dir, prefix + name + '/pkg')
+    if 'PENV' in os.environ:
+        code_signing = os.path.expanduser(os.path.join(
+            os.environ['PENV'], 'code-signing'))
+        if os.path.exists(code_signing):
+            rsync.to_vm(code_signing, '~/code-signing')
 
 
 def from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix='/', name='sw'):
     print('Mirroring data from VM...')
+    run_in_vm(rsync.name, 'rm', '-rf', '~/code-signing')
     prefix = prefix.rstrip('/') + '/'
     rsync.from_vm(prefix + name + '/dist', output_dir)
     rsync.from_vm(prefix + 'sources', sources_dir)
