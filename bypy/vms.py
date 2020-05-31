@@ -136,7 +136,7 @@ class Rsync(object):
         excludes = frozenset(excludes) | self.excludes
         excludes = ['--exclude=' + x for x in excludes]
         cmd = [
-            'rsync', '-a', '-e', ssh, '--delete', '--delete-excluded'
+            'rsync', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded'
         ] + excludes + [from_ + '/', to]
         # print(' '.join(cmd))
         print('Syncing', from_, flush=True)
