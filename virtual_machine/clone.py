@@ -22,5 +22,5 @@ def main():
     opts = parser.parse_args()
     vm_name = opts.vm
     vm_dir = os.path.join(base_dir, vm_name)
-    os.execlp('rsync', 'rsync', '-rvz', '--inplace', '--no-whole-file',
+    os.execlp('rsync', 'rsync', '-rv', '-zz', '--inplace', '--no-whole-file',
               '--progress', vm_dir, opts.dest)
