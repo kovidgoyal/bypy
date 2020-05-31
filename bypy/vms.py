@@ -12,7 +12,7 @@ from time import monotonic, sleep
 
 from .conf import parse_conf_file
 from .constants import base_dir
-from ..virtual_machine.utils import read_build_server
+from virtual_machine.utils import read_build_server
 
 ssh_masters = set()
 BUILD_SERVER, BUILD_SERVER_VM_CD = read_build_server()
