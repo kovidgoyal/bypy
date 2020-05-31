@@ -43,7 +43,7 @@ def shutdown_one_vm(vm_name, wait_for):
     cmd = shutdown_command(vm_name)
     print(f'Trying a graceful shutdown of {vm_name} with: {cmd}')
     if subprocess.run([
-            'ssh', '-p', str(port), 'localhost'] + cmd).returncode == 0:
+            'ssh', '-p', str(port), 'kovid@localhost'] + cmd).returncode == 0:
         if wait_for_monitor_to_be_removed(monitor_path, wait_for):
             return
         print(
