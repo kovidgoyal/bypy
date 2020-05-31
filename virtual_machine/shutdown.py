@@ -50,7 +50,7 @@ def shutdown_one_vm(vm_name, wait_for):
             f'Graceful shutdown failed after waiting {wait_for} seconds,'
             ' forcing close')
     else:
-        print('Graceful shutdown failed')
+        print('Graceful shutdown failed, forcing close')
     kill_using_monitor(monitor_path)
 
 
