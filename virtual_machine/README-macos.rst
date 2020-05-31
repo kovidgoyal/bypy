@@ -3,6 +3,8 @@ With a SystemDisk::
 
     qemu-img create -f qcow2 SystemDisk.qcow2 240G
 
+Create a user account named: kovid
+
 After the OS is installed:
 
 * Change the two network related lines in the launch script, which use an obsolete
@@ -16,6 +18,12 @@ After the OS is installed:
     -m 4G
 
 * turn on SSH, change shell to zsh, install vimrc and zshrc and ssh authorized_keys.
+
+* Edit /etc/ssh/sshd_config and set the following to allow only key based login::
+
+    PasswordAuthentication no
+    ChallengeResponseAuthentication no
+    UsePAM no
 
 * Copy over kitty terminfo using ssh kitten
 

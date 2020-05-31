@@ -94,3 +94,10 @@ It should now be possible to SSH into the VM using::
 
 Copy over .vimrc, .zshrc, .ssh/authorized_keys
 Copy over the kitty terminfo using the ssh kitten
+
+Edit /etc/sshd_config and set the following as we only want
+login via key::
+
+    PasswordAuthentication no
+    ChallengeResponseAuthentication no
+    UsePAM no
