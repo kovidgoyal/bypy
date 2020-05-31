@@ -12,10 +12,12 @@ from .utils import all_vm_names, base_dir, ssh_port_for_vm, vm_platform
 def vm_status(name):
     vm_dir = os.path.join(base_dir, name)
     monitor_path = f'{vm_dir}/monitor.socket'
+    sz = os.path.getsize(f'{vm_dir}/SystemDisk.qcow2')
     return {
         'running': os.path.exists(monitor_path),
         'ssh_port': ssh_port_for_vm(name),
         'platform': vm_platform(name),
+        'size_of_disk_file_gb': sz / (1024**3),
     }
 
 
