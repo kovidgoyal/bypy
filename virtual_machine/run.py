@@ -6,7 +6,7 @@ import argparse
 import os
 import shlex
 
-from .utils import all_vm_names, base_dir
+from .utils import all_vm_names, base_dir, ssh_port_for_vm
 
 
 def main():
@@ -24,13 +24,14 @@ def main():
 
     opts = parser.parse_args()
     vm_dir = os.path.join(base_dir, opts.vm)
+    ssh_port = ssh_port_for_vm(opts.vm)
     args = ['qemu-system-x86_64', '-enable-kvm']
     for line in open(os.path.join(vm_dir, 'machine-spec')):
         if line and not line.startswith('#'):
             args.extend(shlex.split(line))
     monitor_path = f'{vm_dir}/monitor.socket'
     if os.path.exists(monitor_path):
-        print(f'{opts.vm} is already running')
+        print(f'{opts.vm} is already running, SSH into it as port {ssh_port}')
         return
     args.extend(['-monitor', f'unix:{monitor_path},server,nowait'])
     args.extend(['-k', 'en-us'])
@@ -42,4 +43,6 @@ def main():
                 f'{opts.vm} started, you can connect to the console with:'
                 f' screen -r {opts.vm}')
     os.chdir(vm_dir)
+    print(
+        f'SSH into {opts.vm} using port: {ssh_port}')
     os.execlp(args[0], *args)
