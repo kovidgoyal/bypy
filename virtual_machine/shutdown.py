@@ -63,7 +63,7 @@ def main():
                         choices=avm + ('all',))
     parser.add_argument('--wait-for',
                         type=int,
-                        default=15,
+                        default=20,
                         help='seconds to wait before killing qemu')
     opts = parser.parse_args()
     vms = avm if opts.vm == 'all' else (opts.vm,)
