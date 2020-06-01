@@ -37,13 +37,16 @@ def read_build_server():
             'python', os.path.dirname(os.path.dirname(
                 os.path.abspath(__file__))), 'vm']
     with f:
-        server = cmd = None
+        server = cmd = user = None
         for line in f:
             line = line.strip()
             if line.startswith('#') or not line:
                 continue
             if server is None:
-                server = line
+                if '@' in line:
+                    user, server = line.split('@', 1)
+                else:
+                    server = line
                 continue
             if cmd is None:
                 cmd = shlex.split(line)
@@ -51,4 +54,4 @@ def read_build_server():
         if server is None or cmd is None:
             raise ValueError(
                 f'Failed to parse build server config file: {f.name}')
-        return server, cmd
+        return user, server, cmd

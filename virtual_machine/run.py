@@ -32,7 +32,7 @@ def main():
     monitor_path = f'{vm_dir}/monitor.socket'
     if os.path.exists(monitor_path):
         print(f'{opts.vm} is already running,'
-              f' SSH into it as: ssh -p {ssh_port} localhost')
+              f' SSH into it as: ssh -p {ssh_port} kovid@localhost')
         return
     args.extend(['-monitor', f'unix:{monitor_path},server,nowait'])
     args.extend(['-k', 'en-us'])
@@ -45,5 +45,5 @@ def main():
                 f' screen -r {opts.vm}')
     os.chdir(vm_dir)
     print(
-        f'SSH into {opts.vm} using port: ssh -p {ssh_port} localhost')
+        f'SSH into {opts.vm} using port: ssh -p {ssh_port} kovid@localhost')
     os.execlp(args[0], *args)

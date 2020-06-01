@@ -15,7 +15,11 @@ from .constants import base_dir
 from virtual_machine.utils import read_build_server
 
 ssh_masters = set()
-BUILD_SERVER, BUILD_SERVER_VM_CD = read_build_server()
+BUILD_SERVER_USER, BUILD_SERVER, BUILD_SERVER_VM_CD = read_build_server()
+VM_SERVER = f'kovid@{BUILD_SERVER}'
+BUILD_SERVER_WITH_USER = BUILD_SERVER
+if BUILD_SERVER_USER:
+    BUILD_SERVER_WITH_USER = f'{BUILD_SERVER_USER}@{BUILD_SERVER}'
 
 
 def end_ssh_master(address, socket, process):
@@ -29,7 +33,9 @@ def end_ssh_master(address, socket, process):
     ssh_masters.discard(address)
 
 
-def ssh_to(port=22, server=BUILD_SERVER):
+def ssh_to(port=22, server=BUILD_SERVER, user=BUILD_SERVER_USER):
+    if user:
+        server = f'{user}@{server}'
     socket = os.path.expanduser(
         f'~/.ssh/controlmasters/bypy-{server}-{port}')
     os.makedirs(os.path.dirname(socket), exist_ok=True)
@@ -61,7 +67,7 @@ def wait_for_ssh(name):
     print('Waiting for SSH server to start...', flush=True)
     m = vm_metadata(name)
     port = m['ssh_port']
-    cmd = ['ssh', '-p', str(port), BUILD_SERVER, 'date']
+    cmd = ['ssh', '-p', str(port), VM_SERVER, 'date']
     while True:
         cp = subprocess.run(cmd)
         if cp.returncode == 0:
@@ -75,7 +81,8 @@ def wait_for_ssh(name):
 def vm_cmd(name, *args, get_output=False):
     if len(args) == 1:
         args = shlex.split(args[0])
-    cmd = ssh_to() + [BUILD_SERVER] + list(BUILD_SERVER_VM_CD) + list(args)
+    cmd = ssh_to()
+    cmd += [BUILD_SERVER_WITH_USER] + list(BUILD_SERVER_VM_CD) + list(args)
     kw = {}
     if get_output:
         kw['stdout'] = subprocess.PIPE
@@ -95,7 +102,7 @@ def vm_metadata(name):
 def run_in_vm(name, *args, **kw):
     if len(args) == 1:
         args = shlex.split(args[0])
-    p = subprocess.Popen(ssh_to_vm(name) + ['-t', BUILD_SERVER] + list(args))
+    p = subprocess.Popen(ssh_to_vm(name) + ['-t', VM_SERVER] + list(args))
     if kw.get('is_async'):
         return p
     if p.wait() != 0:
@@ -120,13 +127,13 @@ class Rsync(object):
         self.name = name
 
     def from_vm(self, from_, to, excludes=frozenset()):
-        f = BUILD_SERVER + ':' + from_
+        f = VM_SERVER + ':' + from_
         self(f, to, excludes)
 
     def to_vm(self, from_, to, excludes=frozenset()):
-        t = BUILD_SERVER + ':' + to
+        t = VM_SERVER + ':' + to
         subprocess.check_call(
-            ssh_to_vm(self.name) + [BUILD_SERVER, 'mkdir', '-p', to])
+            ssh_to_vm(self.name) + [VM_SERVER, 'mkdir', '-p', to])
         self(from_, t, excludes)
 
     def __call__(self, from_, to, excludes=frozenset()):
