@@ -33,6 +33,6 @@ After the OS is installed:
 the clover bootloader, look for config.plist and change DracoHD
 to LastBootedVolume. You can also decrease the timeout if you prefer.
 
-* Install an up-to-date rsync::
+* Install an up-to-date rsync (after installing Xcode)::
 
     curl -L https://github.com/kovidgoyal/bypy/raw/master/virtual_machine/install_rsync_on_macos.sh | /bin/zsh /dev/stdin
