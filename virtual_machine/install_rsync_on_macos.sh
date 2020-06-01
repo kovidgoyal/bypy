@@ -7,6 +7,7 @@
 
 # see https://github.com/Homebrew/homebrew-core/blob/master/Formula/rsync.rb::
 set -e
+set -x
 set -o pipefail
 VERSION=3.1.3
 cd
