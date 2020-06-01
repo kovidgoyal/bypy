@@ -11,14 +11,14 @@ set -o pipefail
 VERSION=3.1.3
 cd
 mkdir build-rsync && cd build-rsync
-curl -O https://download.samba.org/pub/rsync/src/rsync-$VERSION.tar.gz
-curl -O https://download.samba.org/pub/rsync/src/rsync-patches-$VERSION.tar.gz
+curl -L -O https://download.samba.org/pub/rsync/src/rsync-$VERSION.tar.gz
+curl -L -O https://download.samba.org/pub/rsync/src/rsync-patches-$VERSION.tar.gz
 tar xvf rsync-$VERSION.tar.gz
 tar xvf rsync-pat*
 cd rsync-$VERSION
 patch -p1 <patches/fileflags.diff
-patch -p1 <patches/hfs-compression.diff
-curl https://raw.githubusercontent.com/Homebrew/formula-patches/344bf3b/rsync/fix-crtimes-patch-$VERSION.diff |patch -p1
+patch -p1 <patches/crtimes.diff
+curl -L https://raw.githubusercontent.com/Homebrew/formula-patches/344bf3b/rsync/fix-crtimes-patch-$VERSION.diff |patch -p1
 ./prepare-source
 ./configure --disable-debug --enable-ipv6 --prefix=/usr
 make -j4
