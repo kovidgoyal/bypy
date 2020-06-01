@@ -11,7 +11,7 @@ set -x
 set -o pipefail
 VERSION=3.1.3
 cd
-mkdir build-rsync && cd build-rsync
+rm -rf build-rsync && mkdir build-rsync && cd build-rsync
 curl -L -O https://download.samba.org/pub/rsync/src/rsync-$VERSION.tar.gz
 curl -L -O https://download.samba.org/pub/rsync/src/rsync-patches-$VERSION.tar.gz
 tar xvf rsync-$VERSION.tar.gz
