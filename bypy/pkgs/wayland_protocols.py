@@ -13,4 +13,4 @@ def main(args):
     pcdir = os.path.join(build_dir(), 'lib/pkgconfig')
     os.makedirs(pcdir)
     pc = os.path.join(build_dir(), 'share/pkgconfig/wayland-protocols.pc')
-    os.rename(pc, pc.replace('/share/', '/lib'))
+    os.rename(pc, pc.replace('/share/', '/lib/'))
