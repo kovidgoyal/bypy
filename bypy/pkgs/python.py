@@ -125,9 +125,10 @@ def unix_python(args):
     }
     replace_in_file('setup.py', re.compile(b'def detect_tkinter.+:'),
                     lambda m: m.group() + b'\n' + b' ' * 8 + b'return 0')
-    conf = (f'--enable-ipv6 --with-system-expat --with-pymalloc'
+    conf = ('--enable-ipv6 --with-system-expat --with-pymalloc'
             ' --with-lto --enable-optimizations'
             ' --without-ensurepip --with-c-locale-coercion')
+    install_args = ()
     if islinux:
         conf += f' --with-system-ffi --enable-shared --prefix={build_dir()}'
         # Needed as the system openssl is too old, causing the _ssl module
@@ -145,9 +146,16 @@ def unix_python(args):
             "PYTHON_FOR_BUILD='./$(BUILDPYTHON) -E'",
             f"PYTHON_FOR_BUILD='PYTHONEXECUTABLE={cwd}/$(BUILDPYTHON) PYTHONPATH={cwd}/Lib ./$(BUILDPYTHON)'"  # noqa
         )
+        # dont install IDLE and PythonLauncher
+        replace_in_file(
+            'Mac/Makefile.in',
+            'installapps: install_Python install_PythonLauncher install_IDLE',
+            'installapps: install_Python'
+        )
+        install_args = (f'PYTHONAPPSDIR={build_dir()}',)
 
     with ModifiedEnv(**env):
-        simple_build(conf, relocate_pkgconfig=False)
+        simple_build(conf, relocate_pkgconfig=False, install_args=install_args)
 
     bindir = os.path.join(build_dir(), 'bin')
 
