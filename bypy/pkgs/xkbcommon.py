@@ -9,6 +9,6 @@ def main(args):
     meson_build(**{
         'enable-wayland': 'false',
         'xkb-config-root': '/usr/share/X11/xkb',
-        'x=locale-root': '/usr/share/X11/locale',
+        'x-locale-root': '/usr/share/X11/locale',
         'enable-docs': 'false',
     })
