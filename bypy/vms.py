@@ -51,7 +51,7 @@ def ssh_to(port=22, server=BUILD_SERVER, user=BUILD_SERVER_USER):
 def ssh_to_vm(name):
     m = vm_metadata(name)
     port = m['ssh_port']
-    return ssh_to(port=int(port))
+    return ssh_to(port=int(port), server=VM_SERVER, user=None)
 
 
 def get_rsync_conf():
