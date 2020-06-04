@@ -151,12 +151,13 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
         'apt-get update',
         'apt-get install -y build-essential cmake software-properties-common'
         ' nasm chrpath zsh git uuid-dev libmount-dev'
-        ' dh-autoreconf ninja-build',
+        ' dh-autoreconf',
         'add-apt-repository ppa:deadsnakes/ppa -y',
         'apt-get update',
         'apt-get install -y python3.7',
         'curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py',
         'python3.7 get-pip.py',
+        'python3.7 -m pip install ninja',
         'python3.7 -m pip install meson',
         deps_cmd,
         # Cleanup
