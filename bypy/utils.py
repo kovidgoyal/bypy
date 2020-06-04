@@ -691,7 +691,10 @@ def cmake_build(
 
 
 def meson_build(extra_cmdline='', library_path=None, **options):
-    cmd = ['meson', '--buildtype=release', f'--prefix={build_dir()}']
+    cmd = [
+        'meson', '--buildtype=release', f'--prefix={build_dir()}',
+        f'--libdir={build_dir()}/lib'
+    ]
     if extra_cmdline:
         cmd += shlex.split(extra_cmdline)
     cmd += [f'-D{k}={v}' for k, v in options.items()]
