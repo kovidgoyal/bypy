@@ -33,7 +33,9 @@ def end_ssh_master(address, socket, process):
     ssh_masters.discard(address)
 
 
-def ssh_to(port=22, server=BUILD_SERVER, user=BUILD_SERVER_USER):
+def ssh_to(
+    port=22, server=BUILD_SERVER, user=BUILD_SERVER_USER
+):
     if user:
         server = f'{user}@{server}'
     socket = os.path.expanduser(
@@ -41,11 +43,13 @@ def ssh_to(port=22, server=BUILD_SERVER, user=BUILD_SERVER_USER):
     os.makedirs(os.path.dirname(socket), exist_ok=True)
     port = str(port)
     address = server, port
+    ssh = ['ssh', '-p', port, '-S', socket]
     if address not in ssh_masters:
         ssh_masters.add(address)
-        atexit.register(end_ssh_master, address, socket, subprocess.Popen([
-            'ssh', '-M', '-S', socket, '-N', '-p', port, server]))
-    return ['ssh', '-S', socket, '-p', port]
+        atexit.register(
+            end_ssh_master, address, socket,
+            subprocess.Popen(ssh + ['-M', '-N', server]))
+    return ssh
 
 
 def ssh_to_vm(name):
