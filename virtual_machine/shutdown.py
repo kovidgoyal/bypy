@@ -42,15 +42,22 @@ def shutdown_one_vm(vm_name, wait_for):
     port = ssh_port_for_vm(vm_name)
     cmd = shutdown_command(vm_name)
     print(f'Trying a graceful shutdown of {vm_name} with: {cmd}')
-    if subprocess.run([
-            'ssh', '-p', str(port), 'kovid@localhost'] + cmd).returncode == 0:
+    p = subprocess.run([
+        'ssh',
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', 'UserKnownHostsFile=/dev/null',
+        '-o', 'CheckHostIP=no',
+        '-p', str(port), 'kovid@localhost'
+    ] + cmd)
+    if p.returncode == 0:
         if wait_for_monitor_to_be_removed(monitor_path, wait_for):
             return
         print(
             f'Graceful shutdown failed after waiting {wait_for} seconds,'
             ' forcing close')
     else:
-        print('Graceful shutdown failed, forcing close')
+        print('Graceful shutdown failed with exit code:'
+              f' {p.returncode}, forcing close')
     kill_using_monitor(monitor_path)
 
 
