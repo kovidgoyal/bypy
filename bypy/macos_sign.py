@@ -90,9 +90,9 @@ def codesign(items):
     ] + list(items))
 
 
-def create_entitlements_file(entitlements):
+def create_entitlements_file(entitlements=None):
     with open(path_to_entitlements, 'wb') as f:
-        f.write(plistlib.dumps(entitlements))
+        f.write(plistlib.dumps(entitlements or {}))
 
 
 def notarize_app(app_path):
