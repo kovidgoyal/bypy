@@ -90,7 +90,7 @@ def codesign(items):
     ] + list(items))
 
 
-def verify_signatue(appdir):
+def verify_signature(appdir):
     run('codesign', '-vvv', '--deep', '--strict', appdir)
     run('spctl', '--verbose=4', '--assess', '--type', 'execute', appdir)
 
