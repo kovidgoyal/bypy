@@ -4,8 +4,9 @@
 
 import argparse
 import os
-import subprocess
 import socket
+import subprocess
+import sys
 from time import monotonic, sleep
 
 from .utils import all_vm_names, base_dir, ssh_port_for_vm, vm_platform
@@ -41,7 +42,7 @@ def shutdown_one_vm(vm_name, wait_for):
         return
     port = ssh_port_for_vm(vm_name)
     cmd = shutdown_command(vm_name)
-    print(f'Trying a graceful shutdown of {vm_name} with: {cmd}')
+    print(f'Trying a graceful shutdown of {vm_name} with: {cmd}', flush=True)
     p = subprocess.run([
         'ssh',
         '-o', 'StrictHostKeyChecking=no',
@@ -54,10 +55,10 @@ def shutdown_one_vm(vm_name, wait_for):
             return
         print(
             f'Graceful shutdown failed after waiting {wait_for} seconds,'
-            ' forcing close')
+            ' forcing close', flush=True, file=sys.stderr)
     else:
         print('Graceful shutdown failed with exit code:'
-              f' {p.returncode}, forcing close')
+              f' {p.returncode}, forcing close', flush=True, file=sys.stderr)
     kill_using_monitor(monitor_path)
 
 
