@@ -90,6 +90,11 @@ def codesign(items):
     ] + list(items))
 
 
+def verify_signatue(appdir):
+    run('codesign', '-vvv', '--deep', '--strict', appdir)
+    run('spctl', '--verbose=4', '--assess', '--type', 'execute', appdir)
+
+
 def create_entitlements_file(entitlements=None):
     with open(path_to_entitlements, 'wb') as f:
         f.write(plistlib.dumps(entitlements or {}))
