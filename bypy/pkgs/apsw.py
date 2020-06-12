@@ -12,7 +12,9 @@ if iswindows:
         replace_in_file('setup.py', '2019', '2020')
         run(
             PYTHON, 'setup.py', 'fetch', '--all',
-            '--missing-checksum-ok', 'build', 'install', '--root', build_dir()
+            '--missing-checksum-ok', 'build',
+            '--enable-all-extensions',
+            'install', '--root', build_dir()
         )
         python_install()
 
@@ -26,3 +28,11 @@ def install_name_change(old_name, is_dep):
     if bn.startswith('libsqlite'):
         return os.path.join(PREFIX, 'lib', bn)
     return old_name
+
+
+def post_install_check():
+    code = '''import apsw; \
+    c = apsw.Connection(":memory:"); \
+    c.cursor().execute( \
+    'CREATE VIRTUAL TABLE email USING fts5(title, body);')'''
+    run(PYTHON, '-c', code, library_path=True)
