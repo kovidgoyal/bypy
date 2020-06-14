@@ -22,9 +22,10 @@ def solution_build():
         # the build fails while building the data/tools, which we dont need
         pass
     suffix = '64' if is64bit else ''
-    dlls = install_binaries(f'bin{suffix}/icu*.dll', 'bin')
-    if len(dlls) < 6:
-        raise SystemExit('Failed to build ICU dlls')
+    dll_pat = f'bin{suffix}/icu*.dll'
+    dlls = install_binaries(dll_pat, 'bin')
+    if len(dlls) < 5:
+        raise SystemExit(f'Failed to build ICU dlls in {dll_pat}')
     os.remove(glob.glob(os.path.join(build_dir(), 'bin', 'icutest*.dll'))[0])
     install_binaries(f'lib{suffix}/*.lib')
     shutil.copytree('include', os.path.join(build_dir(), 'include'))
