@@ -6,6 +6,7 @@ import ctypes.wintypes
 import os
 import subprocess
 from functools import lru_cache
+from glob import glob
 
 VS_VERSION = '15.0'
 COMN_TOOLS_VERSION = '150'
@@ -55,14 +56,14 @@ def find_visual_studio(version=VS_VERSION):
 
 @lru_cache()
 def find_msbuild(version=VS_VERSION):
-    return get_output(
+    base_path = get_output(
         find_vswhere(),
         "-version", version,
-        "-requires",
-        "Microsoft.Component.MSBuild",
-        "-find",
-        r"MSBuild\**\Bin\MSBuild.exe"
+        "-requires", "Microsoft.Component.MSBuild",
+        "-property", 'installationPath'
     ).strip()
+    return glob(os.path.join(
+        base_path, 'MSBuild', '*', 'Bin', 'MSBuild.exe'))[0]
 
 
 def find_vcvarsall():
