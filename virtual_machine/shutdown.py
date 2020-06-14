@@ -19,10 +19,10 @@ def wait_for_monitor_to_be_removed(path, timeout):
     return not os.path.exists(path)
 
 
-def kill_using_monitor(monitor_path):
+def kill_using_monitor(monitor_path, command='quit'):
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(monitor_path)
-    sock.sendall(b'quit\n')
+    sock.sendall(f'{command}\n'.encode('ascii'))
     sock.recv(4096)
 
 
