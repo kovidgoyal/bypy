@@ -26,7 +26,6 @@ def solution_build():
     dlls = install_binaries(dll_pat, 'bin')
     if len(dlls) < 5:
         raise SystemExit(f'Failed to build ICU dlls in {dll_pat}')
-    os.remove(glob.glob(os.path.join(build_dir(), 'bin', 'icutest*.dll'))[0])
     install_binaries(f'lib{suffix}/*.lib')
     shutil.copytree('include', os.path.join(build_dir(), 'include'))
 
