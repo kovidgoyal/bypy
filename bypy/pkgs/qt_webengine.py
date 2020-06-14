@@ -25,6 +25,12 @@ def main(args):
                 os.path.join('src/3rdparty/chromium',
                              os.path.basename(header)))
         conf += ' -webp -webengine-icu'
+        # https://github.com/harfbuzz/harfbuzz/issues/1990
+        replace_in_file(
+            'src/3rdparty/chromium/third_party/harfbuzz-ng/src/src/hb-icu.cc',
+            '#define HB_ICU_STMT(S) do { S } while (0)',
+            '#define HB_ICU_STMT(S) do { S; } while (0)'
+        )
     if iswindows:
         # broken test for 64-bit ness needs to be disabled
         replace_in_file(
