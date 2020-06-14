@@ -47,6 +47,7 @@ def shutdown_one_vm(vm_name, wait_for):
         'ssh',
         '-o', 'StrictHostKeyChecking=no',
         '-o', 'UserKnownHostsFile=/dev/null',
+        '-o', 'GlobalKnownHostsFile=/dev/null',
         '-o', 'CheckHostIP=no',
         '-p', str(port), 'kovid@localhost'
     ] + cmd)
