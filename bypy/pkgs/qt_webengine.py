@@ -6,7 +6,7 @@ import glob
 import os
 
 from bypy.constants import PREFIX, islinux, iswindows
-from bypy.utils import qt_build, replace_in_file
+from bypy.utils import qt_build, replace_in_file, apply_patch
 
 
 def main(args):
@@ -31,6 +31,8 @@ def main(args):
             '#define HB_ICU_STMT(S) do { S } while (0)',
             '#define HB_ICU_STMT(S) do { S; } while (0)'
         )
+        # https://chromium-review.googlesource.com/c/v8/v8/+/2136489
+        apply_patch('qt-webengine-icu67.patch')
     if iswindows:
         # broken test for 64-bit ness needs to be disabled
         replace_in_file(
