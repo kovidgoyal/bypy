@@ -152,7 +152,10 @@ def run_shell(library_path=False, cwd=None, env=None):
         paths = env['PATH'].split(os.pathsep)
         paths = paths + cygwin_paths
         env['PATH'] = os.pathsep.join(paths)
-    return subprocess.Popen([sh, '-i'], env=env, cwd=cwd).wait()
+    try:
+        return subprocess.Popen([sh, '-i'], env=env, cwd=cwd).wait()
+    except KeyboardInterrupt:
+        return 0
 
 
 class RunFailure(subprocess.CalledProcessError):
