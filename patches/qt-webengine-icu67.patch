@@ -1,7 +1,7 @@
-diff --git a/deps/v8/src/objects/js-number-format.cc b/deps/v8/src/objects/js-number-format.cc
+diff --git src/3rdparty/chromium/v8/src/objects/js-number-format.cc src/3rdparty/chromium/v8/src/objects/js-number-format.cc
 index 92d3e2fb82e..ced408aa173 100644
---- a/deps/v8/src/objects/js-number-format.cc
-+++ b/deps/v8/src/objects/js-number-format.cc
+--- src/3rdparty/chromium/v8/src/objects/js-number-format.cc
++++ src/3rdparty/chromium/v8/src/objects/js-number-format.cc
 @@ -1197,42 +1197,31 @@ MaybeHandle<JSNumberFormat> JSNumberFormat::New(Isolate* isolate,
  }
  
