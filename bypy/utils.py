@@ -298,6 +298,8 @@ def qt_build(qmake_args='', for_webengine=False, **env):
         '..', '--', *qmake_args,
         library_path=True, append_to_path=append_to_path, **env)
     if iswindows:
+        if for_webengine:
+            os.mkdir('process')
         run(f'"{NMAKE}"', append_to_path=append_to_path, **env)
         iroot = build_dir()[2:]
         run(f'"{NMAKE}" INSTALL_ROOT={iroot} install')
