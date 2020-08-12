@@ -192,6 +192,13 @@ def unix_python(args):
         replace_in_file(os.path.join(bindir, 'python3-config'),
                         re.compile(br'^prefix=".+?"', re.MULTILINE),
                         f'prefix="{PREFIX}"')
+        libdir = os.path.join(build_dir(), 'lib')
+        for x in (
+            'python*/config-*-linux-gnu/python-config.py',
+            'python*/_sysconfigdata__linux_*-linux-gnu.py',
+        ):
+            with open(glob.glob(f'{libdir}/{x}')[0], 'r+b') as f:
+                replace_bdir(f)
     os.symlink('python3', os.path.join(bindir, 'python'))
 
 
