@@ -27,11 +27,9 @@ def main(args):
         conf.append('--prefix=' + build_dir())
         perl_path = os.path.dirname(PERL)
         run(*conf, append_to_path=perl_path)
-        bat = r'ms\do_win64a.bat' if is64bit else r'ms\do_ms.bat'
-        run(bat, append_to_path=perl_path)
-        run(NMAKE, '-f', 'ms/ntdll.mak', append_to_path=perl_path)
-        run(NMAKE, '-f', 'ms/ntdll.mak', 'test', append_to_path=perl_path)
-        run(NMAKE, '-f', 'ms/ntdll.mak', 'install', append_to_path=perl_path)
+        run(NMAKE, append_to_path=perl_path)
+        run(NMAKE, 'test', append_to_path=perl_path)
+        run(NMAKE, 'install', append_to_path=perl_path)
     else:
         optflags = ['enable-ec_nistp_64_gcc_128'] if is64bit else []
         run('./config', '--prefix=/usr', '--openssldir=/etc/ssl', 'shared',
