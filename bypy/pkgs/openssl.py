@@ -2,19 +2,20 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
+import glob
 import os
 import shutil
 
-from bypy.constants import (CFLAGS, LDFLAGS, MAKEOPTS, NMAKE, build_dir,
-                            is64bit, ismacos, iswindows, PERL)
+from bypy.constants import (CFLAGS, LDFLAGS, MAKEOPTS, NMAKE, PERL, build_dir,
+                            is64bit, ismacos, iswindows)
 from bypy.utils import run
 
 
 def main(args):
     if ismacos:
         run(
-            'sh ./Configure darwin64-x86_64-cc shared'
-            f' enable-ec_nistp_64_gcc_128 no-ssl2 --openssldir={build_dir()}')
+            './Configure darwin64-x86_64-cc shared enable-ec_nistp_64_gcc_128 '
+            f'no-ssl2 --prefix={build_dir()} --openssldir={build_dir()}')
         run('make ' + MAKEOPTS)
         run('make install')
     elif iswindows:
@@ -37,9 +38,10 @@ def main(args):
             'zlib', '-Wa,--noexecstack', CFLAGS, LDFLAGS, *optflags)
         run('make ' + MAKEOPTS)
         run('make test', library_path=os.getcwd())
-        run('make', 'INSTALL_PREFIX={}'.format(build_dir()), 'install_sw')
+        run('make', 'DESTDIR={}'.format(build_dir()), 'install_sw')
         for x in 'bin lib include'.split():
             os.rename(
                 os.path.join(build_dir(), 'usr', x),
                 os.path.join(build_dir(), x))
-        shutil.rmtree(os.path.join(build_dir(), 'lib', 'engines'))
+        shutil.rmtree(glob.glob(os.path.join(
+            build_dir(), 'lib', 'engines*'))[0])
