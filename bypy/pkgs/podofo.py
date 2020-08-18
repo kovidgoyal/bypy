@@ -1,12 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import os
-
 from bypy.constants import PREFIX, iswindows, ismacos
 from bypy.utils import (cmake_build, copy_headers, install_binaries,
                         replace_in_file, walk, windows_cmake_build)
@@ -19,8 +15,9 @@ def main(args):
             'CMakeLists.txt', 'FIND_PACKAGE(LIBCRYPTO)',
             ('SET(LIBCRYPTO_FOUND "1")\n'
              'SET(LIBCRYPTO_INCLUDE_DIR "{0}/include")\n'
-             'SET(LIBCRYPTO_LIBRARIES "{0}/lib/libeay32.lib")').format(
-                            PREFIX.replace(os.sep, '/')))
+             'SET(LIBCRYPTO_LIBRARIES "{0}/lib/libcrypto.lib")\n'
+             'SET(PODOFO_HAVE_OPENSSL_1_1 "1")\n').format(
+                 PREFIX.replace(os.sep, '/')))
         windows_cmake_build(
             WANT_LIB64='FALSE', PODOFO_BUILD_SHARED='TRUE',
             PODOFO_BUILD_STATIC='False',
