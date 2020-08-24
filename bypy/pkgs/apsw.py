@@ -5,18 +5,20 @@
 import os
 
 from bypy.constants import PREFIX, PYTHON, build_dir, iswindows
-from bypy.utils import python_install, replace_in_file, run
+from bypy.utils import python_install, run
 
-if iswindows:
-    def main(args):
-        replace_in_file('setup.py', '2019', '2020')
+
+def main(args):
+    if iswindows:
         run(
             PYTHON, 'setup.py', 'fetch', '--all',
             '--missing-checksum-ok', 'build',
             '--enable-all-extensions',
             'install', '--root', build_dir()
         )
-        python_install()
+    else:
+        run(PYTHON, 'setup.py', 'build', 'install', '--root', build_dir())
+    python_install()
 
 
 def install_name_change_predicate(x):
