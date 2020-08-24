@@ -25,12 +25,6 @@ def main(args):
                 os.path.join('src/3rdparty/chromium',
                              os.path.basename(header)))
         conf += ' -webp -webengine-icu'
-        # https://github.com/harfbuzz/harfbuzz/issues/1990
-        replace_in_file(
-            'src/3rdparty/chromium/third_party/harfbuzz-ng/src/src/hb-icu.cc',
-            '#define HB_ICU_STMT(S) do { S } while (0)',
-            '#define HB_ICU_STMT(S) do { S; } while (0)'
-        )
         # https://chromium-review.googlesource.com/c/v8/v8/+/2136489
         apply_patch('qt-webengine-icu67.patch')
     if iswindows:
