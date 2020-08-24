@@ -4,13 +4,19 @@
 
 import os
 
-from bypy.constants import PREFIX, is64bit, iswindows
+from bypy.constants import PREFIX, is64bit, iswindows, ismacos
 from bypy.utils import cmake_build, replace_in_file, windows_cmake_build
 
 
 def main(args):
     if not iswindows:
-        return cmake_build(WITH_JPEG8='1', ENABLE_STATIC='0')
+        kw = {
+            'WITH_JPEG8': '1',
+            'ENABLE_STATIC': '0',
+        }
+        if ismacos:
+            kw['CMAKE_ASM_NASM_COMPILER'] = f'{PREFIX}/bin/nasm'
+        return cmake_build(**kw)
     cpu = 'x86_64' if is64bit else 'i386'
     replace_in_file(
         'CMakeLists.txt',
