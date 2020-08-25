@@ -58,10 +58,8 @@ def main(args):
     if islinux:
         # Gold linker is needed for Qt 5.13.0 because of
         # https://bugreports.qt.io/browse/QTBUG-76196
-        # Accessibility is disabled because it causes crashes
-        # https://bugs.launchpad.net/bugs/1892646
         conf += (' -bundled-xcb-xinput -xcb -glib -openssl -qt-pcre'
-                 ' -xkbcommon -libinput -linker gold -no-accessibility')
+                 ' -xkbcommon -libinput -linker gold')
     elif ismacos:
         conf += ' -no-pkg-config -framework -no-openssl -securetransport'
         ' -no-freetype -no-fontconfig '
