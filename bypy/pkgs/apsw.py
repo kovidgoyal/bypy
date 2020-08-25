@@ -17,7 +17,9 @@ def main(args):
             'install', '--root', build_dir()
         )
     else:
-        run(PYTHON, 'setup.py', 'build', 'install', '--root', build_dir())
+        run(
+            PYTHON, 'setup.py', 'build', 'install', '--root', build_dir(),
+            library_path=True)
     python_install()
 
 
