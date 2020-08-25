@@ -27,8 +27,14 @@ def main(args):
         conf += ' -webp -webengine-icu'
         # https://chromium-review.googlesource.com/c/v8/v8/+/2136489
         apply_patch('qt-webengine-icu67.patch')
+
     if iswindows:
         # broken test for 64-bit ness needs to be disabled
+        replace_in_file('configure.pri', 'ProgramW6432', 'PROGRAMFILES')
+        # Needed for Qt 5.15.0 https://github.com/microsoft/vcpkg/issues/12477
         replace_in_file(
-            'configure.pri', 'ProgramW6432', 'PROGRAMFILES')
+            'src/3rdparty/chromium/third_party/perfetto/src/trace_processor/'
+            'importers/systrace/systrace_trace_parser.cc',
+            '#include <inttypes.h>',
+            '#include <cctype>\n#include <inttypes.h>')
     qt_build(conf, for_webengine=True)
