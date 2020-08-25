@@ -18,8 +18,11 @@ def main(args):
             ' zlib=yes iconv=no'.format(
                 PREFIX.replace(os.sep, '/')).split()), cwd='win32')
         for f in walk('.'):
-            if os.path.basename(f).startswith('Makefile'):
+            bname = os.path.basename(f)
+            if bname.startswith('Makefile'):
                 replace_in_file(f, '/OPT:NOWIN98', '', missing_ok=True)
+            elif bname == 'xsltconfig.h':
+                replace_in_file(f, '@WITH_PROFILER@', '0', missing_ok=True)
         run(f'"{NMAKE}" /f Makefile.msvc', cwd='win32')
         install_tree('libxslt', 'include')
         install_tree('libexslt', 'include')
