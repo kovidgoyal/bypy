@@ -22,7 +22,7 @@ def main(args):
             if bname.startswith('Makefile'):
                 replace_in_file(f, '/OPT:NOWIN98', '', missing_ok=True)
             elif bname == 'xsltconfig.h':
-                replace_in_file(f, '@WITH_PROFILER@', '0', missing_ok=True)
+                replace_in_file(f, '@WITH_PROFILER@', '1')
         run(f'"{NMAKE}" /f Makefile.msvc', cwd='win32')
         install_tree('libxslt', 'include')
         install_tree('libexslt', 'include')
