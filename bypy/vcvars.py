@@ -8,8 +8,8 @@ import subprocess
 from functools import lru_cache
 from glob import glob
 
-VS_VERSION = '15.0'
-COMN_TOOLS_VERSION = '150'
+VS_VERSION = '16.0'
+COMN_TOOLS_VERSION = '160'
 
 CSIDL_PROGRAM_FILES = 38
 CSIDL_PROGRAM_FILESX86 = 42
