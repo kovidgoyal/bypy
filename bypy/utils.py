@@ -408,11 +408,25 @@ def python_prefix():
     return os.path.join(current_output_dir, relpath)
 
 
-def python_install():
+def python_install(add_scripts=False):
     ddir = 'python' if ismacos else 'private' if iswindows else 'lib'
     pp = python_prefix()
     to_remove = os.listdir(build_dir())[0]
     os.rename(os.path.join(pp, ddir), os.path.join(build_dir(), ddir))
+    if add_scripts:
+        if ismacos:
+            major, minor = python_major_minor_version()
+            os.rename(
+                os.path.join(
+                    build_dir(), ddir,
+                    f'Python.framework/Versions/{major}.{minor}/bin'),
+                os.path.join(build_dir(), 'bin'))
+        elif iswindows:
+            os.rename(os.path.join(build_dir(), ddir, 'python', 'Scripts'),
+                      os.path.join(build_dir(), 'bin'))
+        else:
+            ddir = 'bin'
+            os.rename(os.path.join(pp, ddir), os.path.join(build_dir(), ddir))
     rmtree(os.path.join(build_dir(), to_remove))
 
 

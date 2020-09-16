@@ -6,72 +6,48 @@ import os
 import re
 
 from bypy.constants import (MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir,
-                            ismacos, iswindows, python_major_minor_version)
-from bypy.utils import replace_in_file, run
+                            iswindows)
+from bypy.utils import python_install, replace_in_file, run, walk
 
 
-def run_configure(for_webengine=False):
-    pyver = python_major_minor_version()
-    b = build_dir()
-    if ismacos:
-        b = os.path.join(
-            b, 'python/Python.framework/Versions/{}.{}'.format(*pyver))
-    elif iswindows:
-        b = os.path.join(b, 'private', 'python')
-    lp = os.path.join(PREFIX, 'qt', 'lib')
-    sip, qmake = 'sip', 'qmake'
+def run_sip_install(for_webengine=False):
+    qmake = 'qmake' + ('.exe' if iswindows else '')
+    args = (
+        '--no-docstrings --no-make'
+        f' --qmake={PREFIX}/qt/bin/{qmake} --concatenate=5 --verbose'
+    ).split()
     if iswindows:
-        sip += '.exe'
-        qmake += '.exe'
-    sp = 'Lib' if iswindows else 'lib/python{}.{}'.format(*pyver)
-    sip_dir = f'{b}/share/sip/PyQt5'
-    dest_dir = f'{b}/{sp}/site-packages'
-    if for_webengine:
-        pyqt_options = []
-        os.makedirs(sip_dir)
-        dest_dir += '/PyQt5'
+        args.append('--link-full-dll')
+    if not for_webengine:
+        args.extend(
+            '--qt-shared --confirm-license --no-designer-plugin'
+            ' --no-qml-plugin'.split()
+        )
+    run(f'{PREFIX}/bin/sip-build', *args, library_path=True)
+    if iswindows:
+        # disable distinfo as installing it fails when using INSTALL_ROOT
+        replace_in_file('build/Makefile', 'install_distinfo ', ' ')
+        run(NMAKE, cwd='build')
+        run(NMAKE, 'install', cwd='build',
+            env={'INSTALL_ROOT': build_dir()[2:]})
     else:
-        pyqt_options = [
-            '--confirm-license',
-            '--assume-shared',
-            f'--bindir={b}/bin',
-            '--no-designer-plugin',
-            '--no-qml-plugin',
-        ]
-    cmd = [PYTHON, 'configure.py'] + pyqt_options + [
-        '--sip=%s/bin/%s' % (PREFIX, sip),
-        '--qmake=%s/qt/bin/%s' % (PREFIX, qmake),
-        f'--destdir={dest_dir}', '--verbose',
-        f'--sipdir={sip_dir}', '--no-stubs', '-c', '-j5',
-        '--no-docstrings',
-    ]
-    if iswindows:
-        cmd.append('--spec=win32-msvc')
-        cmd.append('--sip-incdir=%s/private/python/include' % PREFIX)
-        if for_webengine:
-            cmd.append(
-                f'--pyqt-sipdir={PREFIX}/private/python/share/sip/PyQt5')
-    run(*cmd, library_path=lp)
-    return dest_dir
-
-
-def run_build():
-    if iswindows:
-        run(f'"{NMAKE}"')
-        run(f'"{NMAKE}" install')
-    else:
-        lp = os.path.join(PREFIX, 'qt', 'lib')
-        run('make ' + MAKEOPTS, library_path=lp)
-        run('make install', library_path=True)
+        run('make ' + MAKEOPTS, cwd='build')
+        run(f'make INSTALL_ROOT="{build_dir()}" install',
+            cwd='build', library_path=True)
+    python_install()
 
 
 def main(args):
-    dest_dir = run_configure()
-    run_build()
+    run_sip_install()
     if iswindows:
-        replace_in_file(
-                f'{dest_dir}/PyQt5/__init__.py',
-                re.compile(r'^find_qt\(\)', re.M), '')
+        for x in walk(build_dir()):
+            parts = x.replace(os.sep, '/').split('/')
+            if parts[-2:] == ['PyQt5', '__init__.py']:
+                replace_in_file(x, re.compile(r'^find_qt\(\)', re.M), '')
+                break
+        else:
+            raise ValueError(
+                f'Failed to find PyQt5 __init__.py to patch in {build_dir()}')
 
 
 def post_install_check():

@@ -5,13 +5,12 @@
 import os
 
 from bypy.constants import PREFIX, PYTHON
-from bypy.pkgs.pyqt import run_build, run_configure
+from bypy.pkgs.pyqt import run_sip_install
 from bypy.utils import run
 
 
 def main(args):
-    run_configure(for_webengine=True)
-    run_build()
+    run_sip_install(for_webengine=True)
 
 
 def post_install_check():
