@@ -263,6 +263,45 @@ mode_for_path(PyObject *self, PyObject *args) {
     return PyLong_FromLong(statbuf.st_mode);
 }
 
+static PyObject*
+print(PyObject *self, PyObject *args) {
+    (void)self;
+    for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(args); i++) {
+        PyObject *s = PyObject_Str(PyTuple_GET_ITEM(args, i));
+        if (s != NULL) {
+            printf("%s", PyUnicode_AsUTF8(s));
+            Py_DECREF(s);
+            if (i != PyTuple_GET_SIZE(args) - 1) printf(" ");
+        }
+    }
+    printf("\n");
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+abspath(PyObject *self, PyObject *args) {
+    (void)self;
+#ifdef _WIN32
+    PyObject *pypath;
+    if (!PyArg_ParseTuple(args, "U", &pypath)) return NULL;
+    const wchar_t *path = PyUnicode_AsWideCharString(pypath);
+    if (!path) return PyErr_NoMemory();
+    DWORD sz = GetFullPathNameW(path, 0, NULL, NULL);
+    wchar_t *resolved_path = PyMem_Calloc(sizeof(wchar_t), 2 * sz + 1);
+    if (!resolved_path) { PyMem_Free(path); return PyErr_NoMemory(); }
+    GetFullPathNameW(path, 2*sz, resolved_path, NULL);
+    PyMem_Free(path);
+    PyObject *ans = PyUnicode_FromWideChar(resolved_path, -1);
+    PyMem_Free(resolved_path);
+    return ans;
+#else
+    const char *path;
+    char resolved_path[PATH_MAX+1] = {0};
+    if (!PyArg_ParseTuple(args, "s", &path)) return NULL;
+    if (realpath(path, resolved_path)) return PyUnicode_FromString(resolved_path);
+    return PyTuple_GET_ITEM(args, 0);
+#endif
+}
 
 static PyMethodDef methods[] = {
     {"getenv", (PyCFunction)getenv_wrapper, METH_VARARGS,
@@ -285,6 +324,12 @@ static PyMethodDef methods[] = {
     },
     {"offsets_for_index", (PyCFunction)offsets_for_index, METH_VARARGS,
      "offsets_for_index(key) -> (offset, size)."
+    },
+    {"print", (PyCFunction)print, METH_VARARGS,
+     "print(*args) -> print args to stdout useful as sys.stdout may not yet be ready"
+    },
+    {"abspath", (PyCFunction)abspath, METH_VARARGS,
+     "abspath(path) -> return the absolute path for path"
     },
     {NULL}  /* Sentinel */
 };

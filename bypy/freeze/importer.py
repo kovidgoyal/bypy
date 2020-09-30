@@ -8,15 +8,16 @@ import sys
 import _imp
 from _frozen_importlib import (ModuleSpec, _call_with_frames_removed,
                                _verbose_message)
-from bypy_frozen_importer import (get_data_at, getenv, index_for_name,
+from bypy_frozen_importer import (abspath, get_data_at, getenv, index_for_name,
                                   initialize_data_access, mode_for_path,
-                                  offsets_for_index, path_sep)
+                                  offsets_for_index, path_sep, print)
 
 DEVELOP_MODE_ENV_VAR = __DEVELOP_MODE_ENV_VAR__  # noqa
 EXTENSIONS_MAP = __EXTENSIONS_MAP__  # noqa
 EXTENSION_SUFFIXES = __EXTENSION_SUFFIXES__  # noqa
 py_ext = '.pyc'
 path_separators = '\\/' if path_sep == '\\' else '/'
+print
 
 
 def _path_is_mode_type(path, mode):
@@ -191,7 +192,7 @@ class BypyFrozenImporter:
         self.develop_mode_path = None
         dv = getenv(DEVELOP_MODE_ENV_VAR) if DEVELOP_MODE_ENV_VAR else None
         if dv and _path_isdir(dv):
-            self.develop_mode_path = dv
+            self.develop_mode_path = abspath(dv)
 
     def __repr__(self):
         return f'{self.__class__.__name__} with data in {self.libdir}'
@@ -231,12 +232,11 @@ class BypyFrozenImporter:
                 fullname, FrozenByteCodeLoader(
                     fullname, offset, size, name, is_package,
                     self.filesystem_tree, filename
-                ), origin=filename,
-                is_package=is_package
+                ), origin=filename, is_package=is_package
             )
 
     def find_spec_in_develop_mode(self, fullname, path, target=None):
-        base = path_sep.join(fullname.split('.'))
+        base = _path_join(self.develop_mode_path, *fullname.split('.'))
         package_path = _path_join(base, '__init__.py')
         is_package = _path_isfile(package_path)
         full_path = package_path if is_package else (base + '.py')
@@ -244,7 +244,7 @@ class BypyFrozenImporter:
             from _frozen_importlib_external import SourceFileLoader
             return ModuleSpec(
                 fullname, SourceFileLoader(fullname, full_path),
-                is_package=is_package)
+                is_package=is_package, origin=full_path)
 
 
 sys.meta_path.insert(0, BypyFrozenImporter())
