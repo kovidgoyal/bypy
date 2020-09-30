@@ -150,11 +150,35 @@ class FrozenByteCodeLoader:
         module.__file__ = self.filename
         exec(code, module.__dict__)
 
-    def contents(self):
+    @property
+    def node_for_self(self):
         p = self.filesystem_tree
         for part in self.resource_prefix:
             p = p[part]
-        return tuple(p)
+        return p
+
+    def contents(self):
+        return tuple(self.node_for_self)
+
+    def is_resource(self, name):
+        children = self.node_for_self.get(name)
+        if children is None or children:
+            return False
+        return True
+
+    def resource_path(self, name):
+        raise FileNotFoundError(
+            f'{name} is not available as a filesystem path in frozen builds')
+
+    def open_resource(self, name):
+        q = '/'.join(self.resource_prefix) + '/' + name
+        idx = index_for_name(q)
+        if idx < 0:
+            raise FileNotFoundError(
+                f'{name} is not present in {self.name}')
+        import io
+        offset, size = offsets_for_index(idx)
+        return io.BytesIO(get_data_at(offset, size))
 
 
 class BypyFrozenImporter:
