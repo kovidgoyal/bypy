@@ -65,12 +65,25 @@ show_error_message(PyObject *self, PyObject *args) {
     return PyBool_FromLong(1);
 }
 
+#ifdef _WIN32
+static HANDLE datastore_file_handle = INVALID_HANDLE_VALUE;
+static HANDLE datastore_mmap_handle = INVALID_HANDLE_VALUE;
+#else
 static int datastore_fd = -1;
 static void *datastore_ptr = MAP_FAILED;
 static size_t datastore_len = 0;
+#endif
 
 static inline void
 free_frozen_data(void) {
+#ifdef _WIN32
+    if (datastore_mmap_handle != INVALID_HANDLE_VALUE) {
+        CloseHandle(datastore_mmap_handle); datastore_mmap_handle = INVALID_HANDLE_VALUE;
+    }
+    if (datastore_file_handle != INVALID_HANDLE_VALUE) {
+        CloseHandle(datastore_file_handle); datastore_file_handle = INVALID_HANDLE_VALUE;
+    }
+#else
     if (datastore_ptr != MAP_FAILED) {
         munmap(datastore_ptr, datastore_len);
         datastore_ptr = MAP_FAILED;
@@ -80,6 +93,7 @@ free_frozen_data(void) {
         while (close(datastore_fd) != 0 && errno == EINTR);
         datastore_fd = -1;
     }
+#endif
 }
 
 static PyObject*
@@ -87,6 +101,15 @@ initialize_data_access(PyObject *self, PyObject *path) {
     (void)self;
     if (!PyUnicode_Check(path)) { PyErr_SetString(PyExc_TypeError, "path must be a string"); return NULL; }
     if (PyUnicode_READY(path) != 0) return NULL;
+#ifdef _WIN32
+    const wchar_t* wpath = PyUnicode_AsWideCharString(path);
+    if (!wpath) return NULL;
+    datastore_file_handle = CreateFileW(wpath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY | FILE_FLAG_RANDOM_ACCESS, NULL);
+    PyMem_Free(wpath);
+    if (datastore_file_handle == INVALID_HANDLE_VALUE) return PyErr_SetExcFromWindowsErrWithFilenameObject(PyExc_OSError, 0, path);
+    datastore_mmap_handle = CreateFileMappingW(datastore_file_handle, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (datastore_mmap_handle == INVALID_HANDLE_VALUE) return PyErr_SetExcFromWindowsErrWithFilenameObject(PyExc_OSError, 0, path);
+#else
     do {
         datastore_fd = open(PyUnicode_AsUTF8(path), O_RDONLY | O_CLOEXEC);
         if (datastore_fd == -1 && errno != EINTR) return PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, path);
@@ -97,6 +120,7 @@ initialize_data_access(PyObject *self, PyObject *path) {
     lseek(datastore_fd, 0, SEEK_SET);
     datastore_ptr = mmap(0, datastore_len, PROT_READ, MAP_SHARED, datastore_fd, 0);
     if (datastore_ptr == MAP_FAILED) { PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, path); close(datastore_fd); datastore_fd = -1; return NULL; }
+#endif
     return PyBytes_FromStringAndSize(filesystem_tree, sizeof(filesystem_tree));
 }
 
