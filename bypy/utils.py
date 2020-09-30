@@ -178,12 +178,17 @@ def run(*args, **kw):
     if append_to_path:
         env['PATH'] = os.pathsep.join(
             env['PATH'].split(os.pathsep) + append_to_path.split(os.pathsep))
-    p = subprocess.Popen(cmd, env=env, cwd=kw.get('cwd'))
+    stdout = subprocess.PIPE if kw.get('get_output') else None
+    p = subprocess.Popen(cmd, env=env, cwd=kw.get('cwd'), stdout=stdout)
+    if kw.get('get_output'):
+        stdout = p.stdout.read()
     rc = p.wait()
     if kw.get('no_check'):
         return rc
     if rc != 0:
         raise RunFailure(rc, str(cmd), env, kw.get('cwd'))
+    if kw.get('get_output'):
+        return stdout
 
 
 def lcopy(src, dst, no_hardlinks=False):
