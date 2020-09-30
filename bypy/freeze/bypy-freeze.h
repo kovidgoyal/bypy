@@ -337,7 +337,6 @@ set_sys_bool(const char* key, const bool val) {
 
 static void
 bypy_pre_initialize_interpreter(bool use_os_log) {
-    PyStatus status;
 	if (PyImport_AppendInittab("bypy_frozen_importer", bypy_frozen_importer) == -1) {
 		fatal("Failed to add bypy_frozen_importer to the init table");
 	}
@@ -348,9 +347,8 @@ bypy_pre_initialize_interpreter(bool use_os_log) {
     preconfig.coerce_c_locale = 1;
     preconfig.isolated = 1;
 
-    status = Py_PreInitialize(&preconfig);
+    PyStatus status = Py_PreInitialize(&preconfig);
 	if (PyStatus_Exception(status)) Py_ExitStatusException(status);
-
 }
 
 static void
@@ -374,14 +372,14 @@ module_dict_for_exec(const char *name) {
 }
 
 static inline int
-bypy_setup_importer(PyObject *libdir) {
+bypy_setup_importer(const wchar_t *libdir) {
     if (libdir == NULL) { fprintf(stderr, "Attempt to setup bypy importer with NULL libdir\n"); return 0; }
     PyObject *importer_code = Py_CompileString(importer_script, "bypy-importer.py", Py_file_input);
 	if (importer_code == NULL) goto error;
 
     PyObject *d = module_dict_for_exec("bypy_importer");
     if (d == NULL) goto error;
-    if (PyDict_SetItemString(d, "libdir", libdir) != 0) goto error;
+    if (PyDict_SetItemString(d, "libdir", PyUnicode_FromWideChar(libdir, -1)) != 0) goto error;
 
 	PyObject *pret = PyEval_EvalCode(importer_code, d, d);
 	Py_CLEAR(importer_code);
@@ -390,4 +388,76 @@ bypy_setup_importer(PyObject *libdir) {
     return 1;
 error:
     print_error(); Py_CLEAR(importer_code); free_frozen_data(); return 0;
+}
+
+static void
+bypy_initialize_interpreter(
+        const wchar_t *program_name, const wchar_t *home, const wchar_t *run_module, const wchar_t *libdir,
+        int argc,
+#ifdef _WIN32
+        wchar_t* const *argv
+#else
+        char* const *argv
+#endif
+) {
+#define CHECK_STATUS if (PyStatus_Exception(status)) { PyConfig_Clear(&config); Py_ExitStatusException(status); }
+    PyStatus status;
+    PyConfig config;
+
+    PyConfig_InitIsolatedConfig(&config);
+    config.module_search_paths_set = 1;
+    config.optimization_level = 2;
+    config.write_bytecode = 0;
+    config.use_environment = 0;
+    config.user_site_directory = 0;
+    config.configure_c_stdio = 1;
+    config.isolated = 1;
+	config._init_main = 0;
+
+    status = PyConfig_SetString(&config, &config.program_name, program_name);
+    CHECK_STATUS;
+
+#ifndef _WIN32
+    status = PyConfig_SetString(&config, &config.home, home);
+    CHECK_STATUS;
+#endif
+    status = PyConfig_SetString(&config, &config.run_module, run_module);
+    CHECK_STATUS;
+
+#ifdef _WIN32
+    status = PyConfig_SetArgv(&config, argc, argv);
+#else
+    status = PyConfig_SetBytesArgv(&config, argc, argv);
+#endif
+    CHECK_STATUS;
+    status = Py_InitializeFromConfig(&config);
+    CHECK_STATUS;
+
+    if (!bypy_setup_importer(libdir)) {
+		PyConfig_Clear(&config);
+        exit(1);
+    }
+
+	status = _Py_InitializeMain();
+	CHECK_STATUS;
+    PyConfig_Clear(&config);
+
+#undef CHECK_STATUS
+}
+
+static int
+bypy_run_interpreter(void) {
+#ifdef _WIN32
+    code_page = GetConsoleOutputCP();
+    if (code_page != CP_UTF8) SetConsoleOutputCP(CP_UTF8);
+    setup_vt_terminal_mode();
+#endif
+
+    int ret = Py_RunMain();
+
+#ifdef _WIN32
+    cleanup_console_state();
+#endif
+	free_frozen_data();
+    return ret;
 }
