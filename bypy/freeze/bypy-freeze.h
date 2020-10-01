@@ -381,11 +381,11 @@ set_sys_bool(const char* key, const bool val) {
 
 
 static void
-bypy_pre_initialize_interpreter(bool use_os_log) {
+bypy_pre_initialize_interpreter(bool use_os_log_) {
 	if (PyImport_AppendInittab("bypy_frozen_importer", bypy_frozen_importer) == -1) {
 		fatal("Failed to add bypy_frozen_importer to the init table");
 	}
-	use_os_log = use_os_log;
+	use_os_log = use_os_log_;
     PyPreConfig preconfig;
     PyPreConfig_InitIsolatedConfig(&preconfig);
     preconfig.utf8_mode = 1;
