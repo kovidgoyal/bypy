@@ -113,6 +113,16 @@ log_error(const char *fmt, ...) {
 }
 #endif
 
+#ifdef _WIN32
+// on Windows the Python DLL is delay loaded so cant use Py_RETURN_NONE
+#define RETURN_NONE return Py_BuildValue("s", NULL);
+static PyObject *WindowsError = NULL;
+static PyObject *RuntimeError = NULL;
+#else
+#define RETURN_NONE Py_RETURN_NONE
+#define RuntimeError PyExc_RuntimeError
+#endif
+
 
 static PyObject*
 getenv_wrapper(PyObject *self, PyObject *args) {
@@ -120,16 +130,19 @@ getenv_wrapper(PyObject *self, PyObject *args) {
 #ifdef _WIN32
     PyObject *pkey;
     if (!PyArg_ParseTuple(args, "U", &pkey)) return NULL;
-    const wchar_t *wkey = PyUnicode_AsWideCharString(pkey, NULL);
-    const wchar_t *wval = _wgetenv(wkey);
+    wchar_t *wkey = PyUnicode_AsWideCharString(pkey, NULL), *wval;
+    size_t len;
+    errno_t err = _wdupenv_s(&wval, &len, wkey);
     PyMem_Free(wkey);
-    if (!wval) Py_RETURN_NONE;
-    return PyUnicode_FromWideChar(wval, -1);
+    if (err) RETURN_NONE;
+    PyObject *ans = PyUnicode_FromWideChar(wval, len);
+    free(wval);
+    return ans;
 #else
     const char *key;
     if (!PyArg_ParseTuple(args, "s", &key)) return NULL;
     const char *val = getenv(key);
-    if (!val) Py_RETURN_NONE;
+    if (!val) RETURN_NONE;
     return PyUnicode_FromString(val);
 #endif
 }
@@ -154,17 +167,22 @@ show_error_message(PyObject *self, PyObject *args) {
 }
 
 #ifdef _WIN32
+#define MAP_FAILED NULL
 static HANDLE datastore_file_handle = INVALID_HANDLE_VALUE;
 static HANDLE datastore_mmap_handle = INVALID_HANDLE_VALUE;
 #else
 static int datastore_fd = -1;
-static void *datastore_ptr = MAP_FAILED;
 static size_t datastore_len = 0;
 #endif
+static unsigned char *datastore_ptr = MAP_FAILED;
 
 static inline void
 free_frozen_data(void) {
 #ifdef _WIN32
+    if (datastore_ptr != MAP_FAILED) {
+        UnmapViewOfFile(datastore_ptr);
+        datastore_ptr = MAP_FAILED;
+    }
     if (datastore_mmap_handle != INVALID_HANDLE_VALUE) {
         CloseHandle(datastore_mmap_handle); datastore_mmap_handle = INVALID_HANDLE_VALUE;
     }
@@ -184,19 +202,92 @@ free_frozen_data(void) {
 #endif
 }
 
+#ifdef _WIN32
+
+static int GUI_APP = 0;
+static int
+_show_error(const wchar_t *preamble, const wchar_t *msg, const int code) {
+    static wchar_t buf[4096];
+	static char utf8_buf[4096] = {0};
+	int n = WideCharToMultiByte(CP_UTF8, 0, preamble, -1, utf8_buf, sizeof(utf8_buf) - 1, NULL, NULL);
+	if (n > 0) fprintf(stderr, "%s\r\n  ", utf8_buf);
+	n = WideCharToMultiByte(CP_UTF8, 0, msg, -1, utf8_buf, sizeof(utf8_buf) - 1, NULL, NULL);
+	if (n > 0) fprintf(stderr, "%s (Error Code: %d)\r\n ", utf8_buf, code);
+    fflush(stderr);
+
+    if (GUI_APP) {
+        _snwprintf_s(buf, arraysz(buf), _TRUNCATE, L"%ls\r\n  %ls (Error Code: %d)\r\n", preamble, msg, code);
+        MessageBeep(MB_ICONERROR);
+        MessageBox(NULL, buf, NULL, MB_OK|MB_ICONERROR);
+    }
+    return code;
+}
+
+int
+show_last_error_crt(wchar_t *preamble) {
+    wchar_t buf[1000];
+    int err = 0;
+
+    _get_errno(&err);
+    _wcserror_s(buf, 1000, err);
+    return _show_error(preamble, buf, err);
+}
+
+int
+show_last_error(wchar_t *preamble) {
+    wchar_t *msg = NULL;
+    DWORD dw = GetLastError();
+    int ret;
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPWSTR)&msg,
+        0,
+        NULL );
+
+    ret = _show_error(preamble, msg, (int)dw);
+    if (msg != NULL) LocalFree(msg);
+    return ret;
+}
+
+
+static void
+bypy_setup_python(const char* python_dll) {
+    if (FAILED(__HrLoadAllImportsForDll(python_dll)))
+        ExitProcess(_show_error(L"Failed to delay load the python DLL", L"", 1));
+    HMODULE pydll = GetModuleHandleA(python_dll);
+    if (pydll == NULL)
+        ExitProcess(_show_error(L"Failed to load the python DLL", L"", 1));
+    WindowsError = (PyObject*)GetProcAddress(pydll, "PyExc_WindowsError");
+    if (WindowsError == NULL)
+        ExitProcess(_show_error(L"Failed to load the PyExc_WindowsError symbol from the python DLL", L"", 1));
+    RuntimeError = (PyObject*)GetProcAddress(pydll, "PyExc_RuntimeError");
+    if (RuntimeError == NULL)
+        ExitProcess(_show_error(L"Failed to load the PyExc_RuntimeError symbol from the python DLL", L"", 1));
+}
+#endif
+
 static PyObject*
-initialize_data_access(PyObject *self, PyObject *path) {
+initialize_data_access(PyObject *self, PyObject *args) {
     (void)self;
-    if (!PyUnicode_Check(path)) { PyErr_SetString(PyExc_TypeError, "path must be a string"); return NULL; }
+    PyObject *path;
+    if (!PyArg_ParseTuple(args, "U", &path)) return NULL;
     if (PyUnicode_READY(path) != 0) return NULL;
 #ifdef _WIN32
-    const wchar_t* wpath = PyUnicode_AsWideCharString(path, NULL);
+    wchar_t* wpath = PyUnicode_AsWideCharString(path, NULL);
     if (!wpath) return NULL;
     datastore_file_handle = CreateFileW(wpath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY | FILE_FLAG_RANDOM_ACCESS, NULL);
     PyMem_Free(wpath);
-    if (datastore_file_handle == INVALID_HANDLE_VALUE) return PyErr_SetExcFromWindowsErrWithFilenameObject(PyExc_OSError, 0, path);
+    if (datastore_file_handle == INVALID_HANDLE_VALUE) return PyErr_SetExcFromWindowsErrWithFilenameObject(WindowsError, 0, path);
     datastore_mmap_handle = CreateFileMappingW(datastore_file_handle, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (datastore_mmap_handle == INVALID_HANDLE_VALUE) return PyErr_SetExcFromWindowsErrWithFilenameObject(PyExc_OSError, 0, path);
+    if (datastore_mmap_handle == INVALID_HANDLE_VALUE) return PyErr_SetExcFromWindowsErrWithFilenameObject(WindowsError, 0, path);
+    datastore_ptr = MapViewOfFile(datastore_mmap_handle, FILE_MAP_READ, 0, 0, 0);
+    if (datastore_ptr == MAP_FAILED) return PyErr_SetExcFromWindowsErrWithFilenameObject(WindowsError, 0, path);
 #else
     do {
         datastore_fd = open(PyUnicode_AsUTF8(path), O_RDONLY | O_CLOEXEC);
@@ -218,7 +309,7 @@ get_data_at(PyObject *self, PyObject *args) {
     (void)self;
     unsigned long long offset, count;
     if (!PyArg_ParseTuple(args, "KK", &offset, &count)) return NULL;
-    if (datastore_ptr == MAP_FAILED) { PyErr_SetString(PyExc_RuntimeError, "Trying to get data from frozen lib before initialization"); return NULL; }
+    if (datastore_ptr == MAP_FAILED) { PyErr_SetString(RuntimeError, "Trying to get data from frozen lib before initialization"); return NULL; }
     return PyMemoryView_FromMemory(datastore_ptr + offset, count, PyBUF_READ);
 }
 
@@ -249,11 +340,11 @@ mode_for_path(PyObject *self, PyObject *args) {
     struct _stat statbuf;
     PyObject *pypath;
     if (!PyArg_ParseTuple(args, "U", &pypath)) return NULL;
-    const wchar_t *path = PyUnicode_AsWideCharString(pypath, NULL);
+    wchar_t *path = PyUnicode_AsWideCharString(pypath, NULL);
     if (!path) return PyErr_NoMemory();
     int result = _wstat(path, &statbuf);
     PyMem_Free(path);
-    if (result != 0) return PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, pypath);
+    if (result != 0) return PyErr_SetFromErrnoWithFilenameObject(WindowsError, pypath);
 #else
     struct stat statbuf;
     const char *path;
@@ -275,7 +366,7 @@ print(PyObject *self, PyObject *args) {
         }
     }
     printf("\n");
-    Py_RETURN_NONE;
+    RETURN_NONE;
 }
 
 static PyObject*
@@ -284,7 +375,7 @@ abspath(PyObject *self, PyObject *args) {
 #ifdef _WIN32
     PyObject *pypath;
     if (!PyArg_ParseTuple(args, "U", &pypath)) return NULL;
-    const wchar_t *path = PyUnicode_AsWideCharString(pypath, NULL);
+    wchar_t *path = PyUnicode_AsWideCharString(pypath, NULL);
     if (!path) return PyErr_NoMemory();
     DWORD sz = GetFullPathNameW(path, 0, NULL, NULL);
     wchar_t *resolved_path = PyMem_Calloc(sizeof(wchar_t), 2 * sz + 1);
@@ -303,7 +394,7 @@ abspath(PyObject *self, PyObject *args) {
 #endif
 }
 
-static PyMethodDef methods[] = {
+static PyMethodDef bypy_methods[] = {
     {"getenv", (PyCFunction)getenv_wrapper, METH_VARARGS,
      "getenv(key) -> Return value of specified env var or None"
     },
@@ -313,7 +404,7 @@ static PyMethodDef methods[] = {
     {"show_error_message", (PyCFunction)show_error_message, METH_VARARGS,
      "show_error_message(title, msg) -> Show an error message."
     },
-    {"initialize_data_access", (PyCFunction)initialize_data_access, METH_O,
+    {"initialize_data_access", (PyCFunction)initialize_data_access, METH_VARARGS,
      "initialize_data_access(path) -> initialize access to the data store."
     },
     {"get_data_at", (PyCFunction)get_data_at, METH_VARARGS,
@@ -340,7 +431,7 @@ static struct PyModuleDef module = {
     /* m_name     */ "bypy_frozen_importer",
     /* m_doc      */ "Utilities to implement importing in a frozen application",
     /* m_size     */ -1,
-    /* m_methods  */ methods,
+    /* m_methods  */ bypy_methods,
     /* m_slots    */ 0,
     /* m_traverse */ 0,
     /* m_clear    */ 0,
