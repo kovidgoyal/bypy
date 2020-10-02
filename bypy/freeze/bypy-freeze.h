@@ -122,6 +122,7 @@ log_error(const char *fmt, ...) {
 #define RETURN_NONE return Py_BuildValue("s", NULL);
 static PyObject *WindowsError = NULL;
 static PyObject *RuntimeError = NULL;
+static PyObject *OSError = NULL;
 #else
 #define RETURN_NONE Py_RETURN_NONE
 #define RuntimeError PyExc_RuntimeError
@@ -274,15 +275,23 @@ static void
 bypy_setup_python(const char* python_dll) {
     if (FAILED(__HrLoadAllImportsForDll(python_dll)))
         ExitProcess(_show_error(L"Failed to delay load the python DLL", L"", 1));
-    HMODULE pydll = GetModuleHandleA(python_dll);
-    if (pydll == NULL)
-        ExitProcess(_show_error(L"Failed to load the python DLL", L"", 1));
-    WindowsError = (PyObject*)GetProcAddress(pydll, "PyExc_WindowsError");
-    if (WindowsError == NULL)
-        ExitProcess(_show_error(L"Failed to load the PyExc_WindowsError symbol from the python DLL", L"", 1));
-    RuntimeError = (PyObject*)GetProcAddress(pydll, "PyExc_RuntimeError");
-    if (RuntimeError == NULL)
-        ExitProcess(_show_error(L"Failed to load the PyExc_RuntimeError symbol from the python DLL", L"", 1));
+}
+
+static void
+setup_windows_exceptions(void) {
+    PyObject *d = PyDict_New(), *val, *tb;
+    PyRun_String("raise WindowsError('foo')", Py_single_input, d, d);
+    PyErr_Fetch(&WindowsError, &val, &tb);
+    Py_CLEAR(val); Py_CLEAR(tb);
+
+    PyRun_String("raise OSError('foo')", Py_single_input, d, d);
+    PyErr_Fetch(&OSError, &val, &tb);
+    Py_CLEAR(val); Py_CLEAR(tb);
+
+    PyRun_String("raise RuntimeError('foo')", Py_single_input, d, d);
+    PyErr_Fetch(&RuntimeError, &val, &tb);
+    Py_CLEAR(val); Py_CLEAR(tb);
+    Py_CLEAR(d);
 }
 #endif
 
@@ -358,7 +367,7 @@ mode_for_path(PyObject *self, PyObject *args) {
     if (!path) return NULL;
     int result = _wstat(path, &statbuf);
     PyMem_Free(path);
-    if (result != 0) return PyErr_SetFromErrnoWithFilenameObject(WindowsError, pypath);
+    if (result != 0) return PyErr_SetFromErrnoWithFilenameObject(OSError, pypath);
 #else
     struct stat statbuf;
     const char *path;
@@ -584,6 +593,9 @@ module_dict_for_exec(const char *name) {
 
 static inline int
 bypy_setup_importer(const wchar_t *libdir) {
+#ifdef _WIN32
+    setup_windows_exceptions();
+#endif
     if (libdir == NULL) { fprintf(stderr, "Attempt to setup bypy importer with NULL libdir\n"); return 0; }
     PyObject *importer_code = Py_CompileString(importer_script, "bypy-importer.py", Py_file_input);
 	if (importer_code == NULL) goto error;
@@ -668,6 +680,7 @@ bypy_run_interpreter(void) {
 
 #ifdef _WIN32
     cleanup_console_state();
+    Py_CLEAR(WindowsError); Py_CLEAR(OSError); Py_CLEAR(RuntimeError);
 #endif
 	free_frozen_data();
     return ret;
