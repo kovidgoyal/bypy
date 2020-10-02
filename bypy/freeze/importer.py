@@ -247,4 +247,9 @@ class BypyFrozenImporter:
                 is_package=is_package, origin=full_path)
 
 
-sys.meta_path.insert(0, BypyFrozenImporter())
+importer = BypyFrozenImporter()
+sys.meta_path.insert(0, importer)
+
+
+def running_in_develop_mode():
+    return importer.develop_mode_path is not None
