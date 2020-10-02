@@ -120,7 +120,7 @@ getenv_wrapper(PyObject *self, PyObject *args) {
 #ifdef _WIN32
     PyObject *pkey;
     if (!PyArg_ParseTuple(args, "U", &pkey)) return NULL;
-    const wchar_t *wkey = PyUnicode_AsWideCharString(pkey);
+    const wchar_t *wkey = PyUnicode_AsWideCharString(pkey, NULL);
     const wchar_t *wval = _wgetenv(wkey);
     PyMem_Free(wkey);
     if (!wval) Py_RETURN_NONE;
@@ -190,7 +190,7 @@ initialize_data_access(PyObject *self, PyObject *path) {
     if (!PyUnicode_Check(path)) { PyErr_SetString(PyExc_TypeError, "path must be a string"); return NULL; }
     if (PyUnicode_READY(path) != 0) return NULL;
 #ifdef _WIN32
-    const wchar_t* wpath = PyUnicode_AsWideCharString(path);
+    const wchar_t* wpath = PyUnicode_AsWideCharString(path, NULL);
     if (!wpath) return NULL;
     datastore_file_handle = CreateFileW(wpath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY | FILE_FLAG_RANDOM_ACCESS, NULL);
     PyMem_Free(wpath);
@@ -249,7 +249,7 @@ mode_for_path(PyObject *self, PyObject *args) {
     struct _stat statbuf;
     PyObject *pypath;
     if (!PyArg_ParseTuple(args, "U", &pypath)) return NULL;
-    const wchar_t *path = PyUnicode_AsWideCharString(pypath);
+    const wchar_t *path = PyUnicode_AsWideCharString(pypath, NULL);
     if (!path) return PyErr_NoMemory();
     int result = _wstat(path, &statbuf);
     PyMem_Free(path);
@@ -284,7 +284,7 @@ abspath(PyObject *self, PyObject *args) {
 #ifdef _WIN32
     PyObject *pypath;
     if (!PyArg_ParseTuple(args, "U", &pypath)) return NULL;
-    const wchar_t *path = PyUnicode_AsWideCharString(pypath);
+    const wchar_t *path = PyUnicode_AsWideCharString(pypath, NULL);
     if (!path) return PyErr_NoMemory();
     DWORD sz = GetFullPathNameW(path, 0, NULL, NULL);
     wchar_t *resolved_path = PyMem_Calloc(sizeof(wchar_t), 2 * sz + 1);
