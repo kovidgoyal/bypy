@@ -6,10 +6,11 @@ import glob
 import json
 import marshal
 import os
+import shutil
 from contextlib import suppress
 from functools import lru_cache
 
-from ..constants import PYTHON
+from ..constants import PYTHON, iswindows, python_major_minor_version
 from ..utils import run, walk
 from .perfect_hash import get_c_code
 
@@ -33,7 +34,7 @@ def remove_extension_suffix(name):
     return name
 
 
-def extract_extension_modules(src_dir, dest_dir):
+def extract_extension_modules(src_dir, dest_dir, move=True):
     ext_map = {}
 
     def extract_extension(path, root):
@@ -49,7 +50,10 @@ def extract_extension_modules(src_dir, dest_dir):
             raise ValueError(
                 f'Cannot extract {fullname} into {dest_dir}, it already exists'
             )
-        os.rename(path, dest)
+        if move:
+            os.rename(path, dest)
+        else:
+            shutil.copy2(path, dest)
         bname, ext = dest.rpartition('.')[::2]
         bpy = bname + '.py'
         if os.path.exists(bpy):
@@ -105,7 +109,8 @@ def collect_files_for_internment(base):
     ans = {}
     for path in walk(base):
         name = os.path.relpath(path, base).replace(os.sep, '/')
-        ans[name] = path
+        if '__pycache__/' not in name:
+            ans[name] = path
     return {name: ans[name] for name in sorted(
         ans, key=lambda x: x.encode('utf-8'))}
 
@@ -120,6 +125,75 @@ def as_tree(items):
     return marshal.dumps(root)
 
 
+def cleanup_site_packages(sp_dir):
+    bad_exts = {
+        'exe', 'dll', 'lib', 'bat', 'pyi', 'pth', 'sip',
+        'h', 'c', 'hpp', 'cpp', 'chm',
+    }
+    j = os.path.join
+    for dirpath, dirnames, filenames in os.walk(sp_dir):
+        allowed_dirs = {
+            x for x in dirnames if
+            x not in ('__pycache__',) and not x.endswith('.egg-info') and
+            not x.endswith('.dist-info')
+        }
+        for remove in set(dirnames) - allowed_dirs:
+            shutil.rmtree(os.path.join(dirpath, remove))
+        dirnames[:] = list(allowed_dirs)
+        for x in filenames:
+            ext = x.rpartition('.')[2].lower()
+            if ext in bad_exts:
+                os.remove(os.path.join(dirpath, x))
+
+    # remove some known useless dirs
+    for x in (
+        'calibre/manual', 'calibre/plugins', 'pythonwin', 'Crypto/SelfTest'
+    ):
+        deld = j(sp_dir, x)
+        if os.path.exists(deld):
+            shutil.rmtree(deld)
+    # calibre needs only py files in frozen builds
+    for f in walk(j(sp_dir, 'calibre')):
+        if not f.endswith('.py'):
+            os.remove(f)
+
+    if not iswindows:
+        return {}
+
+    # special handling for win32
+    os.rmdir(j(sp_dir, 'pywin32_system32'))
+    wl = os.path.join(sp_dir, 'win32', 'lib')
+    for x in os.listdir(wl):
+        os.rename(os.path.join(wl, x), os.path.join(sp_dir, x))
+    os.rmdir(wl)
+    wl = os.path.dirname(wl)
+    for x in os.listdir(wl):
+        f = os.path.join(wl, x)
+        if not os.path.isdir(f):
+            os.rename(f, os.path.join(sp_dir, x))
+    shutil.rmtree(wl)
+
+    # Fix win32com
+    comext = j(sp_dir, 'win32comext')
+    shutil.copytree(j(comext, 'shell'), j(sp_dir, 'win32com', 'shell'))
+    shutil.rmtree(comext)
+
+    # Fix pycryptodome
+    with open(j(sp_dir, 'Crypto', 'Util', '_file_system.py'), 'w') as fspy:
+        fspy.write('''
+import os, sys
+def pycryptodome_filename(dir_comps, filename):
+    base = os.path.join(sys.app_dir, 'app', 'bin')
+    path = os.path.join(base, '.'.join(dir_comps + [filename]))
+    return path
+''')
+    pyver = ''.join(map(str, python_major_minor_version()))
+    return {
+        'pywintypes': f'pywintypes{pyver}.dll',
+        'pythoncom': f'pythoncom{pyver}.dll'
+    }
+
+
 def freeze_python(base, dest_dir, include_dir):
     files = collect_files_for_internment(base)
     frozen_file = os.path.join(dest_dir, 'python-lib.bypy.frozen')
@@ -129,6 +203,8 @@ def freeze_python(base, dest_dir, include_dir):
             raw = open(path, 'rb').read()
             index_data[name] = frozen_file.tell(), len(raw)
             frozen_file.write(raw)
+    # from pprint import pprint
+    # pprint(index_data)
     if len(index_data) > 9999:
         raise ValueError(
             'Too many files in python-lib have to switch'

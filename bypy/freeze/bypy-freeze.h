@@ -135,7 +135,7 @@ getenv_wrapper(PyObject *self, PyObject *args) {
     errno_t err = _wdupenv_s(&wval, &len, wkey);
     PyMem_Free(wkey);
     if (err) RETURN_NONE;
-    PyObject *ans = PyUnicode_FromWideChar(wval, len);
+    PyObject *ans = PyUnicode_FromWideChar(wval, -1);
     free(wval);
     return ans;
 #else
@@ -341,7 +341,7 @@ mode_for_path(PyObject *self, PyObject *args) {
     PyObject *pypath;
     if (!PyArg_ParseTuple(args, "U", &pypath)) return NULL;
     wchar_t *path = PyUnicode_AsWideCharString(pypath, NULL);
-    if (!path) return PyErr_NoMemory();
+    if (!path) return NULL;
     int result = _wstat(path, &statbuf);
     PyMem_Free(path);
     if (result != 0) return PyErr_SetFromErrnoWithFilenameObject(WindowsError, pypath);
@@ -493,6 +493,7 @@ print_error() {
     // not fully setup
     PyErr_Print();
 }
+
 static inline PyObject*
 module_dict_for_exec(const char *name) {
     // cloned from python source code
