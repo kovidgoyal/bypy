@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <Python.h>
+#include <frameobject.h>
 #include <stdio.h>
 #include <string.h>
 #include <bypy-data-index.h>
@@ -31,6 +32,8 @@
 static bool use_os_log = false;
 
 #ifdef _WIN32
+#define sn_printf(a, b, ...) _snprintf_s(a, b, b-1, __VA_ARGS__)
+
 static void
 log_error(const char *fmt, ...) {
     va_list ar;
@@ -75,6 +78,7 @@ cleanup_console_state() {
     restore_vt_terminal_mode();
 }
 #else
+#define sn_printf snprintf
 static void
 log_error(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
@@ -131,11 +135,13 @@ getenv_wrapper(PyObject *self, PyObject *args) {
     PyObject *pkey;
     if (!PyArg_ParseTuple(args, "U", &pkey)) return NULL;
     wchar_t *wkey = PyUnicode_AsWideCharString(pkey, NULL), *wval;
+    if (!wkey) return NULL;
     size_t len;
     errno_t err = _wdupenv_s(&wval, &len, wkey);
     PyMem_Free(wkey);
-    if (err) RETURN_NONE;
-    PyObject *ans = PyUnicode_FromWideChar(wval, -1);
+    if (err) return PyErr_NoMemory();
+    if (!len) RETURN_NONE;
+    PyObject *ans = PyUnicode_FromWideChar(wval, len - 1);
     free(wval);
     return ans;
 #else
@@ -174,7 +180,7 @@ static HANDLE datastore_mmap_handle = INVALID_HANDLE_VALUE;
 static int datastore_fd = -1;
 static size_t datastore_len = 0;
 #endif
-static unsigned char *datastore_ptr = MAP_FAILED;
+static char *datastore_ptr = MAP_FAILED;
 
 static inline void
 free_frozen_data(void) {
@@ -205,6 +211,15 @@ free_frozen_data(void) {
 #ifdef _WIN32
 
 static int GUI_APP = 0;
+static void
+show_windows_error_box(const wchar_t *msg) {
+    if (GUI_APP) {
+        MessageBeep(MB_ICONERROR);
+        MessageBoxW(NULL, msg, L"Unhandled error", MB_OK|MB_ICONERROR);
+    }
+}
+
+
 static int
 _show_error(const wchar_t *preamble, const wchar_t *msg, const int code) {
     static wchar_t buf[4096];
@@ -217,8 +232,7 @@ _show_error(const wchar_t *preamble, const wchar_t *msg, const int code) {
 
     if (GUI_APP) {
         _snwprintf_s(buf, arraysz(buf), _TRUNCATE, L"%ls\r\n  %ls (Error Code: %d)\r\n", preamble, msg, code);
-        MessageBeep(MB_ICONERROR);
-        MessageBox(NULL, buf, NULL, MB_OK|MB_ICONERROR);
+        show_windows_error_box(buf);
     }
     return code;
 }
@@ -488,10 +502,70 @@ bypy_pre_initialize_interpreter(bool use_os_log_) {
 }
 
 static void
-print_error() {
-    // TODO: Replace this with something that works even though interpreter is
-    // not fully setup
-    PyErr_Print();
+show_error_during_setup() {
+    // The interpreter is not fully setup so we cant rely on PyErr_Print()
+    size_t sz = 0, pos = 0;
+    char *errbuf = NULL;
+#ifdef _WIN32
+    const char *nl = "\r\n";
+#else
+    const char *nl = "\n";
+#endif
+#define A(...) { \
+    if (sz - pos < 4096) { sz = sz ? 2 * sz : 8192; errbuf = realloc(errbuf, sz); if (!errbuf) return; } \
+    pos += sn_printf(errbuf + pos, sz - pos - 1, __VA_ARGS__); \
+}
+#define P(fmt, ...) { A(fmt, __VA_ARGS__); pos += sn_printf(errbuf + pos, sz - pos - 1, "%s", nl); }
+
+    P("%s", "There was an error initializing the bypy frozen importer:");
+    PyObject *exc_type, *exc_val, *exc_tb;
+    PyErr_Fetch(&exc_type, &exc_val, &exc_tb);
+    PyErr_NormalizeException(&exc_type, &exc_val, &exc_tb);
+
+    if (exc_type) {
+        PyObject * temps = PyObject_Str(exc_type);
+        if (temps) {
+            const char *tempcstr = PyUnicode_AsUTF8(temps);
+            if (tempcstr) A("%s: ", tempcstr);
+            Py_DECREF(temps);
+        }
+    }
+
+    if (exc_val) {
+        PyObject * temps = PyObject_Str(exc_val);
+        if (temps) {
+            const char *tempcstr = PyUnicode_AsUTF8(temps);
+            if (tempcstr) P("%s", tempcstr);
+            Py_DECREF(temps);
+        }
+    }
+    if (exc_tb) {
+        P("%s", "Traceback (most recent call last):");
+		PyTracebackObject *pactual_trace = (PyTracebackObject*)exc_tb;
+        while (pactual_trace != NULL) {
+			PyFrameObject *cur_frame = pactual_trace->tb_frame;
+			const char *fname = PyUnicode_AsUTF8(cur_frame->f_code->co_filename);
+            const char *func = PyUnicode_AsUTF8(cur_frame->f_code->co_name);
+			int line = PyFrame_GetLineNumber(cur_frame);
+            P("  File %s, line %d, in %s", fname ? fname : "<unknown file>", line, func ? func : "<unknown function>");
+			pactual_trace = pactual_trace->tb_next;
+		}
+    }
+    Py_CLEAR(exc_type); Py_CLEAR(exc_val); Py_CLEAR(exc_tb);
+    fprintf(stderr, "%s", errbuf);
+#ifdef _WIN32
+    if (GUI_APP) {
+        wchar_t *wbuf = calloc(pos+2, sizeof(wchar_t));
+        if (wbuf) {
+            MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, errbuf, (int)pos, wbuf, (int)pos+2);
+            show_windows_error_box(wbuf);
+            free(wbuf);
+        }
+    }
+#endif
+    free(errbuf);
+#undef A
+#undef P
 }
 
 static inline PyObject*
@@ -524,7 +598,7 @@ bypy_setup_importer(const wchar_t *libdir) {
 	Py_CLEAR(pret);
     return 1;
 error:
-    print_error(); Py_CLEAR(importer_code); free_frozen_data(); return 0;
+    show_error_during_setup(); Py_CLEAR(importer_code); free_frozen_data(); return 0;
 }
 
 static void
