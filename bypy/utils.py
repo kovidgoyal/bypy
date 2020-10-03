@@ -179,8 +179,15 @@ def run(*args, **kw):
         env['PATH'] = os.pathsep.join(
             env['PATH'].split(os.pathsep) + append_to_path.split(os.pathsep))
     stdout = subprocess.PIPE if kw.get('get_output') else None
-    p = subprocess.Popen(cmd, env=env, cwd=kw.get('cwd'), stdout=stdout)
-    if kw.get('get_output'):
+    stdin = subprocess.PIPE if kw.get('stdin') else None
+    p = subprocess.Popen(
+        cmd, env=env, cwd=kw.get('cwd'), stdout=stdout, stdin=stdin)
+    if kw.get('stdin'):
+        data = kw['stdin']
+        if isinstance(data, str):
+            data = data.encode('utf-8')
+        stdout = p.communicate(data)[0]
+    elif kw.get('get_output'):
         stdout = p.stdout.read()
     rc = p.wait()
     if kw.get('no_check'):
