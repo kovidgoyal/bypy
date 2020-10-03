@@ -57,7 +57,7 @@ def _path_split(path):
 
 
 def get_module_code(offset, size):
-    data = get_data_at(offset + 16, size - 16)
+    data = get_data_at(offset, size)
     return marshal.loads(data)
 
 

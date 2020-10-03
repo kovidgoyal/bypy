@@ -213,6 +213,10 @@ def freeze_python(
     with open(frozen_file, 'wb') as frozen_file:
         for name, path in files.items():
             raw = open(path, 'rb').read()
+            if name.lower().endswith('.pyc'):
+                # remove the 16 byte magic tag at the start of pyc files used
+                # for invalidation, since we dont do invalidation at all
+                raw = raw[16:]
             index_data[name] = frozen_file.tell(), len(raw)
             frozen_file.write(raw)
     # from pprint import pprint
