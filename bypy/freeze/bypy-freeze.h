@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <bypy-data-index.h>
-#include <bypy-importer.h>
 #define fatal(...) { log_error(__VA_ARGS__); exit(EXIT_FAILURE); }
 #define arraysz(x) (sizeof(x)/sizeof(x[0]))
 

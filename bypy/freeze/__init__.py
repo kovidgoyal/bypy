@@ -242,10 +242,9 @@ get_value_for_hash_index(int index, unsigned long *offset, unsigned long *size)
     }}
 }}
 static const char filesystem_tree[] = {{ {tree} }};
-'''
+''' + importer_src_to_header(develop_mode_env_var)
     with open(os.path.join(include_dir, 'bypy-data-index.h'), 'w') as f:
         f.write(header)
-    save_importer_src_to_header(include_dir, develop_mode_env_var)
 
 
 def path_to_freeze_dir():
@@ -270,13 +269,12 @@ def bin_to_c(src):
         yield ''.join(line)
 
 
-def save_importer_src_to_header(dir_path, develop_mode_env_var):
+def importer_src_to_header(develop_mode_env_var):
     src = open(os.path.join(path_to_freeze_dir(), 'importer.py')).read()
     src = src.replace(
         '__DEVELOP_MODE_ENV_VAR__', repr(develop_mode_env_var), 1)
     src = src.replace(
         '__EXTENSION_SUFFIXES__', repr(extension_suffixes()), 1)
     src = compile_code(src, "bypy-importer.py")
-    with open(os.path.join(dir_path, 'bypy-importer.h'), 'w') as f:
-        script = '\n'.join(bin_to_c(src))
-        print('static const char importer_script[] = {', script, '};', file=f)
+    script = '\n'.join(bin_to_c(src))
+    return 'static const char importer_script[] = {' + script + '};'
