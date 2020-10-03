@@ -596,8 +596,14 @@ bypy_setup_importer(const wchar_t *libdir) {
 #ifdef _WIN32
     setup_windows_exceptions();
 #endif
-    if (libdir == NULL) { fprintf(stderr, "Attempt to setup bypy importer with NULL libdir\n"); return 0; }
-    PyObject *importer_code = Py_CompileString(importer_script, "bypy-importer.py", Py_file_input);
+    int ok = 0;
+    if (libdir == NULL) { fprintf(stderr, "Attempt to setup bypy importer with NULL libdir\n"); return ok; }
+    PyObject *marshal = NULL, *loads = NULL, *importer_code = NULL;
+    marshal = PyImport_ImportModule("marshal");
+    if (marshal == NULL) goto error;
+    loads = PyObject_GetAttrString(marshal, "loads");
+    if (loads == NULL) goto error;
+    importer_code = PyObject_CallFunction(loads, "y#", importer_script, arraysz(importer_script));
 	if (importer_code == NULL) goto error;
 
     PyObject *d = module_dict_for_exec("bypy_importer");
@@ -605,12 +611,16 @@ bypy_setup_importer(const wchar_t *libdir) {
     if (PyDict_SetItemString(d, "libdir", PyUnicode_FromWideChar(libdir, -1)) != 0) goto error;
 
 	PyObject *pret = PyEval_EvalCode(importer_code, d, d);
-	Py_CLEAR(importer_code);
 	if (pret == NULL) goto error;
 	Py_CLEAR(pret);
-    return 1;
+    ok = 1;
 error:
-    show_error_during_setup(); Py_CLEAR(importer_code); free_frozen_data(); return 0;
+    if (!ok) {
+        show_error_during_setup();
+        free_frozen_data();
+    }
+    Py_CLEAR(marshal); Py_CLEAR(loads); Py_CLEAR(importer_code);
+    return ok;
 }
 
 static void

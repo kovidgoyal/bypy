@@ -27,6 +27,16 @@ def extension_suffixes():
         map(str.lower, json.loads(vals)), key=len, reverse=True)
 
 
+def compile_code(src, name):
+    return run(
+        PYTHON, '-c', f'''
+import sys, marshal;
+src = sys.stdin.buffer.read();
+code = compile(src, "{name}", 'exec', optimize=2, dont_inherit=True)
+sys.stdout.buffer.write(marshal.dumps(code))''',
+        get_output=True, stdin=src, library_path=True)
+
+
 def remove_extension_suffix(name):
     for q in extension_suffixes():
         if name.endswith(q):
@@ -266,6 +276,7 @@ def save_importer_src_to_header(dir_path, develop_mode_env_var):
         '__DEVELOP_MODE_ENV_VAR__', repr(develop_mode_env_var), 1)
     src = src.replace(
         '__EXTENSION_SUFFIXES__', repr(extension_suffixes()), 1)
+    src = compile_code(src, "bypy-importer.py")
     with open(os.path.join(dir_path, 'bypy-importer.h'), 'w') as f:
         script = '\n'.join(bin_to_c(src))
         print('static const char importer_script[] = {', script, '};', file=f)
