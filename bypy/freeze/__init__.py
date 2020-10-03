@@ -115,14 +115,14 @@ def collect_files_for_internment(base):
         ans, key=lambda x: x.encode('utf-8'))}
 
 
-def as_tree(items):
+def as_tree(items, extensions_map):
     root = {}
     for item in items:
         parts = item.split('/')
         parent = root
         for q in parts:
             parent = parent.setdefault(q, {})
-    return marshal.dumps(root)
+    return marshal.dumps((root, extensions_map))
 
 
 def cleanup_site_packages(sp_dir):
@@ -194,7 +194,9 @@ def pycryptodome_filename(dir_comps, filename):
     }
 
 
-def freeze_python(base, dest_dir, include_dir):
+def freeze_python(
+    base, dest_dir, include_dir, extensions_map, develop_mode_env_var=''
+):
     files = collect_files_for_internment(base)
     frozen_file = os.path.join(dest_dir, 'python-lib.bypy.frozen')
     index_data = {}
@@ -216,7 +218,7 @@ def freeze_python(base, dest_dir, include_dir):
         v = index_data[k]
         values.append(f'{{ {v[0]}u, {v[1]}u }}')
     vals = ','.join(values)
-    tree = '\n'.join(bin_to_c(as_tree(index_data.keys())))
+    tree = '\n'.join(bin_to_c(as_tree(index_data.keys(), extensions_map)))
     header = code_to_get_index + f'''
 static void
 get_value_for_hash_index(int index, unsigned long *offset, unsigned long *size)
@@ -233,6 +235,7 @@ static const char filesystem_tree[] = {{ {tree} }};
 '''
     with open(os.path.join(include_dir, 'bypy-data-index.h'), 'w') as f:
         f.write(header)
+    save_importer_src_to_header(include_dir, develop_mode_env_var)
 
 
 def path_to_freeze_dir():
@@ -257,14 +260,10 @@ def bin_to_c(src):
         yield ''.join(line)
 
 
-def save_importer_src_to_header(
-    dir_path, extensions_map, develop_mode_env_var=''
-):
+def save_importer_src_to_header(dir_path, develop_mode_env_var):
     src = open(os.path.join(path_to_freeze_dir(), 'importer.py')).read()
     src = src.replace(
         '__DEVELOP_MODE_ENV_VAR__', repr(develop_mode_env_var), 1)
-    src = src.replace(
-        '__EXTENSIONS_MAP__', repr(extensions_map), 1)
     src = src.replace(
         '__EXTENSION_SUFFIXES__', repr(extension_suffixes()), 1)
     with open(os.path.join(dir_path, 'bypy-importer.h'), 'w') as f:

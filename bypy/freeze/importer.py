@@ -13,7 +13,6 @@ from bypy_frozen_importer import (abspath, get_data_at, getenv, index_for_name,
                                   offsets_for_index, path_sep, print)
 
 DEVELOP_MODE_ENV_VAR = __DEVELOP_MODE_ENV_VAR__  # noqa
-EXTENSIONS_MAP = __EXTENSIONS_MAP__  # noqa
 EXTENSION_SUFFIXES = __EXTENSION_SUFFIXES__  # noqa
 py_ext = '.pyc'
 path_separators = '\\/' if path_sep == '\\' else '/'
@@ -187,7 +186,7 @@ class BypyFrozenImporter:
     def __init__(self):
         self.libdir = libdir  # noqa
         self.dataloc = _path_join(self.libdir, 'python-lib.bypy.frozen')
-        self.filesystem_tree = marshal.loads(
+        self.filesystem_tree, self.extensions_map = marshal.loads(
             initialize_data_access(self.dataloc))
         self.develop_mode_path = None
         dv = getenv(DEVELOP_MODE_ENV_VAR) if DEVELOP_MODE_ENV_VAR else None
@@ -204,7 +203,7 @@ class BypyFrozenImporter:
         return self.index_for_python_name(fullname + '.__init__') > -1
 
     def find_spec(self, fullname, path, target=None):
-        ext_dest_name = EXTENSIONS_MAP.get(fullname)
+        ext_dest_name = self.extensions_map.get(fullname)
         if ext_dest_name is not None:
             ext_path = _path_join(self.libdir, ext_dest_name)
             return ModuleSpec(
