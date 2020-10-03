@@ -240,10 +240,8 @@ class BypyFrozenImporter:
         is_package = _path_isfile(package_path)
         full_path = package_path if is_package else (base + '.py')
         if is_package or _path_isfile(full_path):
-            from _frozen_importlib_external import SourceFileLoader
-            return ModuleSpec(
-                fullname, SourceFileLoader(fullname, full_path),
-                is_package=is_package, origin=full_path)
+            from _frozen_importlib_external import spec_from_file_location
+            return spec_from_file_location(fullname, location=full_path)
 
 
 importer = BypyFrozenImporter()
