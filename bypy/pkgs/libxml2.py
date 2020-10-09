@@ -14,8 +14,9 @@ from bypy.utils import (install_binaries, install_tree, replace_in_file, run,
 def main(args):
     if iswindows:
         run(*('cscript.exe configure.js include={0}/include'
-            ' lib={0}/lib prefix={0} zlib=yes iconv=no'.format(
+            ' lib={0}/lib prefix={0} zlib=yes iconv=yes'.format(
                 PREFIX.replace(os.sep, '/')).split()), cwd='win32')
+        replace_in_file('win32/Makefile.msvc', 'iconv.lib', 'libiconv.lib')
         run(f'"{NMAKE}" /f Makefile.msvc', cwd='win32')
         install_tree('include/libxml', 'include/libxml2')
         for f in walk('.'):

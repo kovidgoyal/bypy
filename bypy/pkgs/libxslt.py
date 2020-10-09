@@ -15,12 +15,14 @@ def main(args):
         run(*(
             'cscript.exe configure.js include={0}/include'
             ' include={0}/include/libxml2 lib={0}/lib prefix={0}'
-            ' zlib=yes iconv=no'.format(
+            ' zlib=yes iconv=yes'.format(
                 PREFIX.replace(os.sep, '/')).split()), cwd='win32')
         for f in walk('.'):
             bname = os.path.basename(f)
             if bname.startswith('Makefile'):
                 replace_in_file(f, '/OPT:NOWIN98', '', missing_ok=True)
+                if bname == 'Makefile.msvc':
+                    replace_in_file(f, 'iconv.lib', 'libiconv.lib')
             elif bname == 'xsltconfig.h':
                 replace_in_file(f, '@WITH_PROFILER@', '1')
         run(f'"{NMAKE}" /f Makefile.msvc', cwd='win32')
