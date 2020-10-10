@@ -6,7 +6,7 @@ import glob
 import os
 
 from bypy.constants import PREFIX, islinux, iswindows
-from bypy.utils import qt_build, replace_in_file, apply_patch
+from bypy.utils import qt_build, replace_in_file
 
 
 def main(args):
@@ -25,8 +25,6 @@ def main(args):
                 os.path.join('src/3rdparty/chromium',
                              os.path.basename(header)))
         conf += ' -webp -webengine-icu'
-        # https://chromium-review.googlesource.com/c/v8/v8/+/2136489
-        apply_patch('qt-webengine-icu67.patch')
 
     if iswindows:
         # broken test for 64-bit ness needs to be disabled

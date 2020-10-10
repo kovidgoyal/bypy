@@ -7,10 +7,30 @@ import shutil
 
 from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, NMAKE, PREFIX,
                             build_dir, islinux, ismacos, iswindows)
-from bypy.utils import replace_in_file, run, run_shell
+from bypy.utils import replace_in_file, run, run_shell, apply_patch
 
 
 def main(args):
+    # https://bugreports.qt.io/browse/QTBUG-87320
+    replace_in_file(
+        'src/gui/image/qimage_conversions.cpp',
+        'segments <= 1 ||',
+        '!threadPool || segments <= 1 ||'
+    )
+    replace_in_file(
+        'src/gui/image/qimage_conversions.cpp',
+        'segments > 1 &&',
+        'threadPool && segments > 1 &&'
+    )
+    # https://bugreports.qt.io/browse/QTBUG-86822
+    replace_in_file(
+        'src/plugins/platforms/cocoa/qcocoadrag.mm',
+        'int(dragBoard.pasteboardItems.count) == 1 &&',
+        ''
+    )
+    # https://bugreports.qt.io/browse/QTBUG-86604
+    apply_patch('qtbug-86604.patch', level=1)
+
     if islinux:
         # We disable loading of bearer plugins because many distros ship with
         # broken bearer plugins that cause hangs.  At least, this was the case
