@@ -128,6 +128,9 @@ class FrozenByteCodeLoader:
     def __hash__(self):
         return hash(self.name) ^ hash(self.offset)
 
+    def get_resource_reader(self, fullname=None):
+        return self
+
     def create_module(self, spec):
         pass
 
