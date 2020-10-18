@@ -10,7 +10,7 @@ import shutil
 from contextlib import suppress
 from functools import lru_cache
 
-from ..constants import PYTHON, iswindows, python_major_minor_version
+from ..constants import PYTHON, iswindows
 from ..utils import run, walk
 from .perfect_hash import get_c_code
 
@@ -203,24 +203,6 @@ def cleanup_site_packages(sp_dir):
     if not iswindows:
         return {}
 
-    # special handling for win32
-    os.rmdir(j(sp_dir, 'pywin32_system32'))
-    wl = os.path.join(sp_dir, 'win32', 'lib')
-    for x in os.listdir(wl):
-        os.rename(os.path.join(wl, x), os.path.join(sp_dir, x))
-    os.rmdir(wl)
-    wl = os.path.dirname(wl)
-    for x in os.listdir(wl):
-        f = os.path.join(wl, x)
-        if not os.path.isdir(f):
-            os.rename(f, os.path.join(sp_dir, x))
-    shutil.rmtree(wl)
-
-    # Fix win32com
-    comext = j(sp_dir, 'win32comext')
-    shutil.copytree(j(comext, 'shell'), j(sp_dir, 'win32com', 'shell'))
-    shutil.rmtree(comext)
-
     # Fix pycryptodome
     with open(j(sp_dir, 'Crypto', 'Util', '_file_system.py'), 'w') as fspy:
         fspy.write('''
@@ -230,11 +212,7 @@ def pycryptodome_filename(dir_comps, filename):
     path = os.path.join(base, '.'.join(dir_comps + [filename]))
     return path
 ''')
-    pyver = ''.join(map(str, python_major_minor_version()))
-    return {
-        'pywintypes': f'pywintypes{pyver}.dll',
-        'pythoncom': f'pythoncom{pyver}.dll'
-    }
+    return {}
 
 
 def freeze_python(
