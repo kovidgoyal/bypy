@@ -43,6 +43,9 @@ def main(args):
         # https://bugreports.qt.io/browse/QTBUG-41151
         replace_in_file('src/plugins/platforms/xcb/qxcbcursor.cpp',
                         'pointing_hand"', 'hand2"')
+        # Fix for calibre flatpak runtime directory detection
+        # https://github.com/containers/bubblewrap/issues/346
+        apply_patch('patch_qtbase-revert-correct-handling-for-xdg-runtime-dir.patch', level=1)
     if iswindows or islinux:
         # Let Qt setup its paths based on runtime location
         # this is needed because we want Qt to be able to
