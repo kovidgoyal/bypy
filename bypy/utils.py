@@ -279,13 +279,17 @@ def relocate_pkgconfig_files():
 def simple_build(
         configure_args=(), make_args=(), install_args=(),
         library_path=None, override_prefix=None, no_parallel=False,
-        configure_name='./configure', relocate_pkgconfig=True):
+        configure_name='./configure', relocate_pkgconfig=True,
+        autogen_name='./autogen.sh'
+):
     if isinstance(configure_args, str):
         configure_args = split(configure_args)
     if isinstance(make_args, str):
         make_args = split(make_args)
     if isinstance(install_args, str):
         install_args = split(install_args)
+    if not os.path.exists(configure_name) and os.path.exists(autogen_name):
+        run(autogen_name)
     run(configure_name, '--prefix=' + (
         override_prefix or build_dir()), *configure_args)
     make_opts = [] if no_parallel else split(MAKEOPTS)
