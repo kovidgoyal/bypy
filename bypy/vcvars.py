@@ -19,8 +19,8 @@ CSIDL_PROGRAM_FILESX86 = 42
 def get_program_files_location(which=CSIDL_PROGRAM_FILESX86):
     SHGFP_TYPE_CURRENT = 0
     buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
-    ctypes.windll.shell32.SHGetFolderPathW(0, CSIDL_PROGRAM_FILESX86, 0,
-                                           SHGFP_TYPE_CURRENT, buf)
+    ctypes.windll.shell32.SHGetFolderPathW(
+        0, which, 0, SHGFP_TYPE_CURRENT, buf)
     return buf.value
 
 
