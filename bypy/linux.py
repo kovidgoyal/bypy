@@ -110,29 +110,6 @@ def write_in_chroot(path, data):
         raise SystemExit(p.returncode)
 
 
-def build_espeak():
-    write_in_chroot('build-espeak.py', '''
-import subprocess, os, shutil
-url = 'https://github.com/espeak-ng/espeak-ng/releases/download/1.50/espeak-ng-1.50.tgz'  # noqa
-subprocess.check_call(['curl', '-fSsL', url, '-o', os.path.basename(url)])
-subprocess.check_call(['tar', 'xzf', os.path.basename(url)])
-os.chdir('espeak-ng')
-subprocess.check_call([os.path.abspath('autogen.sh')])
-subprocess.check_call([os.path.abspath('configure'), '--prefix=/usr'])
-subprocess.check_call(['make'])
-subprocess.check_call('make install'.split())
-os.chdir('..')
-shutil.rmtree('espeak-ng')
-os.remove(os.path.basename(url))
-''')
-    chroot('python3 build-espeak.py')
-
-
-def install_espeak():
-    ('wget ')
-    chroot('tar xvf espeak-ng-1.50.tgz')
-
-
 def _build_container(url=DEFAULT_BASE_IMAGE):
     user = pwd.getpwuid(os.geteuid()).pw_name
     archive = cached_download(url.format('amd64' if arch == '64' else 'i386'))
@@ -167,11 +144,6 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
     deps = conf['deps']
     if isinstance(deps, (list, tuple)):
         deps = ' '.join(deps)
-    needs_espeak = ' libespeak-ng-dev' in deps and 'xenial' in url
-    espeak_cmd = ''
-    if needs_espeak:
-        deps = deps.replace(' libespeak-ng-dev', '')
-        espeak_cmd = build_espeak
     deps_cmd = 'apt-get install -y ' + deps
 
     for cmd in [
@@ -180,7 +152,6 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
         'apt-get install -y build-essential cmake software-properties-common'
         ' nasm chrpath zsh git uuid-dev libmount-dev'
         ' dh-autoreconf',
-        espeak_cmd,
         'add-apt-repository ppa:deadsnakes/ppa -y',
         'apt-get update',
         'apt-get install -y python3.7',
