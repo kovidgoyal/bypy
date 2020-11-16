@@ -46,6 +46,9 @@ def main(args):
         # Fix for calibre flatpak runtime directory detection
         # https://github.com/containers/bubblewrap/issues/346
         apply_patch('patch_qtbase-revert-correct-handling-for-xdg-runtime-dir.patch', level=1)
+        # Fixes for calibre flatpak that will be part of QT 5.15.2 release
+        apply_patch('open-file-portal-writable.patch', level=1)
+        apply_patch('qtbase-properly-fix-dangling-pointer.patch', level=1)
     if iswindows or islinux:
         # Let Qt setup its paths based on runtime location
         # this is needed because we want Qt to be able to
