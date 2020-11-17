@@ -17,5 +17,5 @@ def main(args):
     os.makedirs(ddir)
     open(os.path.join(ddir, '__init__.py'), 'w').close()
     with open(os.path.join(ddir, 'paths.py'), 'w') as f:
-        f.write('SPD_SPAWN_CMD = "speech-dispatcher"')
+        f.write('import shutil; SPD_SPAWN_CMD = shutil.which("speech-dispatcher") or "/usr/bin/speech-dispatcher"')
     shutil.copyfile(cl, os.path.join(ddir, os.path.basename(cl)))
