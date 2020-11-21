@@ -382,12 +382,12 @@ print(PyObject *self, PyObject *args) {
     for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(args); i++) {
         PyObject *s = PyObject_Str(PyTuple_GET_ITEM(args, i));
         if (s != NULL) {
-            printf("%s", PyUnicode_AsUTF8(s));
+            fprintf(stderr, "%s", PyUnicode_AsUTF8(s));
             Py_DECREF(s);
-            if (i != PyTuple_GET_SIZE(args) - 1) printf(" ");
+            if (i != PyTuple_GET_SIZE(args) - 1) fprintf(stderr, " ");
         }
     }
-    printf("\n");
+    fprintf(stderr, "\n");
     RETURN_NONE;
 }
 
@@ -439,7 +439,7 @@ static PyMethodDef bypy_methods[] = {
      "offsets_for_index(key) -> (offset, size)."
     },
     {"print", (PyCFunction)print, METH_VARARGS,
-     "print(*args) -> print args to stdout useful as sys.stdout may not yet be ready"
+     "print(*args) -> print args to stderr useful as sys.stderr may not yet be ready"
     },
     {"abspath", (PyCFunction)abspath, METH_VARARGS,
      "abspath(path) -> return the absolute path for path"
