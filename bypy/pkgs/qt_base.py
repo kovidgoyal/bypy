@@ -7,7 +7,7 @@ import shutil
 
 from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, NMAKE, PREFIX,
                             build_dir, islinux, ismacos, iswindows)
-from bypy.utils import replace_in_file, run, run_shell, apply_patch
+from bypy.utils import replace_in_file, run, run_shell
 
 
 def main(args):
@@ -23,11 +23,6 @@ def main(args):
         # https://bugreports.qt.io/browse/QTBUG-41151
         replace_in_file('src/plugins/platforms/xcb/qxcbcursor.cpp',
                         'pointing_hand"', 'hand2"')
-        # Fix for calibre flatpak runtime directory detection
-        # https://github.com/containers/bubblewrap/issues/346
-        apply_patch(
-            'patch_qtbase-revert-correct-handling-for-xdg-runtime-dir.patch',
-            level=1)
     if iswindows or islinux:
         # Let Qt setup its paths based on runtime location
         # this is needed because we want Qt to be able to
