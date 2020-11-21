@@ -137,10 +137,12 @@ def bin_to_c(src):
         yield ''.join(line)
 
 
-def importer_src_to_header(develop_mode_env_var):
+def importer_src_to_header(develop_mode_env_var, path_to_user_env_vars):
     src = open(os.path.join(path_to_freeze_dir(), 'importer.py')).read()
     src = src.replace(
         '__DEVELOP_MODE_ENV_VAR__', repr(develop_mode_env_var), 1)
+    src = src.replace(
+        '__PATH_TO_USER_ENV_VARS__', repr(path_to_user_env_vars), 1)
     src = src.replace(
         '__EXTENSION_SUFFIXES__', repr(extension_suffixes()), 1)
     src = compile_code(src, "bypy-importer.py")
@@ -216,7 +218,8 @@ def pycryptodome_filename(dir_comps, filename):
 
 
 def freeze_python(
-    base, dest_dir, include_dir, extensions_map, develop_mode_env_var=''
+    base, dest_dir, include_dir, extensions_map, develop_mode_env_var='',
+    path_to_user_env_vars=''
 ):
     files = collect_files_for_internment(base)
     frozen_file = os.path.join(dest_dir, 'python-lib.bypy.frozen')
@@ -257,6 +260,6 @@ get_value_for_hash_index(int index, unsigned long *offset, unsigned long *size)
     }}
 }}
 static const char filesystem_tree[] = {{ {tree} }};
-''' + importer_src_to_header(develop_mode_env_var)
+''' + importer_src_to_header(develop_mode_env_var, path_to_user_env_vars)
     with open(os.path.join(include_dir, 'bypy-data-index.h'), 'w') as f:
         f.write(header)

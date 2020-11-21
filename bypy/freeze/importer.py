@@ -8,15 +8,17 @@ import sys
 import _imp
 from _frozen_importlib import (ModuleSpec, _call_with_frames_removed,
                                _verbose_message)
-from bypy_frozen_importer import (abspath, get_data_at, getenv, index_for_name,
+from bypy_frozen_importer import (abspath, get_data_at, get_home_directory,
+                                  getenv, index_for_name,
                                   initialize_data_access, mode_for_path,
-                                  offsets_for_index, path_sep, print)
+                                  offsets_for_index, path_sep, print,
+                                  read_file, setenv, windows_expandvars)
 
 DEVELOP_MODE_ENV_VAR = __DEVELOP_MODE_ENV_VAR__  # noqa
+PATH_TO_USER_ENV_VARS = __PATH_TO_USER_ENV_VARS__  # noqa
 EXTENSION_SUFFIXES = __EXTENSION_SUFFIXES__  # noqa
 py_ext = '.pyc'
 path_separators = '\\/' if path_sep == '\\' else '/'
-print
 
 
 def _path_is_mode_type(path, mode):
@@ -59,6 +61,53 @@ def _path_split(path):
 def get_module_code(offset, size):
     data = get_data_at(offset, size)
     return marshal.loads(data)
+
+
+def unix_expandvars(text):
+    ans = []
+    allowed_chars = \
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
+
+    while text:
+        idx = text.find('$')
+        if idx == -1:
+            ans.append(text)
+            break
+        if len(text) == idx + 1:
+            ans.append(text)
+            break
+        ans.append(text[:idx])
+        text = text[idx:]
+        extent = 0
+        if text.startswith('${'):
+            close_idx = text.find('}')
+            if close_idx > 1:
+                extent = close_idx
+        else:
+            for i, c in enumerate(text):
+                if i == 0:
+                    continue
+                if c not in allowed_chars:
+                    extent = i - 1
+                    break
+            else:
+                if not extent and i > 0:
+                    extent = i
+        if extent:
+            var = text[1:extent+1]
+            if var.startswith('{'):
+                var = var[1:-1]
+            val = getenv(var) or text[:extent+1]
+            ans.append(val)
+            text = text[extent+1:]
+        else:
+            ans.append('$')
+            text = text[1:]
+
+    return ''.join(ans)
+
+
+expandvars = windows_expandvars if path_sep == '\\' else unix_expandvars
 
 
 class ExtensionFileLoader:
@@ -184,6 +233,37 @@ class FrozenByteCodeLoader:
         return io.BytesIO(get_data_at(offset, size))
 
 
+def expanduser(path):
+    if not path.startswith('~'):
+        return path
+    home = get_home_directory()
+    for x in path_separators:
+        home.rstrip(x)
+    if not home:
+        return path
+    if path == '~':
+        return home
+    if path[1:2] not in path_separators:
+        return path
+    return home + path_sep + path[2:]
+
+
+def read_user_env_vars():
+    path = expanduser(PATH_TO_USER_ENV_VARS)
+    try:
+        raw = read_file(path).decode('utf-8', 'replace')
+    except FileNotFoundError:
+        return
+    for line in raw.splitlines():
+        if line.startswith('#'):
+            continue
+        parts = line.split('=', 1)
+        if len(parts) == 2:
+            key, val = parts
+            val = expandvars(expanduser(val))
+            setenv(key, val)
+
+
 class BypyFrozenImporter:
 
     def __init__(self):
@@ -192,6 +272,13 @@ class BypyFrozenImporter:
         self.filesystem_tree, self.extensions_map = marshal.loads(
             initialize_data_access(self.dataloc))
         self.develop_mode_path = None
+        if PATH_TO_USER_ENV_VARS:
+            try:
+                read_user_env_vars()
+            except Exception as err:
+                print(
+                    'Failed to read environment variables from:',
+                    PATH_TO_USER_ENV_VARS, 'with error:', str(err))
         dv = getenv(DEVELOP_MODE_ENV_VAR) if DEVELOP_MODE_ENV_VAR else None
         if dv and _path_isdir(dv):
             self.develop_mode_path = abspath(dv)

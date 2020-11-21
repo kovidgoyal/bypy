@@ -17,8 +17,10 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <limits.h>
+#include <pwd.h>
 #endif
 #include <stdlib.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <Python.h>
 #include <frameobject.h>
@@ -122,10 +124,63 @@ log_error(const char *fmt, ...) {
 static PyObject *WindowsError = NULL;
 static PyObject *RuntimeError = NULL;
 static PyObject *OSError = NULL;
+static PyObject *FileNotFoundError = NULL;
 #else
 #define RETURN_NONE Py_RETURN_NONE
 #define RuntimeError PyExc_RuntimeError
+#define OSError PyExc_OSError
+#define FileNotFoundError PyExc_FileNotFoundError
 #endif
+
+#ifndef _WIN32
+static int
+_get_errno(int *err) {
+    *err = errno;
+    return 0;
+}
+#endif
+
+static PyObject*
+read_file(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *ans = NULL;
+#ifdef _WIN32
+    PyObject *pkey;
+    if (!PyArg_ParseTuple(args, "U", &pkey)) return NULL;
+    wchar_t *path = PyUnicode_AsWideCharString(pkey, NULL);
+    if (!path) return NULL;
+    FILE *f = _wfopen(path, L"rb");
+    PyMem_Free(path);
+#else
+    const char *path;
+    if (!PyArg_ParseTuple(args, "s", &path)) return NULL;
+    FILE *f = fopen(path, "rb");
+#endif
+    int err;
+    _get_errno(&err);
+    if (!f) return PyErr_SetFromErrnoWithFilenameObject(err == ENOENT ? FileNotFoundError : OSError, PyTuple_GET_ITEM(args, 0));
+#define E {fclose(f); Py_CLEAR(ans); return PyErr_SetFromErrnoWithFilenameObject(OSError, PyTuple_GET_ITEM(args, 0)); }
+    if (fseek(f, 0, SEEK_END) != 0) E;
+    long sz = ftell(f);
+    if (sz == -1) E;
+    if (fseek(f, 0, SEEK_SET) != 0) E;
+    ans = PyBytes_FromStringAndSize(NULL, sz);
+    if (!ans) { fclose(f); return NULL; }
+    char *data = PyBytes_AS_STRING(ans);
+    long pos = 0;
+    while (sz > pos) {
+        size_t n = fread(data + pos, 1, sz - pos, f);
+        if (n == 0) {
+            if (ferror(f)) { fclose(f); Py_CLEAR(ans); PyErr_SetString(OSError, "Failed to read from file"); return NULL; }
+            break;
+        }
+        pos += n;
+    }
+    fclose(f);
+    if (pos < sz) { Py_CLEAR(ans); PyErr_SetString(OSError, "file changed while reading it"); return NULL; }
+    return ans;
+#undef E
+}
 
 
 static PyObject*
@@ -150,6 +205,62 @@ getenv_wrapper(PyObject *self, PyObject *args) {
     const char *val = getenv(key);
     if (!val) RETURN_NONE;
     return PyUnicode_FromString(val);
+#endif
+}
+
+static PyObject*
+setenv_wrapper(PyObject *self, PyObject *args) {
+    (void)self;
+#ifdef _WIN32
+    PyObject *pkey, *pval = NULL;
+    if (!PyArg_ParseTuple(args, "U|U", &pkey, &pval)) return NULL;
+    wchar_t *wkey = PyUnicode_AsWideCharString(pkey, NULL), *wval = NULL;
+    if (!wkey) return NULL;
+    if (pval) {
+        wval = PyUnicode_AsWideCharString(pval, NULL);
+        if (!wval) { PyMem_Free(wkey); return NULL; }
+    }
+    BOOL ok = SetEnvironmentVariableW(wkey, wval ? wval : L"");
+    PyMem_Free(wkey); PyMem_Free(wval);
+    if (!ok) return PyErr_SetFromWindowsErr(0);
+#else
+    const char *key, *val = NULL;
+    if (!PyArg_ParseTuple(args, "s|s", &key, &val)) return NULL;
+    int ret = 0;
+    if (val) ret = setenv(key, val, 1);
+    else ret = unsetenv(key);
+    if (ret != 0) return PyErr_SetFromErrno(PyExc_OSError);
+#endif
+    RETURN_NONE;
+}
+
+static PyObject*
+get_home_directory(PyObject *self, PyObject *args) {
+    (void)self; (void)args;
+#ifdef _WIN32
+    LPWSTR dest = PyMem_Calloc(sizeof(wchar_t), 32 * 1024);
+    if (!dest) { return PyErr_NoMemory(); }
+    DWORD sz = ExpandEnvironmentStringsW(L"%USERPROFILE%", dest, 32 * 1024);
+    PyObject *ans = NULL;
+    if (dest[0] != '%') {
+        ans = PyUnicode_FromWideChar(dest, sz);
+    } else {
+        if (_wgetenv(L"HOMEDRIVE") && _wgetenv(L"HOMEPATH")) {
+            sz = ExpandEnvironmentStringsW(L"%HOMEDRIVE%%HOMEPATH%", dest, 32 * 1024);
+            ans = PyUnicode_FromWideChar(dest, sz);
+        } else ans = PyUnicode_FromString("");
+    }
+    PyMem_Free(dest);
+    return ans;
+#else
+    const char *home = getenv("HOME");
+    if (!home) {
+        struct passwd *pwd = getpwuid(getuid());
+        if (!pwd) return PyErr_SetFromErrno(PyExc_OSError);
+        home = pwd->pw_dir;
+    }
+    if (!home) home = "";
+    return PyUnicode_FromString(home);
 #endif
 }
 
@@ -287,6 +398,10 @@ setup_windows_exceptions(void) {
     PyErr_Fetch(&OSError, &val, &tb);
     Py_CLEAR(val); Py_CLEAR(tb);
 
+    PyRun_String("raise FileNotFoundError('foo')", Py_single_input, d, d);
+    PyErr_Fetch(&FileNotFoundError, &val, &tb);
+    Py_CLEAR(val); Py_CLEAR(tb);
+
     PyRun_String("raise RuntimeError('foo')", Py_single_input, d, d);
     PyErr_Fetch(&RuntimeError, &val, &tb);
     Py_CLEAR(val); Py_CLEAR(tb);
@@ -416,9 +531,44 @@ abspath(PyObject *self, PyObject *args) {
 #endif
 }
 
+static PyObject*
+windows_expandvars(PyObject *self, PyObject *args) {
+    (void)self;
+    PyObject *ans = NULL;
+#ifdef _WIN32
+    PyObject *pt;
+    if (!PyArg_ParseTuple(args, "U", &pt)) return NULL;
+    wchar_t *text = PyUnicode_AsWideCharString(pt, NULL);
+    if (!text) return PyErr_NoMemory();
+    LPWSTR dest = PyMem_Calloc(sizeof(wchar_t), 32 * 1024);
+    if (!dest) { PyMem_Free(text); return PyErr_NoMemory(); }
+    DWORD sz = ExpandEnvironmentStringsW(text, dest, 32 * 1024);
+    PyMem_Free(text);
+    if (sz > 32 * 1024 || sz < 1) { ans = pt;  Py_INCREF(pt); }
+    ans = PyUnicode_FromWideChar(dest, sz - 1);
+    PyMem_Free(dest);
+#else
+    (void)args;
+    PyErr_SetString(PyExc_NotImplementedError, "Windows only");
+#endif
+    return ans;
+}
+
 static PyMethodDef bypy_methods[] = {
+    {"windows_expandvars", (PyCFunction)windows_expandvars, METH_VARARGS,
+     "windows_expandvars(key) -> Expand variables in the specified string"
+    },
+    {"get_home_directory", (PyCFunction)get_home_directory, METH_NOARGS,
+     "get_home_directory() -> Return the home directory or empty string"
+    },
     {"getenv", (PyCFunction)getenv_wrapper, METH_VARARGS,
      "getenv(key) -> Return value of specified env var or None"
+    },
+    {"read_file", (PyCFunction)read_file, METH_VARARGS,
+     "read_file(path) -> read contents of file and return it"
+    },
+    {"setenv", (PyCFunction)setenv_wrapper, METH_VARARGS,
+     "setenv(key, val=None) -> Set the specified env var"
     },
     {"mode_for_path", (PyCFunction)mode_for_path, METH_VARARGS,
      "mode_for_path(path) -> Return the mode for the specified path"
