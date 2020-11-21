@@ -11,26 +11,6 @@ from bypy.utils import replace_in_file, run, run_shell, apply_patch
 
 
 def main(args):
-    # https://bugreports.qt.io/browse/QTBUG-87320
-    replace_in_file(
-        'src/gui/image/qimage_conversions.cpp',
-        'segments <= 1 ||',
-        '!threadPool || segments <= 1 ||'
-    )
-    replace_in_file(
-        'src/gui/image/qimage_conversions.cpp',
-        'segments > 1 &&',
-        'threadPool && segments > 1 &&'
-    )
-    # https://bugreports.qt.io/browse/QTBUG-86822
-    replace_in_file(
-        'src/plugins/platforms/cocoa/qcocoadrag.mm',
-        'int(dragBoard.pasteboardItems.count) == 1 &&',
-        ''
-    )
-    # https://bugreports.qt.io/browse/QTBUG-86604
-    apply_patch('qtbug-86604.patch', level=1)
-
     if islinux:
         # We disable loading of bearer plugins because many distros ship with
         # broken bearer plugins that cause hangs.  At least, this was the case
@@ -45,7 +25,9 @@ def main(args):
                         'pointing_hand"', 'hand2"')
         # Fix for calibre flatpak runtime directory detection
         # https://github.com/containers/bubblewrap/issues/346
-        apply_patch('patch_qtbase-revert-correct-handling-for-xdg-runtime-dir.patch', level=1)
+        apply_patch(
+            'patch_qtbase-revert-correct-handling-for-xdg-runtime-dir.patch',
+            level=1)
     if iswindows or islinux:
         # Let Qt setup its paths based on runtime location
         # this is needed because we want Qt to be able to
