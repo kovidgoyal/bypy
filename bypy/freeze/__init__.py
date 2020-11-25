@@ -10,7 +10,7 @@ import shutil
 from contextlib import suppress
 from functools import lru_cache
 
-from ..constants import PYTHON, iswindows
+from ..constants import PYTHON
 from ..utils import run, walk
 from .perfect_hash import get_c_code
 
@@ -170,6 +170,19 @@ def as_tree(items, extensions_map):
     return marshal.dumps((root, extensions_map))
 
 
+def fix_pycryptodome(site_packages_dir):
+    # Fix pycryptodome
+    fs = os.path.join(site_packages_dir, 'Crypto', 'Util', '_file_system.py')
+    with open(fs, 'w') as fspy:
+        fspy.write('''
+import os, sys
+def pycryptodome_filename(dir_comps, filename):
+    path = os.path.join(
+        sys.extensions_location, '.'.join(dir_comps + [filename]))
+    return path
+''')
+
+
 def cleanup_site_packages(sp_dir):
     bad_exts = {
         'exe', 'dll', 'lib', 'bat', 'pyi', 'pth', 'sip',
@@ -202,18 +215,7 @@ def cleanup_site_packages(sp_dir):
         if not f.endswith('.py'):
             os.remove(f)
 
-    if not iswindows:
-        return {}
-
-    # Fix pycryptodome
-    with open(j(sp_dir, 'Crypto', 'Util', '_file_system.py'), 'w') as fspy:
-        fspy.write('''
-import os, sys
-def pycryptodome_filename(dir_comps, filename):
-    base = os.path.join(sys.app_dir, 'app', 'bin')
-    path = os.path.join(base, '.'.join(dir_comps + [filename]))
-    return path
-''')
+    fix_pycryptodome(sp_dir)
     return {}
 
 
