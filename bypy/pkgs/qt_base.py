@@ -7,11 +7,15 @@ import shutil
 
 from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, NMAKE, PREFIX,
                             build_dir, islinux, ismacos, iswindows)
-from bypy.utils import replace_in_file, run, run_shell
+from bypy.utils import replace_in_file, run, run_shell, apply_patch
 
 
 def main(args):
     if islinux:
+        # Revert a Qt patch to explicitly depend on libxcb-util
+        # this breaks on the ever-delightful Debian.
+        # https://bugreports.qt.io/browse/QTBUG-88688
+        apply_patch('qt-xcb-util-dependency-remove.diff')
         # We disable loading of bearer plugins because many distros ship with
         # broken bearer plugins that cause hangs.  At least, this was the case
         # in Qt 4.x Dont know if it is still true for Qt 5 but since we dont
