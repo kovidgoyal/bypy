@@ -11,6 +11,9 @@ from bypy.utils import replace_in_file, run, run_shell, apply_patch
 
 
 def main(args):
+    if ismacos:
+        # https://bugreports.qt.io/browse/QTBUG-88495
+        apply_patch('qtbug-88495.diff', level=1)
     if islinux:
         # Revert a Qt patch to explicitly depend on libxcb-util
         # this breaks on the ever-delightful Debian.
