@@ -6,11 +6,12 @@ import glob
 import os
 
 from bypy.constants import PREFIX, islinux, iswindows
-from bypy.utils import qt_build, replace_in_file
+from bypy.utils import qt_build, replace_in_file, apply_patch
 
 
 def main(args):
     conf = '-spellchecker'
+    apply_patch('qtbug-88976.diff', level=1)
     if islinux:
         # workaround for bug in build system, not adding include path for
         # libjpeg when building iccjpeg, and mjpeg_decoder

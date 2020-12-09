@@ -1,0 +1,141 @@
+From dfe93385f41c8ad2f53ca3fe454812d68a25be17 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Thu, 03 Dec 2020 12:05:18 +0100
+Subject: [PATCH] [Revert] Don't use harfbuzz-subset
+
+Also reverts
+  "Disable font subsetting to support system harfbuzz < 2.4.0"
+
+sfntly has been removed from Chromium and now it uses HarfBuzz as
+the font subsetter.
+
+See https://crbug.com/931719
+
+Change-Id: I55255a82fdb7c10ca69678e2cd04672b520fc6f8
+Fixes: QTBUG-88976
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@qt.io>
+---
+
+diff --git a/src/chromium/components/paint_preview/common/subset_font.cc b/chromium/components/paint_preview/common/subset_font.cc
+index 273974c..ba53917 100644
+--- a/src/3rdparty/chromium/components/paint_preview/common/subset_font.cc
++++ b/src/3rdparty/chromium/components/paint_preview/common/subset_font.cc
+@@ -6,11 +6,7 @@
+ 
+ // clang-format off
+ #include <hb.h>
+-
+-#if defined(HAVE_HB_SUBSET_H)
+ #include <hb-subset.h>
+-#include "third_party/harfbuzz-ng/utils/hb_scoped.h"
+-#endif
+ // clang-format on
+ 
+ #include <memory>
+@@ -18,12 +14,12 @@
+ 
+ #include "base/bind.h"
+ #include "base/callback.h"
++#include "third_party/harfbuzz-ng/utils/hb_scoped.h"
+ #include "third_party/skia/include/core/SkStream.h"
+ #include "third_party/skia/include/core/SkTypeface.h"
+ 
+ namespace paint_preview {
+ 
+-#if defined(HAVE_HB_SUBSET_H)
+ namespace {
+ 
+ // Converts and SkStream to an SkData object without copy if possible or
+@@ -62,11 +58,9 @@
+ }
+ 
+ }  // namespace
+-#endif
+ 
+ // Implementation based on SkPDFSubsetFont() using harfbuzz.
+ sk_sp<SkData> SubsetFont(SkTypeface* typeface, const GlyphUsage& usage) {
+-#if defined(HAVE_HB_SUBSET_H)
+   int ttc_index = 0;
+   sk_sp<SkData> data = StreamToData(typeface->openStream(&ttc_index));
+   HbScoped<hb_face_t> face(hb_face_create(MakeBlob(data).get(), ttc_index));
+@@ -104,9 +98,6 @@
+     return nullptr;
+   return sk_subset_typeface->serialize(
+       SkTypeface::SerializeBehavior::kDoIncludeData);
+-#else
+-  return nullptr;
+-#endif
+ }
+ 
+ }  // namespace paint_preview
+diff --git a/chromium/skia/config/SkUserConfig.h b/chromium/skia/config/SkUserConfig.h
+index 061d014..3c8ffdd 100644
+--- a/src/3rdparty/chromium/skia/config/SkUserConfig.h
++++ b/src/3rdparty/chromium/skia/config/SkUserConfig.h
+@@ -132,7 +132,7 @@
+ /*  Define this to provide font subsetter for font subsetting when generating
+     PDF documents.
+  */
+-// #define SK_PDF_USE_HARFBUZZ_SUBSET
++#define SK_PDF_USE_HARFBUZZ_SUBSET
+ 
+ // Chromium does not use these fonts.  This define causes type1 fonts to be
+ // converted to type3 when producing PDFs, and reduces build size.
+diff --git a/chromium/third_party/BUILD.gn b/chromium/third_party/BUILD.gn
+index 76b14a9..d7f57c8 100644
+--- a/src/3rdparty/chromium/third_party/BUILD.gn
++++ b/src/3rdparty/chromium/third_party/BUILD.gn
+@@ -80,10 +80,6 @@
+   }
+ }
+ 
+-config("bundled_harfbuzz_config") {
+-  defines = [ "HAVE_HB_SUBSET_H=1" ]
+-}
+-
+ # FreeType and HarfBuzz libraries are dependent on each other. This component
+ # will depend on the appropriate source sets or export the system packages
+ # for both FreeType and HarfBuzz.
+@@ -103,6 +99,5 @@
+     public_configs += [ "//third_party/harfbuzz-ng:harfbuzz_from_qt" ]
+   } else {
+     public_deps += [ "//third_party/harfbuzz-ng:harfbuzz_source" ]
+-    public_configs += [ ":bundled_harfbuzz_config" ]
+   }
+ }
+diff --git a/chromium/third_party/harfbuzz-ng/BUILD.gn b/chromium/third_party/harfbuzz-ng/BUILD.gn
+index 56bdc67..8d16309 100644
+--- a/src/3rdparty/chromium/third_party/harfbuzz-ng/BUILD.gn
++++ b/src/3rdparty/chromium/third_party/harfbuzz-ng/BUILD.gn
+@@ -19,6 +19,7 @@
+     ]
+     packages = [
+       "harfbuzz",
++      "harfbuzz-subset",
+     ]
+   }
+ } else if (use_qt_harfbuzz) {
+diff --git a/chromium/third_party/harfbuzz-ng/utils/hb_scoped.h b/chromium/third_party/harfbuzz-ng/utils/hb_scoped.h
+index 7348e89..103cb12 100644
+--- a/src/3rdparty/chromium/third_party/harfbuzz-ng/utils/hb_scoped.h
++++ b/src/3rdparty/chromium/third_party/harfbuzz-ng/utils/hb_scoped.h
+@@ -7,9 +7,7 @@
+ 
+ // clang-format off
+ #include <hb.h>
+-#if defined(HAVE_HB_SUBSET_H)
+-  #include <hb-subset.h>
+-#endif
++#include <hb-subset.h>
+ // clang-format on
+ 
+ #include <memory>
+@@ -59,8 +57,6 @@
+ 
+ HB_TYPE_DESTRUCTOR_PAIRS_REPEAT(SPECIALIZED_DELETER_FOR_HARFBUZZ_TYPE)
+ 
+-#if defined(HAVE_HB_SUBSET_H)
+ SPECIALIZED_DELETER_FOR_HARFBUZZ_TYPE(hb_subset_input_t, hb_subset_input_destroy)
+-#endif
+ 
+ #endif  // THIRD_PARTY_HARFBUZZ_NG_UTILS_HB_SCOPED_H_
