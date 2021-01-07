@@ -794,6 +794,7 @@ bypy_initialize_interpreter(
     config.user_site_directory = 0;
     config.configure_c_stdio = 1;
     config.isolated = 1;
+    config.install_signal_handlers = 1;
 	config._init_main = 0;
 
     status = PyConfig_SetString(&config, &config.program_name, program_name);
