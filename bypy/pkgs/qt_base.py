@@ -40,6 +40,12 @@ def main(args):
             '= getenv("CALIBRE_QT_PREFIX") ?'
             ' getenv("CALIBRE_QT_PREFIX") : getPrefix')
     if iswindows:
+        # https://bugreports.qt.io/browse/QTBUG-89915
+        replace_in_file(
+            'src/plugins/platforms/windows/qwindowskeymapper.cpp',
+            'Qt::Key_MediaPlay,  // 179',
+            'Qt::Key_MediaTogglePlayPause,  // 179',
+        )
         # Enable loading of DLLs from the bin directory
         replace_in_file(
             'src/corelib/global/qlibraryinfo.cpp',
