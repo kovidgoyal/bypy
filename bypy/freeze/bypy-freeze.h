@@ -27,6 +27,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <bypy-data-index.h>
+#ifdef __APPLE__
+#include <os/log.h>
+#endif
 #define fatal(...) { log_error(__VA_ARGS__); exit(EXIT_FAILURE); }
 #define arraysz(x) (sizeof(x)/sizeof(x[0]))
 
