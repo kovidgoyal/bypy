@@ -845,7 +845,8 @@ def get_dll_path(base, levels=1, loc=LIBDIR):
     pat = f'lib{base}.so.*'
     candidates = tuple(glob.glob(os.path.join(loc, pat)))
     if not candidates:
-        candidates = glob.glob(os.path.join(loc, '*', pat))
+        candidates = sorted(
+            glob.glob(os.path.join(loc, '*', pat)), reverse=True)
 
     for x in candidates:
         q = os.path.basename(x)
