@@ -19,8 +19,9 @@ tar xvf rsync-pat*
 cd rsync-$VERSION
 patch -p1 <patches/fileflags.diff
 ./prepare-source
-./configure --disable-debug --enable-ipv6 --prefix=/usr
+./configure --disable-debug --enable-ipv6 --disable-openssl --disable-xxhash --disable-zstd --disable-lz4 --prefix=/usr
 make -j4
-cat rsync | sudo tee /usr/bin/rsync > /dev/null
+sudo mkdir -p /usr/local/bin
+sudo cp rsync /usr/local/bin/rsync
+sudo chmod +x /usr/local/bin/rsync
 cd && rm -rf build-rsync
-
