@@ -467,7 +467,8 @@ def create_package(module, src_dir, outpath):
         shutil.rmtree(outpath)
 
     os.makedirs(outpath)
-    check_universal_binaries = ismacos and len(TARGETS) > 1
+    check_universal_binaries = ismacos and len(TARGETS) > 1 and not getattr(
+        module, 'allow_non_universal', False)
     dylibs = set()
 
     for dirpath, dirnames, filenames in os.walk(src_dir):
@@ -519,7 +520,7 @@ def create_package(module, src_dir, outpath):
         if arches != expected:
             raise SystemExit(
                 f'The file {x} is not a universal binary.'
-                ' It only has arches: {arches}')
+                f' It only has arches: {arches}')
 
 
 @contextmanager

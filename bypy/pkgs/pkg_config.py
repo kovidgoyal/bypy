@@ -5,5 +5,8 @@
 from bypy.utils import simple_build
 
 
+allow_non_universal = True
+
+
 def main(args):
     simple_build('--with-internal-glib --disable-host-tool')
