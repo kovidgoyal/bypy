@@ -28,9 +28,14 @@ After the OS is installed:
 
 * Edit /etc/ssh/sshd_config and set the following to allow only key based login::
 
+    PermitUserEnvironment yes
     PasswordAuthentication no
     ChallengeResponseAuthentication no
     UsePAM no
+
+* Create the file ~/.ssh/environment::
+
+    PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
 
 * Copy over kitty terminfo using ssh kitten
 
