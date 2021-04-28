@@ -861,3 +861,43 @@ def dos2unix(path):
         raw = f.read().replace(b'\r\n', b'\n')
     with open(path, 'wb') as f:
         f.write(raw)
+
+
+def binaries_in(base):
+    for x in walk(base):
+        x = os.path.realpath(x)
+        if x.endswith('.dylib') or is_macho_binary(x):
+            yield os.path.relpath(os.path.abspath(x), base)
+
+
+def arch_for_target(target):
+    return target.split('-', 1)[0]
+
+
+def target_for_output_dir(x):
+    return x.split(',')[0]
+
+
+def lipo(output_dirs, output_dir):
+    binary_map = {}
+    for x in output_dirs:
+        arch = arch_for_target(target_for_output_dir(x))
+        binary_map[arch] = frozenset(binaries_in(x))
+    if len(set(binary_map.values())) > 1:
+        raise SystemExit(
+            'The set of binaries is different across different'
+            ' target architectures, cannot lipo them')
+    for x in os.listdir(output_dirs[0]):
+        f = os.path.join(output_dirs[0], x)
+        dst = os.path.join(output_dir, x)
+        if os.path.isdir(f):
+            shutil.copytree(f, dst)
+        else:
+            shutil.copy2(f, dst)
+
+    for binary in next(binary_map.values()):
+        dst = os.path.join(output_dir, binary)
+        os.remove(dst)
+        cmd = ['lipo', '-create', '-output', dst]
+        cmd.extend(os.path.join(x, binary) for x in output_dirs)
+        run(*cmd)

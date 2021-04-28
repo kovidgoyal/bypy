@@ -31,6 +31,8 @@ def base_dir():
     return ans
 
 
+TARGETS = frozenset(filter(
+    None, os.environ.get('BYPY_TARGETS', '').split(',')))
 ROOT = os.environ.get('BYPY_ROOT', '/').replace('/', os.sep)
 is64bit = sys.maxsize > (1 << 32)
 SW = os.path.join(ROOT, 'sw')
@@ -141,9 +143,14 @@ def mkdtemp(prefix=''):
     return tempfile.mkdtemp(prefix=prefix, dir=tdir)
 
 
-def build_dir(newval=None):
+def current_build_target():
+    return getattr(current_build_target, 'ans', None)
+
+
+def build_dir(newval=None, current_target=None):
     if newval is not None:
         build_dir.ans = newval
+        current_build_target.ans = current_target
     return getattr(build_dir, 'ans', None)
 
 
