@@ -18,12 +18,12 @@ import sys
 import tarfile
 import time
 import zipfile
-from contextlib import closing, contextmanager
+from contextlib import closing, contextmanager, suppress
 from functools import partial
 
 from .constants import (CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX,
-                        PYTHON, build_dir, cpu_count, is64bit, islinux,
-                        ismacos, iswindows, mkdtemp,
+                        PYTHON, TARGETS, build_dir, cpu_count, is64bit,
+                        islinux, ismacos, iswindows, mkdtemp,
                         python_major_minor_version, worker_env)
 
 if iswindows:
@@ -446,6 +446,12 @@ def python_install(add_scripts=False):
     rmtree(os.path.join(build_dir(), to_remove))
 
 
+def get_arches_in_binary(path):
+    x = subprocess.check_output([
+        'lipo', '-info', path]).decode('utf-8').strip().split(':')[-1].strip()
+    return {y for y in x.split()}
+
+
 def create_package(module, src_dir, outpath):
 
     exclude = getattr(module, 'pkg_exclude_names', set(
@@ -457,12 +463,12 @@ def create_package(module, src_dir, outpath):
     if hasattr(module, 'modify_exclude_extensions'):
         module.modify_exclude_extensions(exclude_extensions)
 
-    try:
+    with suppress(FileNotFoundError):
         shutil.rmtree(outpath)
-    except FileNotFoundError:
-        pass
 
     os.makedirs(outpath)
+    check_universal_binaries = ismacos and len(TARGETS) > 1
+    dylibs = set()
 
     for dirpath, dirnames, filenames in os.walk(src_dir):
 
@@ -503,6 +509,17 @@ def create_package(module, src_dir, outpath):
                 # built in tmpfs and outpath is on a different volume
                 lcopy(os.path.join(dirpath, f), os.path.join(outpath, name),
                       no_hardlinks=islinux)
+                full_path = os.path.realpath(os.path.join(dirpath, f))
+                if check_universal_binaries and full_path not in dylibs and (
+                        name.endswith('.dylib') or is_macho_binary(full_path)):
+                    dylibs.add(full_path)
+    expected = {arch_for_target(x) for x in TARGETS}
+    for x in dylibs:
+        arches = get_arches_in_binary(x)
+        if arches != expected:
+            raise SystemExit(
+                f'The file {x} is not a universal binary.'
+                ' It only has arches: {arches}')
 
 
 @contextmanager
@@ -665,8 +682,8 @@ def windows_sdk_paths():
 
 def msbuild(proj, *args, configuration='Release', **env):
     global worker_env
-    from bypy.vcvars import find_msbuild
     from bypy.constants import vcvars_env
+    from bypy.vcvars import find_msbuild
     PL = 'x64' if is64bit else 'Win32'
     sdk = get_windows_sdk()
     orig_worker_env = worker_env.copy()
