@@ -718,6 +718,9 @@ def cmake_build(
         'CMAKE_PREFIX_PATH': PREFIX,
         'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
+    if len(TARGETS) > 1 and ismacos:
+        defs['CMAKE_OSX_ARCHITECTURES'] = ';'.join(map(
+            arch_for_target, TARGETS))
     if iswindows:
         cmd = [CMAKE, '-G', "NMake Makefiles"]
     else:

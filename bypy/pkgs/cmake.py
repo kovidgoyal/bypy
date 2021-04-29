@@ -8,11 +8,15 @@ from __future__ import (unicode_literals, division, absolute_import,
 from bypy.utils import simple_build
 
 
+allow_non_universal = True
+
+
 def main(args):
     simple_build('--no-qt-gui', configure_name='./bootstrap')
 
 
 def filter_pkg(parts):
     return 'Help' in parts
+
 
 pkg_exclude_extensions = frozenset()
