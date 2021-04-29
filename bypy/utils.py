@@ -916,7 +916,7 @@ def lipo(output_dirs, output_dir):
         else:
             shutil.copy2(f, dst)
 
-    for binary in next(binary_map.values()):
+    for binary in next(iter(binary_map.values())):
         dst = os.path.join(output_dir, binary)
         os.remove(dst)
         cmd = ['lipo', '-create', '-output', dst]
