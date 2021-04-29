@@ -331,7 +331,7 @@ def is_macho_binary(p):
     try:
         with open(p, 'rb') as f:
             return f.read(4) in (b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf')
-    except FileNotFoundError:
+    except (FileNotFoundError, IsADirectoryError):
         return False
 
 
