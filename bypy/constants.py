@@ -31,7 +31,7 @@ def base_dir():
     return ans
 
 
-TARGETS = frozenset(filter(
+TARGETS = tuple(filter(
     None, os.environ.get('BYPY_TARGETS', '').split(',')))
 ROOT = os.environ.get('BYPY_ROOT', '/').replace('/', os.sep)
 is64bit = sys.maxsize > (1 << 32)

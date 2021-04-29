@@ -7,17 +7,21 @@ import os
 import shutil
 
 from bypy.constants import (CFLAGS, LDFLAGS, MAKEOPTS, NMAKE, PERL, build_dir,
-                            is64bit, ismacos, iswindows)
-from bypy.utils import run
+                            is64bit, ismacos, iswindows, current_build_target)
+from bypy.utils import run, arch_for_target
+
+
+needs_lipo = True
 
 
 def main(args):
     if ismacos:
+        arch = arch_for_target(current_build_target() or 'x86_64')
         run(
-            './Configure darwin64-x86_64-cc shared enable-ec_nistp_64_gcc_128 '
-            f'no-ssl2 --prefix={build_dir()} --openssldir={build_dir()}')
+            f'./Configure darwin64-{arch}-cc shared enable-ec_nistp_64_gcc_128'
+            f' no-ssl2 --prefix={build_dir()} --openssldir={build_dir()}')
         run('make ' + MAKEOPTS)
-        run('make install')
+        run('make install_sw')
     elif iswindows:
         conf = 'perl.exe Configure VC-WIN32 enable-static-engine'.split()
         if is64bit:

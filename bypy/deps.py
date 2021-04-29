@@ -105,12 +105,12 @@ def build_dep(dep, args, dest_dir=PREFIX):
             for target in TARGETS:
                 output_dirs.append(build_once(
                     dep, m, args, cleanup, target=target))
-            output_dir = make_build_dir(dep_name)
-            getattr(m, 'lipo', lipo)(output_dirs, output_dir)
+            build_dir(make_build_dir(dep_name))
+            getattr(m, 'lipo', lipo)(output_dirs)
         else:
-            output_dir = build_once(dep, m, args, cleanup)
+            build_once(dep, m, args, cleanup)
 
-        create_package(m, output_dir, pkg_path(dep))
+        create_package(m, pkg_path(dep))
         install_package(pkg_path(dep), dest_dir)
         if hasattr(m, 'post_install_check'):
             try:

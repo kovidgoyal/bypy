@@ -448,11 +448,11 @@ def python_install(add_scripts=False):
 
 def get_arches_in_binary(path):
     x = subprocess.check_output([
-        'lipo', '-info', path]).decode('utf-8').strip().split(':')[-1].strip()
+        'lipo', '-archs', path]).decode('utf-8').strip()
     return {y for y in x.split()}
 
 
-def create_package(module, src_dir, outpath):
+def create_package(module, outpath):
 
     exclude = getattr(module, 'pkg_exclude_names', set(
         'doc man info test tests gtk-doc README'.split()))
@@ -470,6 +470,7 @@ def create_package(module, src_dir, outpath):
     check_universal_binaries = ismacos and len(TARGETS) > 1 and not getattr(
         module, 'allow_non_universal', False)
     dylibs = set()
+    src_dir = build_dir()
 
     for dirpath, dirnames, filenames in os.walk(src_dir):
 
@@ -510,7 +511,7 @@ def create_package(module, src_dir, outpath):
                 # built in tmpfs and outpath is on a different volume
                 lcopy(os.path.join(dirpath, f), os.path.join(outpath, name),
                       no_hardlinks=islinux)
-                full_path = os.path.realpath(os.path.join(dirpath, f))
+                full_path = os.path.realpath(os.path.join(outpath, name))
                 if check_universal_binaries and full_path not in dylibs and (
                         name.endswith('.dylib') or is_macho_binary(full_path)):
                     dylibs.add(full_path)
@@ -518,9 +519,12 @@ def create_package(module, src_dir, outpath):
     for x in dylibs:
         arches = get_arches_in_binary(x)
         if arches != expected:
-            raise SystemExit(
+            print(
                 f'The file {x} is not a universal binary.'
-                f' It only has arches: {arches}')
+                f' Copied from {src_dir}.'
+                f' It only has arches: {arches}', file=sys.stderr)
+            run_shell(cwd=outpath)
+            raise SystemExit('Failed to build universal binary')
 
 
 @contextmanager
@@ -885,6 +889,7 @@ def dos2unix(path):
 
 
 def binaries_in(base):
+    base = os.path.abspath(os.path.realpath(base))
     for x in walk(base):
         x = os.path.realpath(x)
         if x.endswith('.dylib') or is_macho_binary(x):
@@ -896,29 +901,32 @@ def arch_for_target(target):
 
 
 def target_for_output_dir(x):
-    return x.split(',')[0]
+    return os.path.basename(x).split(',')[1]
 
 
-def lipo(output_dirs, output_dir):
-    binary_map = {}
+def lipo(output_dirs):
+    output_dir = build_dir()
+    binary_collections = set()
     for x in output_dirs:
-        arch = arch_for_target(target_for_output_dir(x))
-        binary_map[arch] = frozenset(binaries_in(x))
-    if len(set(binary_map.values())) > 1:
+        binary_collections.add(frozenset(binaries_in(x)))
+    if len(binary_collections) > 1:
         raise SystemExit(
             'The set of binaries is different across different'
             ' target architectures, cannot lipo them')
-    for x in os.listdir(output_dirs[0]):
-        f = os.path.join(output_dirs[0], x)
-        dst = os.path.join(output_dir, x)
-        if os.path.isdir(f):
-            shutil.copytree(f, dst)
-        else:
-            shutil.copy2(f, dst)
+    binaries = tuple(binary_collections)[0]
+    install_package(output_dirs[0], output_dir)
 
-    for binary in next(iter(binary_map.values())):
+    for binary in binaries:
         dst = os.path.join(output_dir, binary)
-        os.remove(dst)
-        cmd = ['lipo', '-create', '-output', dst]
-        cmd.extend(os.path.join(x, binary) for x in output_dirs)
+        if os.path.exists(dst):
+            os.remove(dst)
+        cmd = ['lipo']
+        all_arches = []
+        for x in output_dirs:
+            arch = arch_for_target(target_for_output_dir(x))
+            all_arches.append(arch)
+            cmd.extend(('-arch', arch, os.path.join(x, binary)))
+        cmd += ['-create', '-output', dst]
+        run(*cmd)
+        cmd = ['lipo', dst, '-verify_arch'] + all_arches
         run(*cmd)
