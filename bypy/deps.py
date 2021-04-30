@@ -7,8 +7,8 @@ import os
 import sys
 from operator import itemgetter
 
-from .constants import (PKG, PREFIX, SOURCES, TARGETS, build_dir, ismacos,
-                        mkdtemp)
+from .constants import (PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir,
+                        ismacos, mkdtemp)
 from .download_sources import download, read_deps
 from .utils import (RunFailure, create_package, ensure_clear_dir,
                     extract_source_and_chdir, fix_install_names,
@@ -98,13 +98,13 @@ def build_dep(dep, args, dest_dir=PREFIX):
     owd = os.getcwd()
     m = module_for_dep(dep)
     needs_lipo = ismacos and getattr(
-        m, 'needs_lipo', False) and len(TARGETS) > 1
+        m, 'needs_lipo', False) and len(UNIVERSAL_ARCHES) > 1
     with CleanupDirs() as cleanup:
         if needs_lipo:
             output_dirs = []
-            for target in TARGETS:
+            for arch in UNIVERSAL_ARCHES:
                 output_dirs.append(build_once(
-                    dep, m, args, cleanup, target=target))
+                    dep, m, args, cleanup, target=arch))
             build_dir(make_build_dir(dep_name))
             getattr(m, 'lipo', lipo)(output_dirs)
         else:

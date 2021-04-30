@@ -5,8 +5,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from bypy.constants import CFLAGS, TARGETS, ismacos, iswindows
-from bypy.utils import ModifiedEnv, arch_for_target, copy_headers, simple_build
+from bypy.constants import CFLAGS, UNIVERSAL_ARCHES, ismacos, iswindows
+from bypy.utils import ModifiedEnv, copy_headers, simple_build
 
 
 def main(args):
@@ -19,9 +19,9 @@ def main(args):
     env = {}
     if ismacos:
         cflags += ' -O2 -DSQLITE_ENABLE_LOCKING_STYLE'
-        if len(TARGETS) > 1:
+        if len(UNIVERSAL_ARCHES) > 1:
             env['CC'] = 'clang ' + ' '.join(
-                f'-arch {arch_for_target(x)}' for x in TARGETS)
+                f'-arch {x}' for x in UNIVERSAL_ARCHES)
             env['CPP'] = 'clang -E'
     env['CFLAGS'] = cflags
     with ModifiedEnv(**env):

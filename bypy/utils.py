@@ -22,8 +22,8 @@ from contextlib import closing, contextmanager, suppress
 from functools import partial
 
 from .constants import (CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX,
-                        PYTHON, TARGETS, build_dir, cpu_count, is64bit,
-                        islinux, ismacos, iswindows, mkdtemp,
+                        PYTHON, UNIVERSAL_ARCHES, build_dir, cpu_count,
+                        is64bit, islinux, ismacos, iswindows, mkdtemp,
                         python_major_minor_version, worker_env)
 
 if iswindows:
@@ -467,8 +467,9 @@ def create_package(module, outpath):
         shutil.rmtree(outpath)
 
     os.makedirs(outpath)
-    check_universal_binaries = ismacos and len(TARGETS) > 1 and not getattr(
-        module, 'allow_non_universal', False)
+    check_universal_binaries = ismacos and len(
+        UNIVERSAL_ARCHES) > 1 and not getattr(
+            module, 'allow_non_universal', False)
     dylibs = set()
     src_dir = build_dir()
 
@@ -515,7 +516,7 @@ def create_package(module, outpath):
                 if check_universal_binaries and full_path not in dylibs and (
                         name.endswith('.dylib') or is_macho_binary(full_path)):
                     dylibs.add(full_path)
-    expected = {arch_for_target(x) for x in TARGETS}
+    expected = set(UNIVERSAL_ARCHES)
     for x in dylibs:
         arches = get_arches_in_binary(x)
         if arches != expected:
@@ -722,9 +723,8 @@ def cmake_build(
         'CMAKE_PREFIX_PATH': PREFIX,
         'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
-    if len(TARGETS) > 1 and ismacos:
-        defs['CMAKE_OSX_ARCHITECTURES'] = ';'.join(map(
-            arch_for_target, TARGETS))
+    if len(UNIVERSAL_ARCHES) > 1 and ismacos:
+        defs['CMAKE_OSX_ARCHITECTURES'] = ';'.join(UNIVERSAL_ARCHES)
     if iswindows:
         cmd = [CMAKE, '-G', "NMake Makefiles"]
     else:
@@ -896,11 +896,7 @@ def binaries_in(base):
             yield os.path.relpath(os.path.abspath(x), base)
 
 
-def arch_for_target(target):
-    return target.split('-', 1)[0]
-
-
-def target_for_output_dir(x):
+def arch_for_output_dir(x):
     return os.path.basename(x).split(',')[1]
 
 
@@ -923,7 +919,7 @@ def lipo(output_dirs):
         cmd = ['lipo']
         all_arches = []
         for x in output_dirs:
-            arch = arch_for_target(target_for_output_dir(x))
+            arch = arch_for_output_dir(x)
             all_arches.append(arch)
             cmd.extend(('-arch', arch, os.path.join(x, binary)))
         cmd += ['-create', '-output', dst]

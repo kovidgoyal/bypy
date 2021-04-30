@@ -7,8 +7,8 @@ import os
 import shutil
 
 from bypy.constants import (CFLAGS, LDFLAGS, MAKEOPTS, NMAKE, PERL, build_dir,
-                            is64bit, ismacos, iswindows, current_build_target)
-from bypy.utils import run, arch_for_target
+                            is64bit, ismacos, iswindows, current_build_arch)
+from bypy.utils import run
 
 
 needs_lipo = True
@@ -16,7 +16,7 @@ needs_lipo = True
 
 def main(args):
     if ismacos:
-        arch = arch_for_target(current_build_target() or 'x86_64')
+        arch = current_build_arch() or 'x86_64'
         run(
             f'./Configure darwin64-{arch}-cc shared enable-ec_nistp_64_gcc_128'
             f' no-ssl2 --prefix={build_dir()} --openssldir={build_dir()}')

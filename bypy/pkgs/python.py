@@ -7,12 +7,12 @@ import os
 import re
 import shutil
 
-from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, PREFIX, PYTHON, TARGETS,
-                            build_dir, is64bit, islinux, ismacos, iswindows)
-from bypy.utils import (ModifiedEnv, arch_for_target, copy_headers,
-                        get_platform_toolset, get_windows_sdk,
-                        install_binaries, replace_in_file, run, simple_build,
-                        walk)
+from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, PREFIX, PYTHON,
+                            UNIVERSAL_ARCHES, build_dir, is64bit, islinux,
+                            ismacos, iswindows)
+from bypy.utils import (ModifiedEnv, copy_headers, get_platform_toolset,
+                        get_windows_sdk, install_binaries, replace_in_file,
+                        run, simple_build, walk)
 
 
 def unix_python(args):
@@ -36,11 +36,10 @@ def unix_python(args):
     elif ismacos:
         conf += f' --enable-framework={build_dir()}/python'
         conf += f' --with-openssl={PREFIX}'
-        if len(TARGETS) > 1:
+        if len(UNIVERSAL_ARCHES) > 1:
             conf += ' --enable-universalsdk --with-universal-archs=universal2'
             # Without ARCHFLAGS the extensions are built for only one arch
-            env['ARCHFLAGS'] = ' '.join(
-                f'-arch {arch_for_target(x)}' for x in TARGETS)
+            env['ARCHFLAGS'] = ' '.join(f'-arch {x}' for x in UNIVERSAL_ARCHES)
         # Needed for readline detection
         env['MACOSX_DEPLOYMENT_TARGET'] = '10.14'
         env['LDFLAGS'] = LDFLAGS.replace('-headerpad_max_install_names', '')

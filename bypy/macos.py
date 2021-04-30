@@ -29,7 +29,8 @@ def main(args=tuple(sys.argv)):
         raise SystemExit('Another instance of the macOS container is running')
     conf = get_conf()
     vm, prefix, python = conf['vm_name'], conf['root'], conf['python']
-    targets = conf.get('targets', '')
+    universal = conf.get('universal') == 'true'
+    deploy_target = conf.get('deploy_target', '')
     if len(args) > 1:
         if args[1] == 'shutdown':
             shutdown_vm(vm)
@@ -47,8 +48,10 @@ def main(args=tuple(sys.argv)):
     cmd = [
         python, os.path.join(prefix, 'bypy'), 'main',
         f'BYPY_ROOT={prefix}']
-    if targets:
-        cmd.append(f'BYPY_TARGETS={targets}')
+    if universal:
+        cmd.append('BYPY_UNIVERSAL=true')
+    if deploy_target:
+        cmd.append(f'BYPY_DEPLOY_TARGET={deploy_target}')
     cmd += list(args)
     try:
         run_main(vm, *cmd)

@@ -31,8 +31,7 @@ def base_dir():
     return ans
 
 
-TARGETS = tuple(filter(
-    None, os.environ.get('BYPY_TARGETS', '').split(',')))
+UNIVERSAL_ARCHES = ()
 ROOT = os.environ.get('BYPY_ROOT', '/').replace('/', os.sep)
 is64bit = sys.maxsize > (1 << 32)
 SW = os.path.join(ROOT, 'sw')
@@ -125,6 +124,11 @@ else:
         LDFLAGS = worker_env['LDFLAGS'] = \
                 f'-headerpad_max_install_names -L{LIBDIR}'
         CMAKE = os.path.join(BIN, 'cmake')
+        if os.environ.get('BYPY_UNIVERSAL') == 'true':
+            UNIVERSAL_ARCHES = ('x86_64', 'arm64')
+        if 'BYPY_DEPLOY_TARGET' in os.environ:
+            worker_env['MACOSX_DEPLOYMENT_TARGET'] = os.environ[
+                'BYPY_DEPLOY_TARGET']
     else:
         LDFLAGS = worker_env['LDFLAGS'] = \
                 f'-L{LIBDIR} -Wl,-rpath-link,{LIBDIR}'
@@ -143,14 +147,14 @@ def mkdtemp(prefix=''):
     return tempfile.mkdtemp(prefix=prefix, dir=tdir)
 
 
-def current_build_target():
-    return getattr(current_build_target, 'ans', None)
+def current_build_arch():
+    return getattr(current_build_arch, 'ans', None)
 
 
-def build_dir(newval=None, current_target=None):
+def build_dir(newval=None, current_arch=None):
     if newval is not None:
         build_dir.ans = newval
-        current_build_target.ans = current_target
+        current_build_arch.ans = current_arch
     return getattr(build_dir, 'ans', None)
 
 
