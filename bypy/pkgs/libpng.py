@@ -21,8 +21,11 @@ def main(args):
         )
     else:
         configure_args = ['--disable-dependency-tracking', '--disable-static']
-        if UNIVERSAL_ARCHES:
-            configure_args.append(f'PNG_COPTS=-arch {current_build_arch()}')
+        if UNIVERSAL_ARCHES and 'arm' in current_build_arch():
+            configure_args += [
+                '--build=x86_64-apple-darwin', '--host=aarch64-apple-darwin',
+                f'CFLAGS=-arch {current_build_arch()}'
+            ]
             if 'arm' in current_build_arch():
                 # does not build with it set to on, or not set
                 # https://github.com/glennrp/libpng/issues/257
