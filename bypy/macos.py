@@ -29,7 +29,7 @@ def main(args=tuple(sys.argv)):
         raise SystemExit('Another instance of the macOS container is running')
     conf = get_conf()
     vm, prefix, python = conf['vm_name'], conf['root'], conf['python']
-    targets = conf['targets']
+    targets = conf.get('targets', '')
     if len(args) > 1:
         if args[1] == 'shutdown':
             shutdown_vm(vm)
@@ -46,7 +46,10 @@ def main(args=tuple(sys.argv)):
     to_vm(rsync, sources_dir, pkg_dir, prefix=prefix)
     cmd = [
         python, os.path.join(prefix, 'bypy'), 'main',
-        f'BYPY_ROOT={prefix}', f'BYPY_TARGETS={targets}'] + list(args)
+        f'BYPY_ROOT={prefix}']
+    if targets:
+        cmd.append(f'BYPY_TARGETS={targets}')
+    cmd += list(args)
     try:
         run_main(vm, *cmd)
     finally:
