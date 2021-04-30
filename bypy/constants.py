@@ -158,6 +158,11 @@ def build_dir(newval=None, current_arch=None):
     return getattr(build_dir, 'ans', None)
 
 
+def is_arm_half_of_lipo_build():
+    return ismacos and UNIVERSAL_ARCHES and 'arm' in (
+        current_build_arch() or '')
+
+
 @lru_cache()
 def python_major_minor_version():
     from .download_sources import read_deps, ok_dep

@@ -4,8 +4,7 @@
 
 import os
 
-from bypy.constants import (PREFIX, UNIVERSAL_ARCHES, current_build_arch,
-                            iswindows)
+from bypy.constants import PREFIX, current_build_arch, iswindows
 from bypy.utils import simple_build, windows_cmake_build
 
 needs_lipo = True
@@ -21,13 +20,8 @@ def main(args):
         )
     else:
         configure_args = ['--disable-dependency-tracking', '--disable-static']
-        if UNIVERSAL_ARCHES and 'arm' in current_build_arch():
-            configure_args += [
-                '--build=x86_64-apple-darwin', '--host=aarch64-apple-darwin',
-                f'CFLAGS=-arch {current_build_arch()}'
-            ]
-            if 'arm' in current_build_arch():
-                # does not build with it set to on, or not set
-                # https://github.com/glennrp/libpng/issues/257
-                configure_args.append('--enable-arm-neon=off')
+        if 'arm' in (current_build_arch() or ''):
+            # does not build with it set to on, or not set
+            # https://github.com/glennrp/libpng/issues/257
+            configure_args.append('--enable-arm-neon=off')
         simple_build(configure_args)

@@ -23,7 +23,8 @@ from functools import partial
 
 from .constants import (CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX,
                         PYTHON, UNIVERSAL_ARCHES, build_dir, cpu_count,
-                        is64bit, islinux, ismacos, iswindows, mkdtemp,
+                        current_build_arch, is64bit, is_arm_half_of_lipo_build,
+                        islinux, ismacos, iswindows, mkdtemp,
                         python_major_minor_version, worker_env)
 
 if iswindows:
@@ -284,12 +285,20 @@ def simple_build(
 ):
     if isinstance(configure_args, str):
         configure_args = split(configure_args)
+    else:
+        configure_args = list(configure_args)
     if isinstance(make_args, str):
         make_args = split(make_args)
     if isinstance(install_args, str):
         install_args = split(install_args)
     if not os.path.exists(configure_name) and os.path.exists(autogen_name):
         run(autogen_name)
+    if is_arm_half_of_lipo_build():
+        flags = f'{worker_env["CFLAGS"]} -arch {current_build_arch()}'
+        configure_args += [
+            '--build=x86_64-apple-darwin', '--host=aarch64-apple-darwin',
+            f'CXXFLAGS={flags}', f'CFLAGS={flags}',
+        ]
     run(configure_name, '--prefix=' + (
         override_prefix or build_dir()), *configure_args)
     make_opts = [] if no_parallel else split(MAKEOPTS)
