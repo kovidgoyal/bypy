@@ -13,6 +13,7 @@ import shlex
 import shutil
 import socket
 import stat
+import struct
 import subprocess
 import sys
 import tarfile
@@ -336,13 +337,24 @@ def qt_build(qmake_args='', for_webengine=False, **env):
         os.path.join(build_dir(), base, 'qt'), os.path.join(build_dir(), 'qt'))
 
 
+FAT_MAGIC_BE = struct.pack('>I',    0xcafebabe)
+FAT_MAGIC_LE = struct.pack('<I',    0xcafebabe)
+FAT_MAGIC_64_BE = struct.pack('>I', 0xcafebabf)
+FAT_MAGIC_64_LE = struct.pack('<I', 0xcafebabf)
+MH_MAGIC_BE = struct.pack('>I',     0xfeedface)
+MH_MAGIC_LE = struct.pack('<I',     0xfeedface)
+MH_MAGIC_64_BE = struct.pack('>I',  0xfeedfacf)
+MH_MAGIC_64_LE = struct.pack('<I',  0xfeedfacf)
+MACH_MAGICS = (
+    FAT_MAGIC_BE, FAT_MAGIC_LE, FAT_MAGIC_64_BE, FAT_MAGIC_64_LE,
+    MH_MAGIC_BE, MH_MAGIC_LE, MH_MAGIC_64_BE, MH_MAGIC_64_LE
+)
+
+
 def is_macho_binary(p):
     try:
         with open(p, 'rb') as f:
-            return f.read(4) in (
-                b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf',  # Mach-64
-                b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca'   # Mach Fat binary
-            )
+            return f.read(4) in MACH_MAGICS
     except (FileNotFoundError, IsADirectoryError):
         return False
 
