@@ -339,7 +339,10 @@ def qt_build(qmake_args='', for_webengine=False, **env):
 def is_macho_binary(p):
     try:
         with open(p, 'rb') as f:
-            return f.read(4) in (b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf')
+            return f.read(4) in (
+                b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf',  # Mach-64
+                b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca'   # Mach Fat binary
+            )
     except (FileNotFoundError, IsADirectoryError):
         return False
 
