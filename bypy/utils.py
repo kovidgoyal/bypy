@@ -337,14 +337,14 @@ def qt_build(qmake_args='', for_webengine=False, **env):
         os.path.join(build_dir(), base, 'qt'), os.path.join(build_dir(), 'qt'))
 
 
-FAT_MAGIC_BE = struct.pack('>I',    0xcafebabe)
-FAT_MAGIC_LE = struct.pack('<I',    0xcafebabe)
-FAT_MAGIC_64_BE = struct.pack('>I', 0xcafebabf)
-FAT_MAGIC_64_LE = struct.pack('<I', 0xcafebabf)
-MH_MAGIC_BE = struct.pack('>I',     0xfeedface)
-MH_MAGIC_LE = struct.pack('<I',     0xfeedface)
-MH_MAGIC_64_BE = struct.pack('>I',  0xfeedfacf)
-MH_MAGIC_64_LE = struct.pack('<I',  0xfeedfacf)
+FAT_MAGIC_BE = struct.pack('>I',    0xcafe_babe)
+FAT_MAGIC_LE = struct.pack('<I',    0xcafe_babe)
+FAT_MAGIC_64_BE = struct.pack('>I', 0xcafe_babf)
+FAT_MAGIC_64_LE = struct.pack('<I', 0xcafe_babf)
+MH_MAGIC_BE = struct.pack('>I',     0xfeed_face)
+MH_MAGIC_LE = struct.pack('<I',     0xfeed_face)
+MH_MAGIC_64_BE = struct.pack('>I',  0xfeed_facf)
+MH_MAGIC_64_LE = struct.pack('<I',  0xfeed_facf)
 MACH_MAGICS = (
     FAT_MAGIC_BE, FAT_MAGIC_LE, FAT_MAGIC_64_BE, FAT_MAGIC_64_LE,
     MH_MAGIC_BE, MH_MAGIC_LE, MH_MAGIC_64_BE, MH_MAGIC_64_LE
