@@ -92,13 +92,23 @@ qemu-system-aarch64 -nographic -machine virt,gic-version=max -m 512M -cpu max -s
 -nic user,model=virtio-net-pci,hostfwd=tcp:0.0.0.0:22003-:22 \
 -drive file=alpine.qcow2,if=none,id=drive0,cache=writeback -device virtio-blk,drive=drive0,bootindex=0 \
 -drive file=flash0.img,format=raw,if=pflash -drive file=flash1.img,format=raw,if=pflash
-
-# Allow root login in ssh config
+```
+# Post-install guest OS modifications
+## Allow root login in ssh config
+```bash
 sudo su
 chpasswd #Change the root password
 vi /etc/ssh/sshd_conf # Allow `rootpasswordlogin`
 service sshd restart
+```
+You should then be able to ssh via `ssh root@localhost -p 22003`
 
+## `glibc` 2.23 (alpine only)
+This ensures that the glibc is old enough for the compiled bins to run without issues on images both young and old
+```bash
+apk add wget
+wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r4/glibc-2.23-r4.apk
+apk add glibc-2.23-r4.apk
 ```
 
-You should then be able to 
