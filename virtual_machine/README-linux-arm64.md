@@ -1,5 +1,5 @@
 These instructions are loosely based off https://futurewei-cloud.github.io/ARM-Datacenter/qemu/how-to-launch-aarch64-vm/
-# Preparing for qemu install
+# Preparing host for qemu install
 
 ```sh
 apt-get install qemu-system-arm
@@ -28,6 +28,7 @@ qemu-system-aarch64 -nographic -machine virt,gic-version=max -m 512M -cpu max -s
 ```
 
 # OS Installation automation
+You can attempt to automate the installer but honestly it takes ~10 minutes to run through and select the defaults. Ensure you're using the `sys` option while setting up the disk, and that your mirror actually works.
 ```bash
 # log in with `root`
 
@@ -50,7 +51,7 @@ DNSOPTS="-d 8.8.8.8"
 # Set timezone to UTC
 TIMEZONEOPTS="-z UTC"
 # set http/ftp proxy
-#PROXYOPTS="http://webproxy:8080"
+PROXYOPTS="none"
 # Add a random mirror
 APKREPOSOPTS="-f"
 # Install Openssh
@@ -74,7 +75,12 @@ setup-alpine -f answerfile
 # Booting image
 ```
 qemu-system-aarch64 -nographic -machine virt,gic-version=max -m 512M -cpu max -smp 4 \
--netdev user,id=vnet,hostfwd=:127.0.0.1:0-:22 -device virtio-net-pci,netdev=vnet \
+-nic user,model=virtio-net-pci,hostfwd=tcp:0.0.0.0:22003-:22 \
 -drive file=alpine.qcow2,if=none,id=drive0,cache=writeback -device virtio-blk,drive=drive0,bootindex=0 \
--drive file=flash0.img,format=raw,if=pflash -drive file=flash1.img,format=raw,if=pflash 
+-drive file=flash0.img,format=raw,if=pflash -drive file=flash1.img,format=raw,if=pflash
+
+# Allow root login in ssh config
+vi /etc/ssh/sshd_conf
+service sshd restart
+
 ```
