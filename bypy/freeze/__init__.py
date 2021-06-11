@@ -147,7 +147,7 @@ def importer_src_to_header(develop_mode_env_var, path_to_user_env_vars):
         '__EXTENSION_SUFFIXES__', repr(extension_suffixes()), 1)
     src = compile_code(src, "bypy-importer.py")
     script = '\n'.join(bin_to_c(src))
-    return 'static const char importer_script[] = {' + script + '};'
+    return 'static const unsigned char importer_script[] = {' + script + '};'
 
 
 def collect_files_for_internment(base):
@@ -261,7 +261,7 @@ get_value_for_hash_index(int index, unsigned long *offset, unsigned long *size)
     *offset = 0; *size = 0;
     }}
 }}
-static const char filesystem_tree[] = {{ {tree} }};
+static const unsigned char filesystem_tree[] = {{ {tree} }};
 ''' + importer_src_to_header(develop_mode_env_var, path_to_user_env_vars)
     with open(os.path.join(include_dir, 'bypy-data-index.h'), 'w') as f:
         f.write(header)

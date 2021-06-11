@@ -440,7 +440,7 @@ initialize_data_access(PyObject *self, PyObject *args) {
     datastore_ptr = mmap(0, datastore_len, PROT_READ, MAP_SHARED, datastore_fd, 0);
     if (datastore_ptr == MAP_FAILED) { PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, path); close(datastore_fd); datastore_fd = -1; return NULL; }
 #endif
-    return PyBytes_FromStringAndSize(filesystem_tree, sizeof(filesystem_tree));
+    return PyBytes_FromStringAndSize((const char*)filesystem_tree, sizeof(filesystem_tree));
 }
 
 
