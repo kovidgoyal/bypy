@@ -219,9 +219,19 @@ def cleanup_site_packages(sp_dir):
     return {}
 
 
+def remove_pyc_files_in(base):
+    for f in walk(base):
+        if f.lower().endswith('.pyc'):
+            os.remove(f)
+    for dirpath, dirnames, filenames in os.walk(base):
+        if '__pycache__' in dirnames:
+            os.rmdir(os.path.join(dirpath, '__pycache__'))
+            dirnames.remove('__pycache__')
+
+
 def freeze_python(
     base, dest_dir, include_dir, extensions_map, develop_mode_env_var='',
-    path_to_user_env_vars=''
+    path_to_user_env_vars='', remove_pyc_files=False
 ):
     files = collect_files_for_internment(base)
     frozen_file = os.path.join(dest_dir, 'python-lib.bypy.frozen')
@@ -265,3 +275,5 @@ static const unsigned char filesystem_tree[] = {{ {tree} }};
 ''' + importer_src_to_header(develop_mode_env_var, path_to_user_env_vars)
     with open(os.path.join(include_dir, 'bypy-data-index.h'), 'w') as f:
         f.write(header)
+    if remove_pyc_files:
+        remove_pyc_files_in(base)
