@@ -274,6 +274,6 @@ get_value_for_hash_index(int index, unsigned long *offset, unsigned long *size)
 static const unsigned char filesystem_tree[] = {{ {tree} }};
 ''' + importer_src_to_header(develop_mode_env_var, path_to_user_env_vars)
     with open(os.path.join(include_dir, 'bypy-data-index.h'), 'w') as f:
-        f.write(header)
+        f.write(header + '\n')
     if remove_pyc_files:
         remove_pyc_files_in(base)
