@@ -18,8 +18,8 @@ def main(args):
         )
     else:
         run(
-            PYTHON, 'setup.py', 'build', 'install', '--root', build_dir(),
-            library_path=True)
+            PYTHON, 'setup.py', 'build', '--enable-all-extensions', 'install',
+            '--root', build_dir(), library_path=True)
     python_install()
 
 
