@@ -57,5 +57,7 @@ def main(args):
         run(
             cc, '-shared', '-o', dll, *args, *objects
         )
+        os.symlink(dll, dll[:-2])
         install_binaries(dll)
+        install_binaries(dll[:-2])
     copy_headers('include/libstemmer.h')
