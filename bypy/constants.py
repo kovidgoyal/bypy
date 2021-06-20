@@ -62,6 +62,7 @@ PERL = 'perl'
 RUBY = 'ruby'
 NASM = 'nasm'
 CL = 'cl.exe'
+LINK = 'link.exe'
 LIB = 'lib.exe'
 
 
