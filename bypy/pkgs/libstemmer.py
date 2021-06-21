@@ -47,7 +47,6 @@ def main(args):
         run(cc, *args)
         install_binaries(dll, 'bin')
         install_binaries('libstemmer.lib')
-        os.chdir('/')
     else:
         ext = 'dylib' if ismacos else 'so'
         dll = f'libstemmer.{ext}.0'
@@ -61,3 +60,5 @@ def main(args):
         install_binaries(dll)
         install_binaries(dll[:-2])
     copy_headers('include/libstemmer.h')
+    if iswindows:
+        os.chdir('/')
