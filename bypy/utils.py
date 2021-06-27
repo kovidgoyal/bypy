@@ -57,7 +57,9 @@ if iswindows:
         x = x.replace('\\', '\\\\')
         return shlex.split(x)
 else:
-    rmtree = shutil.rmtree
+
+    def rmtree(x, tries=10):
+        shutil.rmtree(x)
     split = shlex.split
 
 

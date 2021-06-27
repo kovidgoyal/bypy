@@ -48,7 +48,10 @@ class CleanupDirs:
 
     def __exit__(self, *a):
         for x in self.dirs:
-            rmtree(x)
+            try:
+                rmtree(x)
+            except PermissionError:
+                pass
 
     def __call__(self, x):
         self.dirs.append(x)
