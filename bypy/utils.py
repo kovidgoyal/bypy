@@ -878,17 +878,17 @@ def parallel_build(jobs, log=print, verbose=True):
         return True
 
 
-def py_compile(basedir):
+def py_compile(basedir, optimization_level='-OO'):
     version = python_major_minor_version()[0]
     if version < 3:
         run(
-            PYTHON, '-OO', '-m', 'compileall', '-d', '', '-f', '-q',
-            basedir, library_path=True)
+            PYTHON, optimization_level, '-m', 'compileall', '-d', '', '-f',
+            '-q', basedir, library_path=True)
         clean_exts = ('py', 'pyc')
     else:
         run(
-            PYTHON, '-OO', '-m', 'compileall', '-d', '', '-f', '-q',
-            '-b', '-j', '0', '--invalidation-mode=unchecked-hash',
+            PYTHON, optimization_level, '-m', 'compileall', '-d', '', '-f',
+            '-q', '-b', '-j', '0', '--invalidation-mode=unchecked-hash',
             basedir, library_path=True)
         clean_exts = ('py',)
 
