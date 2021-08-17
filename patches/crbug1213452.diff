@@ -7,8 +7,8 @@ index 05c39f0..086c56a2 100644
    }
  
 +  // clone3 takes a pointer argument which we cannot examine, so return ENOSYS
-+  // to force the libc to use clone. See https://crbug.com/1213452.
-+  if (sysno == __NR_clone3) {
++  // to force the libc to use clone. See https://crbug.com/1213452. 435 == __NR_clone3
++  if (sysno == 435) {
 +    return Error(ENOSYS);
 +  }
 +
