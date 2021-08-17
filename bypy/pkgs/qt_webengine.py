@@ -13,6 +13,8 @@ def main(args):
     conf = '-spellchecker'
     apply_patch('qtbug-88976.diff', level=1)
     if islinux:
+        # see https://bugs.launchpad.net/calibre/+bug/1939958
+        apply_patch('crbug1213452.diff', level=1)
         # workaround for bug in build system, not adding include path for
         # libjpeg when building iccjpeg, and mjpeg_decoder
         jpeg_files = list(glob.glob(f'{PREFIX}/include/*jpeg*.h'))

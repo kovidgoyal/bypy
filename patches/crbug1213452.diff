@@ -1,0 +1,17 @@
+diff --git a/src/3rdparty/chromium/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc b/src/3rdparty/chromium/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
+index 05c39f0..086c56a2 100644
+--- a/src/3rdparty/chromium/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
++++ b/src/3rdparty/chromium/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
+@@ -178,6 +178,12 @@
+     return RestrictCloneToThreadsAndEPERMFork();
+   }
+ 
++  // clone3 takes a pointer argument which we cannot examine, so return ENOSYS
++  // to force the libc to use clone. See https://crbug.com/1213452.
++  if (sysno == __NR_clone3) {
++    return Error(ENOSYS);
++  }
++
+   if (sysno == __NR_fcntl)
+     return RestrictFcntlCommands();
+ 
