@@ -110,9 +110,36 @@ def write_in_chroot(path, data):
         raise SystemExit(p.returncode)
 
 
+def install_modern_python(image_name):
+    return [
+        'add-apt-repository ppa:deadsnakes/ppa -y',
+        'apt-get update',
+        'apt-get install -y python3.9 python3.9-venv',
+        ['sh', '-c', 'ln -sf `which python3.9` `which python3`'],
+        'python3 -m ensurepip --upgrade --default-pip',
+    ]
+
+
+def install_modern_cmake(image_name):
+    kitware = '/usr/share/keyrings/kitware-archive-keyring.gpg'
+    return [
+        ['sh', '-c',
+         'curl https://apt.kitware.com/keys/kitware-archive-latest.asc |'
+         f' gpg --dearmor - > {kitware}'],
+        ['sh', '-c', f"echo 'deb [signed-by={kitware}]'"
+            f' https://apt.kitware.com/ubuntu/ {image_name} main'
+            ' > /etc/apt/sources.list.d/kitware.list'],
+        'apt-get update',
+        f'rm {kitware}',
+        'apt-get install -y kitware-archive-keyring',
+        'apt-get install -y cmake',
+    ]
+
+
 def _build_container(url=DEFAULT_BASE_IMAGE):
     user = pwd.getpwuid(os.geteuid()).pw_name
     archive = cached_download(url.format('amd64' if arch == '64' else 'i386'))
+    image_name = url.split('/')[-1].split('-')[1]
     if os.path.exists(img_path):
         call('sudo', 'rm', '-rf', img_path, echo=False)
     if os.path.exists(img_store_path):
@@ -146,20 +173,26 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
         deps = ' '.join(deps)
     deps_cmd = 'apt-get install -y ' + deps
 
+    extra_cmds = []
+    if image_name == 'xenial':
+        extra_cmds += install_modern_cmake(image_name)
+    else:
+        extra_cmds.append('apt-get install -y cmake')
+
+    if image_name in ('xenial', 'bionic'):
+        extra_cmds += install_modern_python(image_name)
+    else:
+        extra_cmds.append('apt-get install -y python-is-python3 python3-pip')
+
     for cmd in [
         # Basic build environment
         'apt-get update',
-        'apt-get install -y build-essential cmake software-properties-common'
-        ' nasm chrpath zsh git uuid-dev libmount-dev'
+        'apt-get install -y build-essential software-properties-common'
+        ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https'
         ' dh-autoreconf gperf',
-        # python 3.7
-        'add-apt-repository ppa:deadsnakes/ppa -y',
-        'apt-get update',
-        'apt-get install -y python3.7',
-        'curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py',
-        'python3.7 get-pip.py',
-        'python3.7 -m pip install ninja',
-        'python3.7 -m pip install meson',
+    ] + extra_cmds + [
+        'python3 -m pip install ninja',
+        'python3 -m pip install meson',
         deps_cmd,
         # Cleanup
         'apt-get clean',
@@ -249,7 +282,7 @@ def run(args):
             open(os.path.join(tdir, '.zshrc'), 'wb').close()
         try:
             mount_all(tdir)
-            cmd = ['python3.7', '/bypy', 'main'] + args
+            cmd = ['python3', '/bypy', 'main'] + args
             os.environ.pop('LANG', None)
             for k in tuple(os.environ):
                 if k.startswith('LC') or k.startswith('XAUTH'):
