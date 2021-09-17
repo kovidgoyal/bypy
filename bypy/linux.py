@@ -152,6 +152,7 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
         'apt-get install -y build-essential cmake software-properties-common'
         ' nasm chrpath zsh git uuid-dev libmount-dev'
         ' dh-autoreconf gperf',
+        # python 3.7
         'add-apt-repository ppa:deadsnakes/ppa -y',
         'apt-get update',
         'apt-get install -y python3.7',
