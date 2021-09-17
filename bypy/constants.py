@@ -132,7 +132,7 @@ else:
                 'BYPY_DEPLOY_TARGET']
     else:
         LDFLAGS = worker_env['LDFLAGS'] = \
-                f'-L{LIBDIR} -Wl,-rpath-link,{LIBDIR}'
+            f'-L{LIBDIR} -Wl,-rpath-link,{LIBDIR}'
 
 
 def mkdtemp(prefix=''):
