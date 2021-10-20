@@ -150,6 +150,82 @@ class ExtensionFileLoader:
         return self.path
 
 
+class Traversable:
+
+    __slots__ = ('_filesystem_tree', '_path_entries')
+
+    def __init__(self, path_entries, filesystem_tree):
+        self._filesystem_tree = filesystem_tree
+        self._path_entries = path_entries
+
+    def __repr__(self):
+        return '/'.join(self._path_entries)
+
+    @property
+    def name(self):
+        return self._path_entries[-1]
+
+    @property
+    def _self_node(self):
+        p = self._filesystem_tree
+        for part in self._path_entries:
+            try:
+                p = p[part]
+            except KeyError:
+                return
+        return p
+
+    def iterdir(self):
+        p = self._self_node
+        if p is not None:
+            for child_name, child_node in p.items():
+                yield Traversable(
+                    tuple(self._path_entries + (child_name,)), child_node)
+
+    def is_dir(self):
+        return bool(self._self_node)
+
+    def is_file(self):
+        p = self._self_node
+        return p is not None and not p
+
+    def read_memoryview(self):
+        if self.is_dir():
+            raise IsADirectoryError(f'Is a directory: {self.name}')
+        q = '/'.join(self._path_entries)
+        idx = index_for_name(q)
+        if idx < 0:
+            raise FileNotFoundError(f'{q} not found')
+        offset, size = offsets_for_index(idx)
+        return get_data_at(offset, size)
+
+    def read_bytes(self):
+        return bytes(self.read_memoryview())
+
+    def read_text(self, encoding=None):
+        return self.read_bytes().decode(encoding or 'utf-8')
+
+    def joinpath(self, child_name):
+        if isinstance(child_name, Traversable):
+            return Traversable(
+                self._path_entries + (child_name.name,), self._filesystem_tree)
+        return Traversable(
+            self._path_entries + (child_name,), self._filesystem_tree)
+
+    def __truediv__(self, child):
+        return self.joinpath(child)
+
+    def open(self, mode='r', *a, **kw):
+        from io import BytesIO, TextIOWrapper
+        if mode == 'rb':
+            return BytesIO(self.read_memoryview())
+        elif mode == 'r':
+            return TextIOWrapper(BytesIO(self.read_memoryview()), **kw)
+        else:
+            raise PermissionError(
+                f'The mode {mode!r} is not supported for opening frozen files')
+
+
 class FrozenByteCodeLoader:
 
     __slots__ = (
@@ -208,6 +284,9 @@ class FrozenByteCodeLoader:
         for part in self.resource_prefix:
             p = p[part]
         return p
+
+    def files(self):
+        return Traversable(tuple(self.resource_prefix), self.filesystem_tree)
 
     def contents(self):
         return tuple(self.node_for_self)
