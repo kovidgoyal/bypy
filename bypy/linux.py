@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 from functools import partial
 from urllib.request import urlopen
 
@@ -73,7 +74,7 @@ def copy_terminfo():
         call('sudo', 'cp', '-a', path, dest, echo=False)
 
 
-def chroot(cmd, as_root=True):
+def chroot(cmd, as_root=True, for_install=False):
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
     print_cmd(['in-chroot'] + cmd)
@@ -86,6 +87,8 @@ def chroot(cmd, as_root=True):
         'USER': 'root' if as_root else user,
         'TERM': os.environ.get('TERM', 'xterm-256color'),
     }
+    if for_install:
+        env['DEBIAN_FRONTEND'] = 'noninteractive'
     us = [] if as_root else ['--userspec={}:{}'.format(
         os.geteuid(), os.getegid())]
     as_arch = ['linux{}'.format(arch), '--']
@@ -108,6 +111,20 @@ def write_in_chroot(path, data):
     p.communicate(data)
     if p.wait() != 0:
         raise SystemExit(p.returncode)
+
+
+@contextmanager
+def mounts_needed_for_install():
+    mounts = []
+    for dev in ('random', 'urandom'):
+        mounts.append(os.path.join(img_path, f'dev/{dev}'))
+        call('sudo', 'touch', mounts[-1])
+        call('sudo', 'mount', '--bind', f'/dev/{dev}', mounts[-1])
+    try:
+        yield
+    finally:
+        for x in mounts:
+            call('sudo', 'umount', '-l', x)
 
 
 def install_modern_python(image_name):
@@ -181,25 +198,35 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
         extra_cmds.append('apt-get install -y python-is-python3 python3-pip')
         extra_cmds.append('apt-get install -y cmake')
 
-    for cmd in [
-        # Basic build environment
-        'apt-get update',
-        'apt-get install -y build-essential software-properties-common'
-        ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https'
-        ' dh-autoreconf gperf',
-    ] + extra_cmds + [
-        'python3 -m pip install ninja',
-        'python3 -m pip install meson',
-        deps_cmd,
-        # Cleanup
-        'apt-get clean',
-        'chsh -s /bin/zsh ' + user,
-    ]:
-        if cmd:
-            if callable(cmd):
-                cmd()
-            else:
-                chroot(cmd)
+    tzdata_cmds = [
+        f'''sh -c "echo '{x}' | debconf-set-selections"''' for x in (
+            'tzdata tzdata/Areas select Asia',
+            'tzdata tzdata/Zones/Asia select Kolkata'
+        )] + ['debconf-show tzdata']
+
+    with mounts_needed_for_install():
+        for cmd in tzdata_cmds + [
+            'apt-get update',
+            # bloody only way to get tzdata to install non-interactively is to
+            # pipe the expected responses to it
+            """sh -c 'echo "6\\n44" | apt-get install -y tzdata'""",
+            # Basic build environment
+            'apt-get install -y build-essential software-properties-common'
+            ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https'
+            ' dh-autoreconf gperf',
+        ] + extra_cmds + [
+            'python3 -m pip install ninja',
+            'python3 -m pip install meson',
+            deps_cmd,
+            # Cleanup
+            'apt-get clean',
+            'chsh -s /bin/zsh ' + user,
+        ]:
+            if cmd:
+                if callable(cmd):
+                    cmd()
+                else:
+                    chroot(cmd, for_install=True)
 
 
 def build_container():
