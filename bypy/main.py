@@ -8,7 +8,7 @@ import runpy
 import shutil
 import sys
 
-from .constants import OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, build_dir
+from .constants import OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, build_dir, PREFIX
 from .deps import init_env
 from .deps import main as deps_main
 from .utils import mkdtemp, rmtree, run_shell
@@ -63,7 +63,7 @@ def main(args):
     if args.shell or args.deps == ['shell']:
         init_env()
         os.chdir(ROOT)
-        run_shell()
+        run_shell(cwd=PREFIX)
         return
 
     if args.deps == ['program']:
