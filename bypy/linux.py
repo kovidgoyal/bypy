@@ -81,8 +81,6 @@ def chroot(cmd, as_root=True, for_install=False):
     user = pwd.getpwuid(os.geteuid()).pw_name
     env = {
         'PATH': '/sbin:/usr/sbin:/usr/local/bin:/bin:/usr/bin',
-        'PS1': '\x1b[92mbypy\x1b[0m ({}-bit) %d {} '.format(
-            arch, '#' if as_root else '$'),
         'HOME': '/root' if as_root else '/home/' + user,
         'USER': 'root' if as_root else user,
         'TERM': os.environ.get('TERM', 'xterm-256color'),
