@@ -25,6 +25,8 @@ def main(args):
             elif f.endswith('.lib'):
                 install_binaries(f)
     else:
+        # https://gitlab.gnome.org/GNOME/libxml2/-/issues/204
+        replace_in_file('encoding.c', re.compile(r'\bTRUE\b'), '1')
         # ICU is needed to use libxml2 in qt-webengine
         simple_build(
             '--disable-dependency-tracking --disable-static --enable-shared'
