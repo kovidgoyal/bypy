@@ -86,13 +86,17 @@ def chroot(cmd, as_root=True, for_install=False):
         'HOME': '/root' if as_root else '/home/' + user,
         'USER': 'root' if as_root else user,
         'TERM': os.environ.get('TERM', 'xterm-256color'),
+        'BYPY_ARCH': f'{arch}-bit',
     }
     if for_install:
         env['DEBIAN_FRONTEND'] = 'noninteractive'
     us = [] if as_root else ['--userspec={}:{}'.format(
         os.geteuid(), os.getegid())]
     as_arch = ['linux{}'.format(arch), '--']
-    cmd = ['sudo', 'chroot'] + us + [img_path] + as_arch + list(cmd)
+    env_cmd = ['env']
+    for k, v in env.items():
+        env_cmd += [f'{k}={v}']
+    cmd = ['sudo', 'chroot'] + us + [img_path] + as_arch + env_cmd + list(cmd)
     copy_terminfo()
     call('sudo', 'cp', '/etc/resolv.conf',
          os.path.join(img_path, 'etc'), echo=False)
@@ -300,10 +304,15 @@ def run(args):
     # too small
     with tempfile.TemporaryDirectory(prefix='tmp-', dir='bypy/b') as tdir:
         zshrc = os.path.realpath(os.path.expanduser('~/.zshrc'))
+        dest = os.path.join(
+            img_path, 'home', pwd.getpwuid(os.geteuid()).pw_name, '.zshrc')
         if os.path.exists(zshrc):
-            shutil.copy2(zshrc, os.path.join(tdir, '.zshrc'))
+            shutil.copy2(zshrc, dest)
         else:
-            open(os.path.join(tdir, '.zshrc'), 'wb').close()
+            open(dest, 'wb').close()
+        shi = os.path.expanduser('~/work/kitty/shell-integration/kitty.zsh')
+        if os.path.exists(shi):
+            shutil.copy2(shi, os.path.dirname(dest))
         try:
             mount_all(tdir)
             cmd = ['python3', '/bypy', 'main'] + args
