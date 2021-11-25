@@ -161,9 +161,15 @@ def run_shell(library_path=False, cwd=None, env=None):
         paths = paths + cygwin_paths
         env['PATH'] = os.pathsep.join(paths)
     try:
-        return subprocess.Popen([sh, '-i'], env=env, cwd=cwd).wait()
-    except KeyboardInterrupt:
-        return 0
+        try:
+            return subprocess.Popen([sh, '-il'], env=env, cwd=cwd).wait()
+        except KeyboardInterrupt:
+            return 0
+    finally:
+        # turn off cursor key mode, zsh tends to leave the terminal in that
+        # mode when exited with a EOF (ctrl-d)
+        sys.stdout.write('\x1b[?1l')
+        sys.stdout.flush()
 
 
 class RunFailure(subprocess.CalledProcessError):
