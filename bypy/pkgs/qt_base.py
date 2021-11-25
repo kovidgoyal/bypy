@@ -5,9 +5,9 @@
 import os
 import shutil
 
-from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, MAKEOPTS, NMAKE, PREFIX,
-                            build_dir, islinux, ismacos, iswindows)
-from bypy.utils import replace_in_file, run, run_shell, apply_patch
+from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, PREFIX, build_dir,
+                            islinux, ismacos, iswindows, BIN)
+from bypy.utils import apply_patch, replace_in_file, run, run_shell
 
 
 def main(args):
@@ -15,17 +15,6 @@ def main(args):
         # https://bugreports.qt.io/browse/QTBUG-88495
         apply_patch('qtbug-88495.diff', level=1)
     if islinux:
-        # Revert a Qt patch to explicitly depend on libxcb-util
-        # this breaks on the ever-delightful Debian.
-        # https://bugreports.qt.io/browse/QTBUG-88688
-        apply_patch('qt-xcb-util-dependency-remove.diff')
-        # We disable loading of bearer plugins because many distros ship with
-        # broken bearer plugins that cause hangs.  At least, this was the case
-        # in Qt 4.x Dont know if it is still true for Qt 5 but since we dont
-        # need bearers anyway, it cant hurt.
-        replace_in_file(
-            'src/network/bearer/qnetworkconfigmanager_p.cpp',
-            b'/bearer"', b'/bearer-disabled-by-kovid"')
         # Change pointing_hand to hand2, see
         # https://bugreports.qt.io/browse/QTBUG-41151
         replace_in_file('src/plugins/platforms/xcb/qxcbcursor.cpp',
@@ -59,20 +48,23 @@ def main(args):
             r".replace(QLatin1Char('/'), QLatin1Char('\\'))"
             r'+ QString::fromLatin1("\\app\\bin\\"));')
     cflags, ldflags = CFLAGS, LDFLAGS
+    cmake_args = ''
     if ismacos:
         ldflags = '-L' + LIBDIR
     os.mkdir('build'), os.chdir('build')
     configure = os.path.abspath(
         '..\\configure.bat') if iswindows else '../configure'
     conf = configure + (
-        ' -v -silent -opensource -confirm-license -prefix {}/qt -release'
+        ' -prefix {}/qt -release'
         ' -nomake examples -nomake tests -no-sql-odbc -no-sql-psql'
         ' -icu -qt-harfbuzz -qt-doubleconversion').format(build_dir())
     if islinux:
         # Gold linker is needed for Qt 5.13.0 because of
         # https://bugreports.qt.io/browse/QTBUG-76196
-        conf += (' -bundled-xcb-xinput -xcb -glib -openssl -qt-pcre'
-                 ' -xkbcommon -libinput -linker gold')
+        conf += (
+            ' -bundled-xcb-xinput -xcb -glib -openssl -openssl-linked'
+            ' -qt-pcre -xkbcommon -libinput -linker gold -pkg-config')
+        cmake_args += f'-D OPENSSL_ROOT_DIR={PREFIX}'
     elif ismacos:
         conf += ' -no-pkg-config -framework -no-openssl -securetransport'
         ' -no-freetype -no-fontconfig '
@@ -80,25 +72,27 @@ def main(args):
         # Qt links incorrectly against libpng and libjpeg, so use the bundled
         # copy Use dynamic OpenGl, as per:
         # https://doc.qt.io/qt-5/windows-requirements.html#dynamically-loading-graphics-drivers
-        conf += (' -openssl -directwrite -ltcg -mp'
+        conf += (' -schannel -no-openssl -directwrite -ltcg -mp'
                  ' -no-plugin-manifests -no-freetype -no-fontconfig'
                  ' -qt-libpng -qt-libjpeg ')
-        # The following config items are not supported on windows
-        conf = conf.replace('-v -silent ', '-v ')
         cflags = '-I {}/include'.format(PREFIX).replace(os.sep, '/')
         ldflags = '-L {}/lib'.format(PREFIX).replace(os.sep, '/')
     conf += ' ' + cflags + ' ' + ldflags
+    if cmake_args:
+        conf += f'-- {cmake_args}'
     run(conf, library_path=True)
     # run_shell()
     run_shell
     if iswindows:
-        run(f'"{NMAKE}"', append_to_path=f'{PREFIX}/private/gnuwin32/bin')
-        run(f'"{NMAKE}" install')
+        run('cmake --build . --parallel',
+            append_to_path=f'{PREFIX}/private/gnuwin32/bin')
+        run('cmake --install .')
         shutil.copy2('../src/3rdparty/sqlite/sqlite3.c',
                      os.path.join(build_dir(), 'qt'))
     else:
-        run('make ' + MAKEOPTS, library_path=True)
-        run('make install')
+        run('cmake --build . --parallel',
+            library_path=True, append_to_path=BIN)
+        run('cmake --install .')
     with open(os.path.join(build_dir(), 'qt', 'bin', 'qt.conf'), 'wb') as f:
         f.write(b"[Paths]\nPrefix = ..\n")
 
