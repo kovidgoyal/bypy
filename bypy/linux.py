@@ -193,11 +193,15 @@ def _build_container(url=DEFAULT_BASE_IMAGE):
     deps_cmd = 'apt-get install -y ' + deps
 
     extra_cmds = []
-    if image_name in ('xenial', 'bionic'):
+    needs_python = image_name in ('xenial', 'bionic')
+    if needs_python:
         extra_cmds += install_modern_python(image_name)
-        extra_cmds += install_modern_cmake(image_name)
     else:
         extra_cmds.append('apt-get install -y python-is-python3 python3-pip')
+    needs_cmake = True
+    if needs_cmake:
+        extra_cmds += install_modern_cmake(image_name)
+    else:
         extra_cmds.append('apt-get install -y cmake')
 
     tzdata_cmds = [
