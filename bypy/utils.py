@@ -282,6 +282,9 @@ def relocate_pkgconfig_files():
                     f'^prefix={PREFIX}$', open(path).read(),
                     flags=re.M) is None:
                 replace_in_file(path, build_dir(), PREFIX)
+        if path.endswith('.cmake'):
+            if build_dir() in open(path).read():
+                replace_in_file(path, build_dir(), PREFIX)
 
 
 def simple_build(
