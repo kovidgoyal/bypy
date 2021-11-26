@@ -765,7 +765,7 @@ def cmake_build(
     os.mkdir('build')
     defs = {
         'CMAKE_BUILD_TYPE': 'RELEASE',
-        'CMAKE_PREFIX_PATH': PREFIX,
+        'CMAKE_SYSTEM_PREFIX_PATH': PREFIX,
         'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
     if len(UNIVERSAL_ARCHES) > 1 and ismacos:
