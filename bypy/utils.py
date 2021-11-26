@@ -190,8 +190,10 @@ def run(*args, **kw):
     env.update(kw.get('env', {}))
     append_to_path = kw.get('append_to_path')
     if append_to_path:
+        if isinstance(append_to_path, str):
+            append_to_path = append_to_path.split(os.pathsep)
         env['PATH'] = os.pathsep.join(
-            env['PATH'].split(os.pathsep) + append_to_path.split(os.pathsep))
+            env['PATH'].split(os.pathsep) + list(append_to_path))
     stdout = subprocess.PIPE if kw.get('get_output') else None
     stdin = subprocess.PIPE if kw.get('stdin') else None
     p = subprocess.Popen(
@@ -325,31 +327,39 @@ def simple_build(
         relocate_pkgconfig_files()
 
 
-def qt_build(qmake_args='', for_webengine=False, **env):
+def qt_build(configure_args='', for_webengine=False, **env):
+    # To get configure args run qt-configure-module . -help in the module
+    # source dir
     os.mkdir('build')
     os.chdir('build')
-    qmake_args = shlex.split(qmake_args)
-    append_to_path = None
+    append_to_path = [os.path.join(PREFIX, 'qt', 'bin')]
+    run('qt-configure-module', '..', '-list-features',
+        append_to_path=append_to_path, library_path=True)
     if iswindows:
-        append_to_path = os.path.dirname(os.environ['PYTHON_TWO'])
+        append_to_path.append(os.path.dirname(os.environ['PYTHON_TWO']))
         if for_webengine:
-            append_to_path = f'{PREFIX}/private/gnuwin32/bin;{append_to_path}'
+            append_to_path.insert(0, f'{PREFIX}/private/gnuwin32/bin')
     run(
-        os.path.join(PREFIX, 'qt', 'bin', 'qmake'),
-        '..', '--', *qmake_args,
-        library_path=True, append_to_path=append_to_path, **env)
-    if iswindows:
-        if for_webengine:
-            os.mkdir('process')
-        run(f'"{NMAKE}"', append_to_path=append_to_path, **env)
-        iroot = build_dir()[2:]
-        run(f'"{NMAKE}" INSTALL_ROOT={iroot} install')
-    else:
-        run('make ' + MAKEOPTS, library_path=True, **env)
-        run(f'make INSTALL_ROOT={build_dir()} install')
-    base = os.path.relpath(PREFIX, '/')
-    os.rename(
-        os.path.join(build_dir(), base, 'qt'), os.path.join(build_dir(), 'qt'))
+        'qt-configure-module', '..', *shlex.split(configure_args),
+        library_path=True, append_to_path=append_to_path or None,
+        **env
+    )
+    run('cmake --build . --parallel',
+        library_path=True, append_to_path=append_to_path)
+    run(f'cmake --install . --prefix {build_dir()}/qt')
+    relocate_pkgconfig_files()
+    # if iswindows:
+    #     if for_webengine:
+    #         os.mkdir('process')
+    #     run(f'"{NMAKE}"', append_to_path=append_to_path, **env)
+    #     iroot = build_dir()[2:]
+    #     run(f'"{NMAKE}" INSTALL_ROOT={iroot} install')
+    # else:
+    #     run('make ' + MAKEOPTS, library_path=True, **env)
+    #     run(f'make INSTALL_ROOT={build_dir()} install')
+    # base = os.path.relpath(PREFIX, '/')
+    # os.rename(
+    #     os.path.join(build_dir(), base, 'qt'), os.path.join(build_dir(), 'qt'))
 
 
 FAT_MAGIC_BE = struct.pack('>I',    0xcafe_babe)
