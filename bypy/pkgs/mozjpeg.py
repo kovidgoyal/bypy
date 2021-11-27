@@ -6,12 +6,12 @@ import os
 
 from bypy.constants import BIN, ismacos
 from bypy.utils import (cmake_build, install_binaries, iswindows,
-                        windows_cmake_build)
+                        windows_cmake_build, build_dir)
 
 
 def main(args):
     if iswindows:
-        windows_cmake_build()
+        windows_cmake_build(ENABLE_SHARED='FALSE')
         install_binaries('build/jpegtran-static.exe',
                          'bin',
                          fname_map=lambda x: 'jpegtran-calibre.exe')
@@ -22,4 +22,7 @@ def main(args):
         env = {}
         if ismacos:
             env['PATH'] = BIN + os.pathsep + os.environ['PATH']
-        cmake_build(env=env)
+        cmake_build(
+            env=env, ENABLE_SHARED='FALSE',
+            override_prefix=os.path.join(build_dir(), 'private', 'mozjpeg')
+        )
