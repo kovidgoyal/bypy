@@ -18,7 +18,9 @@ def run_sip_install(for_webengine=False):
     ).split()
     if iswindows:
         args.append('--link-full-dll')
-    if not for_webengine:
+    if for_webengine:
+        args.extend('--disable QtWebEngineQuick'.split())
+    else:
         args.extend(
             '--qt-shared --confirm-license --no-designer-plugin'
             ' --no-qml-plugin'.split()

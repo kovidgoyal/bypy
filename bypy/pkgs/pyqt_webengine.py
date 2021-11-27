@@ -16,5 +16,5 @@ def main(args):
 def post_install_check():
     run(PYTHON,
         '-c',
-        'from PyQt6 import QtWebEngine',
+        'from PyQt6 import QtWebEngineCore',
         library_path=os.path.join(PREFIX, 'qt', 'lib'))
