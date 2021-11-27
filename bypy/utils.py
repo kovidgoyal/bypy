@@ -327,26 +327,38 @@ def simple_build(
         relocate_pkgconfig_files()
 
 
-def qt_build(configure_args='', for_webengine=False, **env):
+def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):
     # To get configure args run qt-configure-module . -help in the module
     # source dir
     os.mkdir('build')
     os.chdir('build')
     append_to_path = [os.path.join(PREFIX, 'qt', 'bin')]
+    run('qt-configure-module', '..', '-help',
+        append_to_path=append_to_path, library_path=True)
     run('qt-configure-module', '..', '-list-features',
         append_to_path=append_to_path, library_path=True)
     if iswindows:
         append_to_path.append(os.path.dirname(os.environ['PYTHON_TWO']))
         if for_webengine:
             append_to_path.insert(0, f'{PREFIX}/private/gnuwin32/bin')
+    if for_webengine:
+        pass  # configure_args += ' -no-feature-webengine-jumbo-build'
     run(
-        'qt-configure-module', '..', *shlex.split(configure_args),
+        'qt-configure-module', '..', *shlex.split(configure_args.strip()),
         library_path=True, append_to_path=append_to_path or None,
-        **env
+        env=env
     )
+    if for_webengine:
+        # configure_args += ' -no-feature-webengine-jumbo-build'
+        # ninja by default creates cpu_count + 2 jobs, max RAM per job is thus
+        # RAM/num_jobs. Linking webengine requires several GB of RAM -- ka blammo
+        for f in walk('.'):
+            if f.endswith('.ninja'):
+                replace_in_file(
+                    f, 'ninja -C', 'ninja -j 2 -C', missing_ok=True)
     run('cmake --build . --parallel',
-        library_path=True, append_to_path=append_to_path)
-    run(f'cmake --install . --prefix {build_dir()}/qt')
+        library_path=True, append_to_path=append_to_path, env=env)
+    run(f'cmake --install . --prefix {build_dir()}/qt', env=env)
     relocate_pkgconfig_files()
     # if iswindows:
     #     if for_webengine:
