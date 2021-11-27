@@ -42,16 +42,14 @@ def main(args):
     if iswindows:
         for x in walk(build_dir()):
             parts = x.replace(os.sep, '/').split('/')
-            if parts[-2:] == ['PyQt5', '__init__.py']:
+            if parts[-2:] == ['PyQt6', '__init__.py']:
                 replace_in_file(x, re.compile(r'^find_qt\(\)', re.M), '')
                 break
         else:
             raise ValueError(
-                f'Failed to find PyQt5 __init__.py to patch in {build_dir()}')
+                f'Failed to find PyQt6 __init__.py to patch in {build_dir()}')
 
 
 def post_install_check():
-    q = 'from PyQt5 import sip, QtCore, QtGui'
-    if iswindows:
-        q += ', QtWinExtras'
+    q = 'from PyQt6 import sip, QtCore, QtGui'
     run(PYTHON, '-c', q, library_path=os.path.join(PREFIX, 'qt', 'lib'))
