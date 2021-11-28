@@ -82,6 +82,7 @@ def chroot(cmd, as_root=True, for_install=False):
     env = {
         'PATH': '/sbin:/usr/sbin:/usr/local/bin:/bin:/usr/bin',
         'HOME': '/root' if as_root else '/home/' + user,
+        'XDG_RUNTIME_DIR': '/tmp/' + ('root' if as_root else user),
         'USER': 'root' if as_root else user,
         'TERM': os.environ.get('TERM', 'xterm-256color'),
         'BYPY_ARCH': f'{arch}-bit',
