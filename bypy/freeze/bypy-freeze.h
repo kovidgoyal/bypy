@@ -7,6 +7,7 @@
 #pragma once
 
 #define UNICODE
+#define PY_SSIZE_T_CLEAN
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0502
