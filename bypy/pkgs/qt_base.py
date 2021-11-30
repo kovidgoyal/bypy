@@ -19,6 +19,7 @@ def cmake(args):
         'QT_BUILD_TESTS': 'FALSE',
         'CMAKE_BUILD_TYPE': 'Release',
         'OPENSSL_ROOT_DIR': PREFIX,
+        'ICU_ROOT': PREFIX,
         'CMAKE_SYSTEM_PREFIX_PATH': PREFIX,
         'INPUT_sql_odbc': 'no',
         'INPUT_sql_psql': 'no',
