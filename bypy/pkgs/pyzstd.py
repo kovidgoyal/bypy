@@ -11,7 +11,7 @@ from bypy.utils import python_build, python_install, walk, build_dir
 def main(args):
     python_build()
     for f in walk(build_dir()):
-        if os.path.basename(f) == 'c_ppmd.py':
+        if os.path.basename(f) == 'c_pyzstd.py':
             q = os.path.join(os.path.dirname(f), '__init__.py')
             if not os.path.exists(q):
                 open(q, 'w').close()
