@@ -37,8 +37,9 @@ def main(args):
     else:
         optflags = ['enable-ec_nistp_64_gcc_128'] if is64bit else []
         # need --libdir=lib because on focal it becomes lib64 otherwise
+        # tests are very slow and flaky on ARM in QEMU
         run('./config', '--prefix=/usr', '--libdir=lib',
-            '--openssldir=/etc/ssl', 'shared', 'zlib', '-Wa,--noexecstack',
+            '--openssldir=/etc/ssl', 'shared', 'no-tests', 'zlib', '-Wa,--noexecstack',
             CFLAGS, LDFLAGS, *optflags)
         run('make ' + MAKEOPTS)
         run('make test', library_path=os.getcwd())
