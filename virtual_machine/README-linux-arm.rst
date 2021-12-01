@@ -1,7 +1,9 @@
 We dont need an actual VM for this, we can make use of QEMU's ability to run
-ARM binaries on an Intel host. This we can build the ARM packages in a chroot
-like the normal Linux binaries.
-Based on: https://nerdstuff.org/posts/2020/2020-003_simplest_way_to_create_an_arm_chroot/
+ARM binaries on an Intel host. This way, we can build the ARM packages in a
+chroot like the normal Linux binaries.
+
+Based on:
+`this guide <https://nerdstuff.org/posts/2020/2020-003_simplest_way_to_create_an_arm_chroot/>`_.
 
 The following package names are for Arch Linux,
 there are likely similar packages available for other distros.
