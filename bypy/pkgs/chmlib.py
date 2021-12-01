@@ -5,10 +5,11 @@
 import os
 
 from bypy.constants import ismacos, iswindows, CL, LIB, PATCHES
-from bypy.utils import simple_build, run, install_binaries, copy_headers, apply_patch
+from bypy.utils import simple_build, run, install_binaries, copy_headers, apply_patch, replace_in_file
 
 
 def main(args):
+    apply_patch('chmlib-empty-file-not-dir.patch', level=1)  # needed for aarch64
     if iswindows:
         os.chdir('src')
         for f in 'chm_lib.c lzx.c'.split():
@@ -19,6 +20,7 @@ def main(args):
         copy_headers('chm_lib.h')
         copy_headers('lzx.h', 'src')
     else:
+        replace_in_file('src/chm_lib.c', 'pread64', 'pread')
         apply_patch('chmlib-integer-types.patch', level=1)  # needed for aarch64
         # updated config.guess is needed for aarch64
         with open('config.guess', 'wb') as dest, open(os.path.join(PATCHES, 'config.guess'), 'rb') as src:
