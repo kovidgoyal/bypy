@@ -4,8 +4,8 @@
 
 import os
 
-from bypy.constants import ismacos, iswindows, CL, LIB
-from bypy.utils import simple_build, run, install_binaries, copy_headers
+from bypy.constants import ismacos, iswindows, CL, LIB, PATCHES
+from bypy.utils import simple_build, run, install_binaries, copy_headers, apply_patch
 
 
 def main(args):
@@ -19,6 +19,10 @@ def main(args):
         copy_headers('chm_lib.h')
         copy_headers('lzx.h', 'src')
     else:
+        apply_patch('chmlib-integer-types.patch', level=1)  # needed for aarch64
+        # updated config.guess is needed for aarch64
+        with open('config.guess', 'wb') as dest, open(os.path.join(PATCHES, 'config.guess'), 'rb') as src:
+            dest.write(src.read())
         conf = '--disable-dependency-tracking'
         if ismacos:
             conf += ' --disable-pread --disable-io64'
