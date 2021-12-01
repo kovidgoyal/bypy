@@ -25,6 +25,7 @@ def unix_python(args):
     conf = (
         '--enable-ipv6 --with-system-expat --with-pymalloc'
         ' --with-lto --enable-optimizations'
+        ' --enable-loadable-sqlite-extensions'
         ' --without-ensurepip --with-c-locale-coercion'
     )
     install_args = ()
@@ -185,3 +186,5 @@ def post_install_check():
     if not iswindows:
         mods.extend('readline _curses'.split())
     run(PYTHON, '-c', 'import ' + ','.join(mods), library_path=True)
+    run(PYTHON, '-c', 'import sqlite3; c = sqlite3.Connection(":memory:");'
+        'c.enable_load_extension(True)', library_path=True)
