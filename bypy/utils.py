@@ -352,10 +352,11 @@ def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):
         # configure_args += ' -no-feature-webengine-jumbo-build'
         # ninja by default creates cpu_count + 2 jobs, max RAM per job is thus
         # RAM/num_jobs. Linking webengine requires several GB of RAM -- ka blammo
+        num = 4 if islinux else 2
         for f in walk('.'):
             if f.endswith('.ninja'):
                 replace_in_file(
-                    f, 'ninja -C', 'ninja -j 2 -C', missing_ok=True)
+                    f, 'ninja -C', f'ninja -j {num} -C', missing_ok=True)
     run('cmake --build . --parallel',
         library_path=True, append_to_path=append_to_path, env=env)
     run(f'cmake --install . --prefix {build_dir()}/qt', env=env)
