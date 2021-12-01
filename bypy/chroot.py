@@ -16,7 +16,10 @@ from .conf import parse_conf_file
 from .constants import base_dir
 from .utils import call, print_cmd, single_instance
 
-RECOGNIZED_ARCHES = tuple('64 32 arm64'.split())
+RECOGNIZED_ARCHES = {
+    'arm64': 'qemu-aarch64',
+    '64': '', '32': ''
+}
 
 
 def cached_download(url):
@@ -95,6 +98,10 @@ class Chroot:
     def __init__(self, arch='64'):
         self.specified_arch = arch
         self.setarch_name = 'linux32' if arch == '32' else 'linux64'
+        self.binfmt_misc_name = RECOGNIZED_ARCHES[arch]
+        if self.binfmt_misc_name:
+            if not os.path.exists(f'/proc/sys/fs/binfmt_misc/{self.binfmt_misc_name}'):
+                raise SystemExit('Cannot execute ARM binaries on this computer. Read README-linux-arm.rst')
         self.image_arch = {'64': 'amd64', '32': 'i386', 'arm64': 'arm64'}[arch]
         self.sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
         os.makedirs(self.sources_dir, exist_ok=True)
@@ -215,9 +222,10 @@ class Chroot:
             shutil.copy2(zshrc, dest)
         else:
             open(dest, 'wb').close()
-        shi = os.path.expanduser('~/work/kitty/shell-integration/kitty.zsh')
-        if os.path.exists(shi):
-            shutil.copy2(shi, os.path.dirname(dest))
+        if 'KITTY_INSTALLATION_DIR' in os.environ:
+            shi = os.path.join(os.environ['KITTY_INSTALLATION_DIR'], 'shell-integration', 'zsh', 'kitty.zsh')
+            if os.path.exists(shi):
+                shutil.copy2(shi, os.path.dirname(dest))
 
         # dont use /tmp since it could be RAM mounted and therefore too small
         with tempfile.TemporaryDirectory(prefix='tmp-', dir='bypy/b') as tdir, self.mounts_in_chroot(tdir):
