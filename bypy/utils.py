@@ -827,7 +827,6 @@ def meson_build(extra_cmdline='', library_path=None, **options):
         cmd += shlex.split(extra_cmdline)
     cmd += [f'-D{k}={v}' for k, v in options.items()]
     cmd.append('build')
-    # meson stupidly fails if HOME is not readable while detecting cmake
     run(*cmd)
     run('ninja -C build', library_path=library_path)
     run('ninja -C build install', library_path=library_path)
