@@ -303,7 +303,7 @@ class Chroot:
                 # Basic build environment
                 'apt-get install -y build-essential software-properties-common'
                 ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https'
-                ' dh-autoreconf gperf',
+                ' dh-autoreconf gperf strace',
             ] + extra_cmds + [
                 'python3 -m pip install ninja',
                 'python3 -m pip install meson',
