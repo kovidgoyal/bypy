@@ -27,10 +27,13 @@ def kill_using_monitor(monitor_path, command='quit'):
 
 
 def shutdown_command(vm_name):
-    if vm_platform(vm_name) == 'macos':
+    pn = vm_platform(vm_name)
+    if pn == 'macos':
         return [
             'osascript', '-e', """'tell app "System Events" to shut down'"""
         ]
+    if pn == 'ubuntu':
+        return 'sudo poweroff --force'
     return 'shutdown.exe -s -f -t 0'.split()
 
 

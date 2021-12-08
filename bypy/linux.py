@@ -11,13 +11,14 @@ def main(args=tuple(sys.argv)):
     arch, args = process_args(args)
     chroot = Chroot(arch)
     if not chroot.single_instance():
-        raise SystemExit('Another instance of the linux container is running')
+        raise SystemExit('Another instance of the Linux container is running')
     try:
         if len(args) > 1:
             if args[1] == 'shutdown':
                 return
             if args[1] == 'container':
-                chroot.build_container()
+                from .build_linux_vm import build_vm
+                build_vm(chroot)
                 return
         if not chroot.check_for_image():
             chroot.build_container()

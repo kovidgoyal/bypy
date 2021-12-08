@@ -26,7 +26,12 @@ def ssh_port_for_vm(name):
 
 
 def vm_platform(name):
-    return 'macos' if 'macos' in name.split('-') else 'windows'
+    parts = name.split('-')
+    if 'macos' in parts:
+        return 'macos'
+    if 'ubuntu' in parts:
+        return 'ubuntu'
+    return 'windows'
 
 
 def read_build_server():
