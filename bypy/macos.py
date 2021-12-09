@@ -3,6 +3,7 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
+import subprocess
 import sys
 
 from virtual_machine.run import shutdown, wait_for_ssh
@@ -58,6 +59,8 @@ def main(args=tuple(sys.argv)):
     cmd += list(args)
     try:
         rsync.run_via_ssh(*cmd, allocate_tty=True)
+    except subprocess.CalledProcessError as e:
+        sys.exit(e.returncode)
     finally:
         from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix=prefix)
 

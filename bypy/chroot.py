@@ -8,16 +8,11 @@ import json
 import os
 import pwd
 import shlex
-import shutil
-import subprocess
-import tempfile
-from contextlib import contextmanager
-from functools import partial
 from urllib.request import urlopen
 
 from .conf import parse_conf_file
 from .constants import base_dir
-from .utils import call, print_cmd, single_instance
+from .utils import single_instance
 
 RECOGNIZED_ARCHES = {
     'arm64': 'qemu-aarch64',
@@ -38,46 +33,23 @@ def cached_download(url):
     return local
 
 
-def get_mounts():
-    ans = {}
-    lines = open('/proc/self/mountinfo', 'rb').read().decode(
-            'utf-8').splitlines()
-    for line in lines:
-        parts = line.split()
-        src, dest = parts[3:5]
-        ans[os.path.abspath(os.path.realpath(dest))] = src
-    return ans
-
-
-@contextmanager
-def mounts_needed_for_install(img_path):
-    mounts = []
-    for dev in ('random', 'urandom'):
-        mounts.append(os.path.join(img_path, f'dev/{dev}'))
-        call('sudo', 'touch', mounts[-1])
-        call('sudo', 'mount', '--bind', f'/dev/{dev}', mounts[-1])
-    try:
-        yield
-    finally:
-        for x in mounts:
-            call('sudo', 'umount', '-l', x)
-
-
 def install_modern_python(image_name):
     needs_python = image_name in ('xenial', 'bionic')
     if needs_python:
+        yield 'start_custom_apt'
         yield 'add-apt-repository ppa:deadsnakes/ppa -y'
         yield 'apt-get update'
         yield 'apt-get install -y python3.9 python3.9-venv'
         yield ['sh', '-c', 'ln -sf `which python3.9` `which python3`']
+        yield ['sh', '-c', 'ln -sf `which python3.9` /usr/local/bin/python']
         yield 'python3 -m ensurepip --upgrade --default-pip'
+        yield 'end_custom_apt'
     else:
         yield 'apt-get install -y python-is-python3 python3-pip'
 
 
-def install_modern_cmake(image_name, for_cloud_init=False):
-    if for_cloud_init:
-        yield 'start_custom_apt'
+def install_modern_cmake(image_name):
+    yield 'start_custom_apt'
     kitware = '/usr/share/keyrings/kitware-archive-keyring.gpg'
     yield ['sh', '-c', 'curl https://apt.kitware.com/keys/kitware-archive-latest.asc |' f' gpg --dearmor - > {kitware}']
     yield ['sh', '-c', f"echo 'deb [signed-by={kitware}]'" f' https://apt.kitware.com/ubuntu/ {image_name} main' ' > /etc/apt/sources.list.d/kitware.list']
@@ -85,8 +57,7 @@ def install_modern_cmake(image_name, for_cloud_init=False):
     yield f'rm {kitware}'
     yield 'apt-get install -y kitware-archive-keyring'
     yield 'apt-get install -y cmake'
-    if for_cloud_init:
-        yield 'end_custom_apt'
+    yield 'end_custom_apt'
 
 
 def process_args(args):
@@ -117,154 +88,39 @@ class Chroot:
         self.img_path = os.path.abspath(
             os.path.realpath(os.path.join(self.output_dir, 'chroot')))
         self.img_store_path = self.img_path + '.img'
-        self.sw_dir = os.path.join(self.output_dir, 'sw')
-        os.makedirs(self.sw_dir, exist_ok=True)
         self.conf = parse_conf_file(os.path.join(base_dir(), 'linux.conf'))
         self.vm_name_suffix = self.conf.get('vm_name_suffix', '')
-        self.image_mounted = False
         self.single_instance_name = f'bypy-{arch}-singleinstance-{os.getcwd()}'
         url = self.conf['image']
-        self.image_name = url.split('/')[-1].split('-')[1]
-        self.cloud_image_url = url.format(self.image_name)
+        self.image_name = url.split('/')[4]
+        self.cloud_image_url = url.format(self.image_arch)
         self.vm_name = f'ubuntu-{self.image_name}-{self.image_arch}-{os.path.basename(os.getcwd())}{self.vm_name_suffix}'
         self.vm_path = os.path.abspath(
-            os.path.realpath(os.path.join(self.output_dir, self.vm_name)))
+            os.path.realpath(os.path.join(self.output_dir, 'vm')))
 
     def single_instance(self):
         return single_instance(self.single_instance_name)
 
-    def mount_image(self):
-        if not self.image_mounted:
-            call('sudo', 'mount', self.img_store_path, self.img_path)
-            self.image_mounted = True
+    def ensure_vm_is_built(self, spec):
+        if spec.startswith('ssh:'):
+            return
+        if not os.path.exists(os.path.join(self.vm_path, 'SystemDisk.qcow2')):
+            self.build_vm()
 
-    def unmount_image(self):
-        if self.image_mounted:
-            call('sudo', 'umount', self.img_path)
-            self.image_mounted = False
+    def build_vm(self):
+        from .build_linux_vm import build_vm
+        build_vm(self)
 
-    @contextmanager
-    def mounts_in_chroot(self, tdir):
-        scall = partial(call, echo=False)
-        current_mounts = get_mounts()
-        base = os.path.dirname(os.path.abspath(__file__))
-
-        def mount(src, dest, readonly=False):
-            dest = os.path.join(self.img_path, dest.lstrip('/'))
-            if dest not in current_mounts:
-                scall('sudo', 'mkdir', '-p', dest)
-                scall('sudo', 'mount', '--bind', src, dest)
-                if readonly:
-                    scall('sudo', 'mount', '-o', 'remount,ro,bind', dest)
-
-        mount(tdir, '/tmp')
-        mount(self.sw_dir, '/sw')
-        mount(os.getcwd(), '/src', readonly=True)
-        mount(self.sources_dir, '/sources')
-        mount(os.path.dirname(base), '/bypy', readonly=True)
-        mount('/dev', '/dev')
-        scall('sudo', 'mount', '-t', 'proc', 'proc', os.path.join(self.img_path, 'proc'))
-        scall('sudo', 'mount', '-t', 'sysfs', 'sys', os.path.join(self.img_path, 'sys'))
-        scall('sudo', 'chmod', 'a+w', os.path.join(self.img_path, 'dev/shm'))
-        scall('sudo', 'mount', '--bind', '/dev/shm', os.path.join(self.img_path, 'dev/shm'))
-        try:
-            yield
-        finally:
-            found = True
-            while found:
-                found = False
-                for mp in sorted(get_mounts(), key=len, reverse=True):
-                    if mp.startswith(self.img_path) and '/chroot/src/' not in mp:
-                        call('sudo', 'umount', '-l', mp, echo=False)
-                        found = True
-                        break
-            self.image_mounted = False
-
-    def copy_terminfo(self):
-        raw = subprocess.check_output(['infocmp']).decode('utf-8').splitlines()[0]
-        path = raw.partition(':')[2].strip()
-        if path and os.path.exists(path):
-            bdir = os.path.basename(os.path.dirname(path))
-            dest = os.path.join(self.img_path, 'usr/share/terminfo', bdir)
-            call('sudo', 'mkdir', '-p', dest, echo=False)
-            call('sudo', 'cp', '-a', path, dest, echo=False)
-
-    def __call__(self, cmd, as_root=True, for_install=False):
-        if isinstance(cmd, str):
-            cmd = shlex.split(cmd)
-        print_cmd(['in-chroot'] + cmd)
-        user = pwd.getpwuid(os.geteuid()).pw_name
-        env = {
-            'PATH': '/sbin:/usr/sbin:/usr/local/bin:/bin:/usr/bin',
-            'HOME': '/root' if as_root else '/home/' + user,
-            'XDG_RUNTIME_DIR': '/tmp/' + ('root' if as_root else user),
-            'USER': 'root' if as_root else user,
-            'TERM': os.environ.get('TERM', 'xterm-256color'),
-            'BYPY_ARCH': self.image_arch,
-        }
-        if for_install:
-            env['DEBIAN_FRONTEND'] = 'noninteractive'
-        us = [] if as_root else ['--userspec={}:{}'.format(
-            os.geteuid(), os.getegid())]
-        as_arch = [self.setarch_name, '--']
-        env_cmd = ['env']
-        for k, v in env.items():
-            env_cmd += [f'{k}={v}']
-        cmd = ['sudo', 'chroot'] + us + [self.img_path] + as_arch + env_cmd + list(cmd)
-        self.copy_terminfo()
-        call('sudo', 'cp', '/etc/resolv.conf', os.path.join(self.img_path, 'etc'), echo=False)
-        ret = subprocess.Popen(cmd, env=env).wait()
-        if ret != 0:
-            raise SystemExit(ret)
-
-    def write_in_chroot(self, path, data):
-        path = path.lstrip('/')
-        p = subprocess.Popen([
-            'sudo', 'tee', os.path.join(self.img_path, path)],
-            stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
-        if not isinstance(data, bytes):
-            data = data.encode('utf-8')
-        p.communicate(data)
-        if p.wait() != 0:
-            raise SystemExit(p.returncode)
-
-    def run(self, args):
-        zshrc = os.path.realpath(os.path.expanduser('~/.zshrc'))
-        dest = os.path.join(
-            self.img_path, 'home', pwd.getpwuid(os.geteuid()).pw_name, '.zshrc')
-        if os.path.exists(zshrc):
-            shutil.copy2(zshrc, dest)
-        else:
-            open(dest, 'wb').close()
-        if 'KITTY_INSTALLATION_DIR' in os.environ:
-            shi = os.path.join(os.environ['KITTY_INSTALLATION_DIR'], 'shell-integration', 'zsh', 'kitty.zsh')
-            if os.path.exists(shi):
-                shutil.copy2(shi, os.path.dirname(dest))
-
-        # dont use /tmp since it could be RAM mounted and therefore too small
-        with tempfile.TemporaryDirectory(prefix='tmp-', dir='bypy/b') as tdir, self.mounts_in_chroot(tdir):
-            cmd = ['python3', '/bypy', 'main'] + args
-            os.environ.pop('LANG', None)
-            for k in tuple(os.environ):
-                if k.startswith('LC') or k.startswith('XAUTH'):
-                    del os.environ[k]
-            self(cmd, as_root=False)
-
-    def check_for_image(self):
-        return os.path.exists(self.img_store_path)
-
-    def container_deps_cmds(self, for_cloud_init=False):
+    def container_deps_cmds(self):
         # Basic build environment
-        if not for_cloud_init:
-            yield ['sh', '-c', r"""'echo "6\n44" | apt-get install -y tzdata'"""]
         yield p(
             'apt-get install -y build-essential software-properties-common'
             ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https'
-            ' dh-autoreconf gperf strace sudo kitty-terminfo vim screen zsh-syntax-highlighting'
+            ' dh-autoreconf gperf strace sudo vim screen zsh-syntax-highlighting'
         )
         for cmd in install_modern_python(self.image_name):
             yield p(cmd)
-        for cmd in install_modern_cmake(self.image_name, for_cloud_init):
+        for cmd in install_modern_cmake(self.image_name):
             yield p(cmd)
         yield p('python3 -m pip install ninja meson')
 
@@ -279,7 +135,7 @@ class Chroot:
         packages = []
         ans = {}
         cmds = []
-        sources = []
+        sources = {}
         files = []
         try:
             ssh_authorized_keys = [x.strip() for x in open(os.path.expanduser('~/.ssh/authorized_keys'))]
@@ -311,7 +167,7 @@ class Chroot:
             'fqdn': f'{self.vm_name}.localdomain',
             'package_upgrade': True,
             'groups': ['crusers'],
-            'mounts': ["LABEL=datadisk", "/sw"],
+            'mounts': [["LABEL=datadisk", "/sw"]],
             'apt': {
                 'preserve_sources_list': True,
                 'sources': sources,
@@ -332,11 +188,11 @@ class Chroot:
             'runcmd': cmds,
         }
         process_apt = True
-        for cmd in self.container_deps_cmds(for_cloud_init=True):
+        for cmd in self.container_deps_cmds():
             if not cmd:
                 continue
             if cmd[0] == 'add-apt-repository':
-                sources.append({f'ignored{len(sources)+1}': {'source': cmd[1]}})
+                sources[f'ignored{len(sources)+1}'] = {'source': cmd[1]}
             elif cmd[0] == 'start_custom_apt':
                 process_apt = False
             elif cmd[0] == 'end_custom_apt':
@@ -347,23 +203,25 @@ class Chroot:
                         packages.append(x)
             else:
                 cmds.append(cmd)
-        cmds.append(['apt-get', 'clean'])
-        cmds.append(p('mv /tmp /sw'))
-        cmds.append(p('ln -s /sw/tmp /tmp'))
-        cmds.append(p(f'chown {user}:crusers /sw'))
-        cmds.append(['fstrim', '-A', '-v'])
-        cmds.append(['poweroff'])
+
+        def a(x):
+            cmds.append(p(x))
+
+        a('apt-get clean')
+        a('mkdir /sw/src /sw/sources /sw/bypy')
+        a('ln -s /sw/src /src')
+        a('ln -s /sw/sources /sources')
+        a('ln -s /sw/bypy /bypy')
+        a(f'chown -R {user}:crusers /sw')
+        a('mv /tmp /sw')
+        a('ln -s /sw/tmp /tmp')
+        a('fstrim -v --all')
+        a('poweroff')
         return ans
 
     @property
-    def cloud_container_archive(self):
-        url = self.conf['image']
-        return cached_download(url.format(self.image_arch))
-
-    @property
     def cloud_image(self):
-        url = self.conf['cloud_image']
-        return cached_download(url.format(self.image_arch))
+        return cached_download(self.cloud_image_url)
 
     @property
     def efi_firmware_images(self):
@@ -375,61 +233,3 @@ class Chroot:
                 for target in data['targets']:
                     if target['architecture'] == self.qemu_arch:
                         return data
-
-    def _build_container(self, url):
-        user = pwd.getpwuid(os.geteuid()).pw_name
-        archive = self.cloud_img_archive
-        if os.path.exists(self.img_path):
-            call('sudo', 'rm', '-rf', self.img_path, echo=False)
-        if os.path.exists(self.img_store_path):
-            os.remove(self.img_store_path)
-        os.makedirs(self.img_path)
-        call('truncate', '-s', '2G', self.img_store_path)
-        call('mkfs.ext4', self.img_store_path)
-        self.mount_image()
-        call('sudo tar -C "{}" -xpf "{}"'.format(self.img_path, archive), echo=False)
-        if os.getegid() != 100:
-            self('groupadd -f -g {} {}'.format(os.getegid(), 'crusers'))
-        self(
-            'useradd --home-dir=/home/{user} --create-home'
-            ' --uid={uid} --gid={gid} {user}'.format(
-                user=user, uid=os.geteuid(), gid=os.getegid())
-        )
-        # Prevent services from starting
-        self.write_in_chroot('/usr/sbin/policy-rc.d', '#!/bin/sh\nexit 101')
-        self('chmod +x /usr/sbin/policy-rc.d')
-        # prevent upstart scripts from running during install/update
-        self('dpkg-divert --local --rename --add /sbin/initctl')
-        self('cp -a /usr/sbin/policy-rc.d /sbin/initctl')
-        self('''sed -i 's/^exit.*/exit 0/' /sbin/initctl''')
-        # remove apt-cache translations for fast "apt-get update"
-        self.write_in_chroot(
-            '/etc/apt/apt.conf.d/chroot-no-languages',
-            'Acquire::Languages "none";'
-        )
-        tzdata_cmds = [
-            f'''sh -c "echo '{x}' | debconf-set-selections"''' for x in (
-                'tzdata tzdata/Areas select Asia',
-                'tzdata tzdata/Zones/Asia select Kolkata'
-            )] + ['debconf-show tzdata']
-
-        with mounts_needed_for_install(self.img_path):
-            for cmd in tzdata_cmds + ['apt-get update'] + list(self.container_deps_cmds()) + [
-                'chsh -s /bin/zsh ' + user,
-            ]:
-                if cmd:
-                    if callable(cmd):
-                        cmd()
-                    else:
-                        self(cmd, for_install=True)
-
-    def build_container(self):
-        url = self.conf['image']
-        try:
-            self._build_container(url=url)
-        except Exception:
-            failed_img_path = self.img_store_path + '.failed'
-            if os.path.exists(failed_img_path):
-                os.remove(failed_img_path)
-            os.rename(self.img_store_path, failed_img_path)
-            raise

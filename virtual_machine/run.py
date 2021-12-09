@@ -51,7 +51,7 @@ def cmdline_for_machine_spec(lines, monitor_path, gui=False):
                 if 'q35' in spec:
                     prefix.append('qemu-system-x86_64')
                 elif 'virt' in spec:
-                    prefix.append('qemu-system-x86_64')
+                    prefix.append('qemu-system-aarch64')
                 else:
                     raise ValueError(f'Unknown machine type: {spec}')
                 if 'accel=kvm' in spec:
@@ -106,7 +106,7 @@ def get_ssh_port(monitor_path):
     return int(data_is_complete(data))
 
 
-def startup(vm_dir, timeout=10):
+def startup(vm_dir, timeout=30):
     start = monotonic()
     monitor_path = monitor_template.format(vm_dir)
     with open(machine_spec_template.format(vm_dir)) as f:
