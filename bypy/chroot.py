@@ -161,6 +161,9 @@ class Chroot:
             shi = os.path.join(os.environ['KITTY_INSTALLATION_DIR'], 'shell-integration', 'zsh', 'kitty.zsh')
             if os.path.exists(shi):
                 file(f'/home/{user}/kitty.zsh', open(shi).read(), owner=f'{user}:crusers', defer=True)
+            ti = os.path.join(os.environ['KITTY_INSTALLATION_DIR'], 'terminfo', 'x', 'xterm-kitty')
+            if os.path.exists(ti):
+                file('/usr/share/terminfo/x/xterm-kitty', open(ti, 'rb').read())
 
         ans = {
             'timezone': 'Asia/Kolkata',
