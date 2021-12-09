@@ -5,7 +5,7 @@
 import os
 import subprocess
 import tempfile
-
+from contextlib import suppress
 
 from bypy.deps import install_package
 
@@ -14,8 +14,6 @@ def create_bundle(osname, bitness, dest):
     pkg_dir = os.path.join('bypy', 'b', osname)
     if bitness and osname != 'macos':
         pkg_dir = os.path.join(pkg_dir, bitness)
-    if osname == 'linux':
-        pkg_dir = os.path.join(pkg_dir, 'sw')
     pkg_dir = os.path.join(pkg_dir, 'pkg')
     with tempfile.TemporaryDirectory(suffix='.export', dir=pkg_dir) as tdir:
         name = osname
@@ -28,12 +26,19 @@ def create_bundle(osname, bitness, dest):
         for x in os.listdir(pkg_dir):
             if '.' not in x:
                 install_package(os.path.join(pkg_dir, x), tdir)
-        with tempfile.NamedTemporaryFile(suffix='.tar.xz') as tf:
-            print('\tCreating bundle...')
+        with tempfile.NamedTemporaryFile(suffix='.tar', delete=False) as tf:
             os.fchmod(tf.fileno(), 0o644)
+        print('\tCreating bundle...')
+        try:
             subprocess.check_call([
                 'tar', '-caf', tf.name] + os.listdir(tdir), cwd=tdir)
-            subprocess.check_call(['scp', tf.name, dest + name])
+            subprocess.check_call(['xz', '-9', '--threads=0', tf.name])
+            subprocess.check_call(['scp', tf.name + '.xz', dest + name])
+        finally:
+            with suppress(FileNotFoundError):
+                os.unlink(tf.name)
+            with suppress(FileNotFoundError):
+                os.unlink(tf.name + '.xz')
 
 
 def main(args):
@@ -51,10 +56,7 @@ def main(args):
             bitness = '32'
         groups = [(which, bitness)]
     else:
-        groups = [('macos', '64')]
-        for osname in 'linux windows'.split():
-            for bitness in '64 32'.split():
-                groups.append((osname, bitness))
+        groups = [('macos', '64'), ('linux', '64'), ('windows', '64')]
 
     for osname, bitness in groups:
         create_bundle(osname, bitness, dest)
