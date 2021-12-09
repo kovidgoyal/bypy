@@ -215,6 +215,8 @@ class Chroot:
         a(f'chown -R {user}:crusers /sw')
         a('mv /tmp /sw')
         a('ln -s /sw/tmp /tmp')
+        a('sh -c "rm -f /etc/resolv.conf; echo nameserver 8.8.4.4 > /etc/resolv.conf; echo nameserver 8.8.8.8 >> /etc/resolv.conf;'
+          ' chattr +i /etc/resolv.conf; cat /etc/resolv.conf"')
         a('fstrim -v --all')
         a('poweroff')
         return ans

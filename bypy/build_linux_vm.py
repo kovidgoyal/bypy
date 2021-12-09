@@ -31,7 +31,6 @@ def build_vm(chroot: Chroot):
     user_data = '#cloud-config\n\n' + yaml.dump(user_data)
     meta_data = json.dumps({'instance-id': chroot.vm_name})
     cloud_image = chroot.cloud_image
-    firmware_images = chroot.efi_firmware_images
     is_arm = chroot.image_arch == 'arm64'
 
     machine_spec = [
@@ -45,19 +44,11 @@ def build_vm(chroot: Chroot):
         '# Have a RNG in the VM based on the host RNG for performance',
         '-object rng-random,id=rng0,filename=/dev/urandom -device virtio-rng-pci,rng=rng0',
         '# Forward port 22 from the guest to a random port on the host',
-        '-nic user,model=virtio-net-pci,hostfwd=tcp:0.0.0.0:0-:22',
+        '# The romfile option prevents loading of PXE boot at startup',
+        '-netdev user,id=n1,hostfwd=tcp:0.0.0.0:0-:22 -device virtio-net-pci,netdev=n1,romfile='
     ]
-    firmware = []
     disks = []
     scsi_count = -1
-
-    def add_firmware(entry):
-        e = firmware_images['mapping'][entry]
-        d = 'firmware/' + os.path.basename(e['filename'])
-        shutil.copy2(e['filename'], d)
-        ro = 'on' if entry == 'executable' else 'off'
-        firmware.append('# Firmware')
-        firmware.append(f'-drive if=pflash,format={e["format"]},readonly={ro},file="{d}"')
 
     def add_disk(filename, disk_id):
         nonlocal scsi_count
@@ -80,14 +71,11 @@ def build_vm(chroot: Chroot):
         call('qemu-img convert -f raw -O qcow2 SystemDisk.img SystemDisk.qcow2')
         os.remove('SystemDisk.img')
         os.mkdir('firmware')
-        add_firmware('executable')
-        add_firmware('nvram-template')
         shutil.copy2(cloud_image, '.')
         add_disk(os.path.basename(cloud_image), 'os_disk')
         add_disk('SystemDisk.qcow2', 'datadisk')
         add_disk('cloud-init.qcow2', 'cloud_init')
 
-        machine_spec += firmware
         machine_spec += disks
         with open('machine-spec', 'w') as f:
             f.write('\n'.join(machine_spec))
