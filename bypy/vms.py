@@ -52,10 +52,15 @@ class Rsync(object):
     def main(self, sources_dir, pkg_dir, output_dir, cmd, prefix='/', name='sw'):
         to_vm(self, sources_dir, pkg_dir, prefix=prefix, name=name)
         cp = self.run_via_ssh(*cmd, allocate_tty=True, raise_exception=False)
-        try:
-            from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
-        except Exception as e:
-            print(f'Downloading data from VM failed: {e}', file=sys.stderr)
+        while True:
+            try:
+                from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
+                break
+            except Exception as e:
+                print(f'Downloading data from VM failed: {e}', file=sys.stderr)
+                ans = input('Would you like to try downloading again [y/n]? ')
+                if ans.lower() not in ('', 'y'):
+                    break
         raise SystemExit(cp.returncode)
 
     def from_vm(self, from_, to, excludes=frozenset()):
