@@ -5,10 +5,12 @@
 import os
 import sys
 
+from virtual_machine.run import shutdown, wait_for_ssh
+
 from .conf import parse_conf_file
 from .constants import base_dir
 from .utils import single_instance
-from .vms import Rsync, ensure_vm, from_vm, run_main, shutdown_vm, to_vm
+from .vms import Rsync, from_vm, get_vm_spec, to_vm
 
 
 def get_conf():
@@ -28,15 +30,16 @@ def main(args=tuple(sys.argv)):
     if not singleinstance():
         raise SystemExit('Another instance of the macOS container is running')
     conf = get_conf()
-    vm, prefix, python = conf['vm_name'], conf['root'], conf['python']
+    prefix, python = conf['root'], conf['python']
+    vm = get_vm_spec('macos')
     universal = conf.get('universal') == 'true'
     deploy_target = conf.get('deploy_target', '')
     if len(args) > 1:
         if args[1] == 'shutdown':
-            shutdown_vm(vm)
+            shutdown(vm)
             return
-    ensure_vm(vm)
-    rsync = Rsync(vm)
+    port = wait_for_ssh(vm)
+    rsync = Rsync(vm, port)
     output_dir = os.path.join(base_dir(), 'b', 'macos', 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'macos', 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
@@ -54,7 +57,7 @@ def main(args=tuple(sys.argv)):
         cmd.append(f'BYPY_DEPLOY_TARGET={deploy_target}')
     cmd += list(args)
     try:
-        run_main(vm, *cmd)
+        rsync.run_via_ssh(*cmd, allocate_tty=True)
     finally:
         from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix=prefix)
 

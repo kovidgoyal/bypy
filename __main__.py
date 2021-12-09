@@ -36,18 +36,9 @@ else:
 
 
 if subcommand == 'vm':
-    if len(args) < 2:
-        raise SystemExit(
-            'You must provide a sub-command such as: run, shutdown, status')
-    try:
-        main = importlib.import_module(f'virtual_machine.{args[1]}').main
-    except (ModuleNotFoundError, AttributeError):
-        raise SystemExit(
-            f'Unknown virtual machine sub-command: {args[1]},'
-            ' common choices are: run, shutdown and status')
-    del args[1]
-    sys.argv = args
-    main()
+    from virtual_machine.run import main
+    action, vm_spec = sys.argv[-2:]
+    main(action, vm_spec)
     sys.exit(0)
 else:
     try:

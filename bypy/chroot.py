@@ -260,7 +260,7 @@ class Chroot:
         yield p(
             'apt-get install -y build-essential software-properties-common'
             ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https'
-            ' dh-autoreconf gperf strace sudo kitty-terminfo vim zsh-syntax-highlighting'
+            ' dh-autoreconf gperf strace sudo kitty-terminfo vim screen zsh-syntax-highlighting'
         )
         for cmd in install_modern_python(self.image_name):
             yield p(cmd)

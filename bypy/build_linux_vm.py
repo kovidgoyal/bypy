@@ -31,6 +31,9 @@ def build_vm(chroot: Chroot):
     cloud_image = chroot.cloud_image
     firmware_images = chroot.efi_firmware_images
 
+    machine_spec = [
+        f'-name {chroot.vm_name}'
+    ]
     firmware = []
     disks = []
     scsi_count = -1
@@ -68,3 +71,6 @@ def build_vm(chroot: Chroot):
         add_disk(os.path.basename(cloud_image), 'os_disk')
         add_disk('SystemDisk.qcow2', 'datadisk')
         add_disk('cloud-init.qcow2', 'cloud_init')
+
+    machine_spec += firmware
+    machine_spec += disks
