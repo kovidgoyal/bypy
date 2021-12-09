@@ -3,14 +3,13 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
-import subprocess
 import sys
 
 from virtual_machine.run import shutdown, wait_for_ssh
 
 from .chroot import Chroot, process_args
 from .constants import base_dir
-from .vms import Rsync, from_vm, get_vm_spec, to_vm
+from .vms import Rsync, get_vm_spec
 
 
 def main(args=tuple(sys.argv)):
@@ -38,15 +37,9 @@ def main(args=tuple(sys.argv)):
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(pkg_dir, exist_ok=True)
 
-    to_vm(rsync, sources_dir, pkg_dir)
     cmd = ['python3', os.path.join('/', 'bypy'), 'main']
     cmd += list(args)
-    try:
-        rsync.run_via_ssh(*cmd, allocate_tty=True)
-    except subprocess.CalledProcessError as e:
-        sys.exit(e.returncode)
-    finally:
-        from_vm(rsync, sources_dir, pkg_dir, output_dir)
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd)
 
 
 if __name__ == '__main__':

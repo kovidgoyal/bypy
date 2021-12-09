@@ -5,10 +5,12 @@
 import os
 import shlex
 import subprocess
+import sys
+
+from virtual_machine.run import server_from_spec, ssh_command_to
 
 from .conf import parse_conf_file
 from .constants import base_dir
-from virtual_machine.run import ssh_command_to, server_from_spec
 
 
 def get_rsync_conf():
@@ -40,9 +42,21 @@ class Rsync(object):
         self.server = server_from_spec(spec)
         self.port = port
 
-    def run_via_ssh(self, *args, allocate_tty=False):
+    def run_via_ssh(self, *args, allocate_tty=False, raise_exception=True):
         cmd = ssh_command_to(*args, server=self.server, port=self.port, allocate_tty=allocate_tty)
-        subprocess.check_call(cmd)
+        if raise_exception:
+            subprocess.check_call(cmd)
+        else:
+            return subprocess.run(cmd)
+
+    def main(self, sources_dir, pkg_dir, output_dir, cmd, prefix='/', name='sw'):
+        to_vm(self, sources_dir, pkg_dir, prefix=prefix, name=name)
+        cp = self.run_via_ssh(*cmd, allocate_tty=True, raise_exception=False)
+        try:
+            from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
+        except Exception as e:
+            print(f'Downloading data from VM failed: {e}', file=sys.stderr)
+        raise SystemExit(cp.returncode)
 
     def from_vm(self, from_, to, excludes=frozenset()):
         f = self.server + ':' + from_

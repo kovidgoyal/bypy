@@ -3,7 +3,6 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
-import subprocess
 import sys
 
 from virtual_machine.run import shutdown, wait_for_ssh
@@ -11,7 +10,7 @@ from virtual_machine.run import shutdown, wait_for_ssh
 from .conf import parse_conf_file
 from .constants import base_dir
 from .utils import single_instance
-from .vms import Rsync, from_vm, get_vm_spec, to_vm
+from .vms import Rsync, get_vm_spec
 
 
 def get_conf():
@@ -48,7 +47,6 @@ def main(args=tuple(sys.argv)):
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(pkg_dir, exist_ok=True)
 
-    to_vm(rsync, sources_dir, pkg_dir, prefix=prefix)
     cmd = [
         python, os.path.join(prefix, 'bypy'), 'main',
         f'BYPY_ROOT={prefix}']
@@ -57,12 +55,7 @@ def main(args=tuple(sys.argv)):
     if deploy_target:
         cmd.append(f'BYPY_DEPLOY_TARGET={deploy_target}')
     cmd += list(args)
-    try:
-        rsync.run_via_ssh(*cmd, allocate_tty=True)
-    except subprocess.CalledProcessError as e:
-        sys.exit(e.returncode)
-    finally:
-        from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix=prefix)
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, prefix=prefix)
 
 
 if __name__ == '__main__':

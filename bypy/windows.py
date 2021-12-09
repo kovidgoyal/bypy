@@ -3,7 +3,6 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
-import subprocess
 import sys
 
 from virtual_machine.run import shutdown, wait_for_ssh
@@ -11,7 +10,7 @@ from virtual_machine.run import shutdown, wait_for_ssh
 from .conf import parse_conf_file
 from .constants import base_dir
 from .utils import single_instance
-from .vms import Rsync, from_vm, get_vm_spec, to_vm
+from .vms import Rsync, get_vm_spec
 
 
 def get_conf():
@@ -58,21 +57,13 @@ def main(args=tuple(sys.argv)):
     path = win_prefix[2:].replace('\\', '/').replace('//', '/')
     prefix = f'/cygdrive/{drive}{path}'
     win_prefix = win_prefix.replace('/', os.sep)
-    to_vm(rsync, sources_dir, pkg_dir, prefix=prefix, name=f'sw{arch}')
     cmd = [
         python, os.path.join(win_prefix, 'bypy'), 'main',
         f'BYPY_ROOT={win_prefix}', f'BUILD_ARCH={arch}',
         f'PYTHON_TWO={python2}', f'PERL={perl}', f'RUBY={ruby}',
         f'MESA={mesa}',
     ] + list(args)
-    try:
-        rsync.run_via_ssh(*cmd, allocate_tty=True)
-    except subprocess.CalledProcessError as e:
-        sys.exit(e.returncode)
-    finally:
-        from_vm(
-            rsync, sources_dir, pkg_dir, output_dir,
-            prefix=prefix, name=f'sw{arch}')
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, prefix=prefix, name=f'sw{arch}')
 
 
 if __name__ == '__main__':
