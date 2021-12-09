@@ -6,11 +6,13 @@ import argparse
 import os
 import runpy
 import shutil
+import subprocess
 import sys
 
-from .constants import OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, build_dir, PREFIX
-from .deps import init_env
-from .deps import main as deps_main
+from .constants import (
+    OS_NAME, OUTPUT_DIR, PREFIX, ROOT, SRC, SW, build_dir, islinux
+)
+from .deps import init_env, main as deps_main
 from .utils import mkdtemp, rmtree, run_shell
 
 
@@ -99,6 +101,8 @@ def main(args):
         finally:
             os.chdir(SRC)
             rmtree(ext_dir), rmtree(bdir)
+        if islinux:
+            subprocess.run('sudo fstrim --all -v'.split())
         return
 
     deps_main(args)
