@@ -9,6 +9,7 @@ import shlex
 import socket
 import subprocess
 import sys
+import threading
 from functools import wraps
 from time import monotonic, sleep
 
@@ -260,21 +261,20 @@ def shell(spec, timeout=60):
     raise SystemExit(start_shell(spec, port))
 
 
-@remote_or_local('shutdown')
-def shutdown(spec):
+def shutdown_vm_dir(vm_dir):
     timeout = 10
     start = monotonic()
-    monitor_path = monitor_template.format(spec)
+    monitor_path = monitor_template.format(vm_dir)
     if not os.path.exists(monitor_path):
         print('VM already shutdown', file=sys.stderr)
         return
-    m = metadata_from_vm_dir(spec)
+    m = metadata_from_vm_dir(vm_dir)
     system = m['os']
     print('Shutting down', system, file=sys.stderr)
     if system == 'linux':
         run_monitor_command(monitor_path, 'system_powerdown')
     else:
-        port = ssh_port_for_vm_dir(spec)
+        port = ssh_port_for_vm_dir(vm_dir)
         cmd = shutdown_cmd_for_os(system)
         cmd = ['ssh'] + disable_known_hosts + [f'ssh://{BUILD_VM_USER}@localhost:{port}'] + cmd
         cp = subprocess.run(cmd)
@@ -285,8 +285,27 @@ def shutdown(spec):
         sleep(0.1)
     if os.path.exists(monitor_path):
         if start >= 0:
-            print(spec, 'failed to shutdown in', timeout, 'seconds. Halting', file=sys.stderr)
+            print(vm_dir, 'failed to shutdown in', timeout, 'seconds. Halting', file=sys.stderr)
         run_monitor_command(monitor_path, 'quit')
+
+
+@remote_or_local('shutdown')
+def shutdown(spec):
+    shutdown_vm_dir(spec)
+
+
+@remote_or_local('shutdown_all')
+def shutdown_all(spec):
+    running = []
+    for x in os.listdir(spec):
+        x = os.path.join(spec, x)
+        if os.path.exists(monitor_template.format(x)):
+            running.append(x)
+    workers = [threading.Thread(target=shutdown_vm_dir, args=(x,)) for x in running]
+    for w in workers:
+        w.start()
+    for w in workers:
+        w.join()
 
 
 actions['wait_for_ssh'] = wait_for_ssh
