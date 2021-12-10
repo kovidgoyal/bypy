@@ -16,6 +16,8 @@ is_running_remotely = False
 monitor_template = '{}/monitor.socket'
 machine_spec_template = '{}/machine-spec'
 BUILD_VM_USER = 'kovid'
+ssh_masters = set()
+disable_known_hosts = ['-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-o', 'LogLevel=ERROR']
 
 
 def os_from_machine_spec(raw):
@@ -131,19 +133,25 @@ def startup(vm_dir, timeout=30):
 
 def ssh_port_for_vm_dir(vm_dir):
     monitor_path = monitor_template.format(vm_dir)
+    just_started = False
     if not os.path.exists(monitor_path):
         startup(vm_dir)
-        m = metadata_from_vm_dir(vm_dir)
-        time = 20
-        if not m['is_accelerated']:
-            time *= 2
-        print('Waiting', time, 'seconds for VM to initialize...', file=sys.stderr)
-        sleep(time)
-    return get_ssh_port(monitor_path)
-
-
-ssh_masters = set()
-disable_known_hosts = ['-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-o', 'LogLevel=ERROR']
+        just_started = True
+    ans = get_ssh_port(monitor_path)
+    if just_started:
+        print('Waiting for SSH server to come up...', file=sys.stderr)
+        start = monotonic()
+        timeout = 180
+        while True:
+            cp = subprocess.run(ssh_command_to(port=ans, use_master=False) + ['date'], capture_output=True)
+            if cp.returncode == 0:
+                break
+            if cp.stderr and b'Connection reset by peer' in cp.stderr:
+                sleep(1)
+            if monotonic() - start > timeout:
+                raise TimeoutError(f'SSH server failed to come up in {timeout} seconds')
+        print('SSH server came up in', int(monotonic() - start), 'seconds', file=sys.stderr)
+    return ans
 
 
 def end_ssh_master(address, socket, process):
@@ -157,15 +165,17 @@ def end_ssh_master(address, socket, process):
     ssh_masters.discard(address)
 
 
-def ssh_command_to(*args, user=BUILD_VM_USER, server='localhost', port=22, allocate_tty=False, timeout=30):
+def ssh_command_to(*args, user=BUILD_VM_USER, server='localhost', port=22, allocate_tty=False, timeout=30, use_master=True):
     server = f'{user}@{server}'
     socket = os.path.expanduser(
         f'~/.ssh/controlmasters/bypy-{server}-{port}-{os.getpid()}')
     os.makedirs(os.path.dirname(socket), exist_ok=True)
     port = str(port)
     address = server, port
-    ssh = ['ssh', '-p', port, '-S', socket, '-o', f'ConnectTimeout={timeout}'] + disable_known_hosts
-    if address not in ssh_masters:
+    ssh = ['ssh', '-p', port, '-o', f'ConnectTimeout={timeout}'] + disable_known_hosts
+    if use_master:
+        ssh += ['-S', socket]
+    if use_master and address not in ssh_masters:
         ssh_masters.add(address)
         atexit.register(
             end_ssh_master, address, socket,
@@ -229,7 +239,7 @@ def wait_for_ssh(spec, timeout=60):
     server = server_from_spec(spec)
     cmd = ssh_command_to('date', server=server, port=port, timeout=180)
     start = monotonic()
-    print(f'Waiting for SSH server {server}:{port} to start...', file=sys.stderr)
+    print(f'Waiting for master connection to SSH server at {server}:{port}...', file=sys.stderr)
     while monotonic() - start < timeout:
         cp = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if cp.returncode == 0:
