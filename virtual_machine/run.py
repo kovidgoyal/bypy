@@ -334,4 +334,7 @@ if __name__ == '__main__':
     parser.add_argument('--running-remotely', action='store_true', help='For internal use')
     args = parser.parse_args()
     is_running_remotely = args.running_remotely
-    main(args.action, args.location)
+    try:
+        main(args.action, args.location)
+    except KeyboardInterrupt:
+        raise SystemExit('Exiting because of Ctrl-C')
