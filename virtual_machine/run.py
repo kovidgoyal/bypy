@@ -329,7 +329,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         prog='run.py' if sys.argv[0] == '-' else sys.argv[0],
         description='Control the execution of Virtual Machines')
-    parser.add_argument('action', help='The action to take')
+    parser.add_argument('action', help='The action to take. One of: ' + ', '.join(actions))
     parser.add_argument(
         'location', help='The VM location either an ssh:// URL of the form'
         ' ssh://user@host/path/to/vm/dir or just /path/to/vm/dir for local virtual machines.'
