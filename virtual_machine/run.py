@@ -132,6 +132,7 @@ def ssh_port_for_vm_dir(vm_dir):
     monitor_path = monitor_template.format(vm_dir)
     if not os.path.exists(monitor_path):
         startup(vm_dir)
+        sleep(20)
     return get_ssh_port(monitor_path)
 
 
