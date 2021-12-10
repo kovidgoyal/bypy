@@ -26,9 +26,10 @@ def os_from_machine_spec(raw):
     return 'linux'
 
 
-def os_for_vm_dir(vm_dir):
+def metadata_from_vm_dir(vm_dir):
     with open(machine_spec_template.format(vm_dir)) as f:
-        return os_from_machine_spec(f.read())
+        raw = f.read()
+    return {'os': os_from_machine_spec(raw), 'is_accelerated': 'accel=kvm' in raw}
 
 
 def shutdown_cmd_for_os(os):
@@ -132,7 +133,12 @@ def ssh_port_for_vm_dir(vm_dir):
     monitor_path = monitor_template.format(vm_dir)
     if not os.path.exists(monitor_path):
         startup(vm_dir)
-        sleep(20)
+        m = metadata_from_vm_dir(vm_dir)
+        time = 20
+        if not m['is_accelerated']:
+            time *= 2
+        print('Waiting', time, 'seconds for VM to initialize...', file=sys.stderr)
+        sleep(time)
     return get_ssh_port(monitor_path)
 
 
@@ -252,7 +258,8 @@ def shutdown(spec):
     if not os.path.exists(monitor_path):
         print('VM already shutdown', file=sys.stderr)
         return
-    system = os_for_vm_dir(spec)
+    m = metadata_from_vm_dir(spec)
+    system = m['os']
     print('Shutting down', system, file=sys.stderr)
     if system == 'linux':
         run_monitor_command(monitor_path, 'system_powerdown')
