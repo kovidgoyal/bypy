@@ -32,6 +32,7 @@ def build_vm(chroot: Chroot):
     meta_data = json.dumps({'instance-id': chroot.vm_name})
     cloud_image = chroot.cloud_image
     is_arm = chroot.image_arch == 'arm64'
+    firmware_images = chroot.efi_firmware_images
 
     machine_spec = [
         f'-name {chroot.vm_name}',
@@ -47,8 +48,17 @@ def build_vm(chroot: Chroot):
         '# The romfile option prevents loading of PXE boot at startup',
         '-netdev user,id=n1,hostfwd=tcp:0.0.0.0:0-:22 -device virtio-net-pci,netdev=n1,romfile='
     ]
+    firmware = []
     disks = []
     scsi_count = -1
+
+    def add_firmware(entry):
+        e = firmware_images['mapping'][entry]
+        d = 'firmware/' + os.path.basename(e['filename'])
+        shutil.copy2(e['filename'], d)
+        ro = 'on' if entry == 'executable' else 'off'
+        firmware.append('# Firmware')
+        firmware.append(f'-drive if=pflash,format={e["format"]},readonly={ro},file="{d}"')
 
     def add_disk(filename, disk_id):
         nonlocal scsi_count
@@ -70,12 +80,16 @@ def build_vm(chroot: Chroot):
         call('mkfs.ext4 -L datadisk -F SystemDisk.img')
         call('qemu-img convert -f raw -O qcow2 SystemDisk.img SystemDisk.qcow2')
         os.remove('SystemDisk.img')
-        os.mkdir('firmware')
+        if is_arm:
+            os.mkdir('firmware')
+            add_firmware('executable')
+            add_firmware('nvram-template')
         shutil.copy2(cloud_image, '.')
         add_disk(os.path.basename(cloud_image), 'os_disk')
         add_disk('SystemDisk.qcow2', 'datadisk')
         add_disk('cloud-init.qcow2', 'cloud_init')
 
+        machine_spec += firmware
         machine_spec += disks
         with open('machine-spec', 'w') as f:
             f.write('\n'.join(machine_spec))
