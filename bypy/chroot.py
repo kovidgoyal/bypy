@@ -166,6 +166,11 @@ class Chroot:
                 file('/usr/share/terminfo/x/xterm-kitty', open(ti, 'rb').read())
 
         ans = {
+            'growpart': {
+                'mode': 'growpart',
+                'devices': ['/'],
+                'ignore_growroot_disabled': True,
+            },
             'timezone': 'Asia/Kolkata',
             'fqdn': f'{self.vm_name}.localdomain',
             'package_upgrade': True,
