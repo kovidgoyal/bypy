@@ -97,7 +97,6 @@ def build_once(dep, m, args, cleanup, target=None):
 
 def build_dep(dep, args, dest_dir=PREFIX):
     dep_name = dep['name']
-    set_title('Building ' + dep_name)
     owd = os.getcwd()
     m = module_for_dep(dep)
     needs_lipo = ismacos and getattr(
@@ -184,7 +183,8 @@ def main(parsed_args):
     download(deps_to_build)
 
     built_names = set()
-    for dep in deps_to_build:
+    for i, dep in enumerate(deps_to_build):
+        set_title(f'Building {dep["name"]} -- {i+1} of {len(deps_to_build)}')
         try:
             build_dep(dep, parsed_args)
             built_names.add(dep['name'])
