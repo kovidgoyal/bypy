@@ -84,13 +84,13 @@ Now restart the VM with, changing the SSH port 22003 to whatever you like::
     -smp cores=2,threads=4 \
     -m 8G \
     -drive file=SystemDisk.qcow2,index=0,media=disk,if=virtio \
-    -nic user,model=virtio-net-pci,hostfwd=tcp:0.0.0.0:22003-:22 \
+    -nic user,model=virtio-net-pci,hostfwd=tcp:0.0.0.0:0-:22 \
     -rtc base=localtime,clock=host \
     -usb -device usb-tablet
 
 It should now be possible to SSH into the VM using::
 
-    ssh -p 22003 localhost
+    ssh -p `echo info usernet | socat - unix-connect:monitor.socket | grep HOST_FORWARD | tr -s ' ' '\t' | cut -f 5` kovid@localhost
 
 Copy over .vimrc, .zshrc, .ssh/authorized_keys
 Copy over the kitty terminfo using the ssh kitten

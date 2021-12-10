@@ -14,12 +14,12 @@ After the OS is installed:
 * Change the two network related lines in the launch script, which use an obsolete
   syntax to::
 
-    -nic user,model=e1000-82545em,mac=52:54:00:0e:0d:20,hostfwd=tcp:0.0.0.0:22001-:22
+    -nic user,model=e1000-82545em,mac=52:54:00:0e:0d:20,hostfwd=tcp:0.0.0.0:0-:22
 
 * Change the number of CPUS and RAM to::
 
     -smp 4,cores=2
-    -m 4G
+    -m 8G
 
 * enable automatic login for the ``kovid`` user in Preferences->Users->Login
   options
