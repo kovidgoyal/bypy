@@ -100,16 +100,21 @@ def main(args):
     args = option_parser().parse_args(args[2:])
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    if args.shell or args.deps == ['shell']:
-        init_env()
-        os.chdir(ROOT)
-        run_shell(cwd=PREFIX)
-        return
+    try:
+        if args.shell or args.deps == ['shell']:
+            init_env()
+            os.chdir(ROOT)
+            run_shell(cwd=PREFIX)
+            return
 
-    if args.deps == ['program']:
-        build_program(args)
-    else:
-        deps_main(args)
+        if args.deps == ['program']:
+            build_program(args)
+        else:
+            deps_main(args)
+    finally:
+        cs = os.path.expanduser('~/code-signing')
+        if os.path.exists(cs):
+            shutil.rmtree(cs, ignore_errors=True)
 
 
 if __name__ == '__main__':

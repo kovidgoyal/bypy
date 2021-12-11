@@ -111,7 +111,6 @@ def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
 
 def from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix='/', name='sw'):
     print('Mirroring data from VM...', flush=True)
-    rsync.run_via_ssh('rm', '-rf', '~/code-signing')
     prefix = prefix.rstrip('/') + '/'
     rsync.from_vm(prefix + name + '/dist', output_dir)
     rsync.from_vm(prefix + 'sources', sources_dir)
