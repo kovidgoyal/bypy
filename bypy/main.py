@@ -58,6 +58,44 @@ def option_parser():
     return parser
 
 
+def build_program(args):
+    init_env()
+    init_env_module = runpy.run_path(os.path.join(
+        SRC, 'bypy', 'init_env.py'),
+        run_name='program')
+    os.chdir(SRC)
+    ext_dir, bdir = mkdtemp('plugins-'), mkdtemp('build-')
+    build_dir(bdir)
+    if 'build_c_extensions' in init_env_module:
+        extensions_dir = init_env_module['build_c_extensions'](
+                ext_dir, args)
+        if args.build_only:
+            dest = os.path.join(SW, 'dist', 'c-extensions')
+            if os.path.exists(dest):
+                shutil.rmtree(dest)
+            shutil.copytree(extensions_dir, dest)
+            print('C extensions built in', dest)
+            return
+    try:
+        runpy.run_path(
+            os.path.join(SRC, 'bypy', OS_NAME),
+            init_globals={
+                'args': args,
+                'ext_dir': ext_dir,
+                'init_env': init_env_module,
+            },
+            run_name='__main__')
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        run_shell()
+    finally:
+        os.chdir(SRC)
+        rmtree(ext_dir), rmtree(bdir)
+    if islinux:
+        subprocess.run('sudo fstrim --all -v'.split())
+
+
 def main(args):
     args = option_parser().parse_args(args[2:])
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -69,43 +107,9 @@ def main(args):
         return
 
     if args.deps == ['program']:
-        init_env()
-        init_env_module = runpy.run_path(os.path.join(
-            SRC, 'bypy', 'init_env.py'),
-            run_name='program')
-        os.chdir(SRC)
-        ext_dir, bdir = mkdtemp('plugins-'), mkdtemp('build-')
-        build_dir(bdir)
-        if 'build_c_extensions' in init_env_module:
-            extensions_dir = init_env_module['build_c_extensions'](
-                    ext_dir, args)
-            if args.build_only:
-                dest = os.path.join(SW, 'dist', 'c-extensions')
-                if os.path.exists(dest):
-                    shutil.rmtree(dest)
-                shutil.copytree(extensions_dir, dest)
-                print('C extensions built in', dest)
-                return
-        try:
-            runpy.run_path(os.path.join(SRC, 'bypy', OS_NAME),
-                           init_globals={
-                               'args': args,
-                               'ext_dir': ext_dir,
-                               'init_env': init_env_module,
-                           },
-                           run_name='__main__')
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            run_shell()
-        finally:
-            os.chdir(SRC)
-            rmtree(ext_dir), rmtree(bdir)
-        if islinux:
-            subprocess.run('sudo fstrim --all -v'.split())
-        return
-
-    deps_main(args)
+        build_program(args)
+    else:
+        deps_main(args)
 
 
 if __name__ == '__main__':
