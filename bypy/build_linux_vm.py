@@ -86,7 +86,7 @@ def build_vm(chroot: Chroot):
             add_firmware('nvram-template')
         shutil.copy2(cloud_image, '.')
         converted = os.path.basename(cloud_image)
-        call(f'qemu-img resize "{cloud_image}" +1G')
+        call(f'qemu-img resize "{cloud_image}" +8G')
         add_disk(converted, 'os_disk')
         add_disk('SystemDisk.qcow2', 'datadisk')
         add_disk('cloud-init.qcow2', 'cloud_init')
