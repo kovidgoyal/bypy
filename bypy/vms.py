@@ -50,9 +50,13 @@ class Rsync(object):
         else:
             return subprocess.run(cmd)
 
-    def main(self, sources_dir, pkg_dir, output_dir, cmd, prefix='/', name='sw'):
-        to_vm(self, sources_dir, pkg_dir, prefix=prefix, name=name)
-        cp = self.run_via_ssh(*cmd, allocate_tty=True, raise_exception=False)
+    def main(self, sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix='/', name='sw'):
+        cp = self.run_via_ssh(*cmd_prefix, args[0], 'bypy-worker-status', raise_exception=False)
+        if cp.returncode == 1:
+            print('An existing job is running, reconnecting to that job...', flush=True)
+        else:
+            to_vm(self, sources_dir, pkg_dir, prefix=prefix, name=name)
+        cp = self.run_via_ssh(*cmd_prefix, *args, allocate_tty=True, raise_exception=False)
         while True:
             try:
                 from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)

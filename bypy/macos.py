@@ -54,8 +54,7 @@ def main(args=tuple(sys.argv)):
         cmd.append('BYPY_UNIVERSAL=true')
     if deploy_target:
         cmd.append(f'BYPY_DEPLOY_TARGET={deploy_target}')
-    cmd += list(args)
-    rsync.main(sources_dir, pkg_dir, output_dir, cmd, prefix=prefix)
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, list(args), prefix=prefix)
 
 
 if __name__ == '__main__':

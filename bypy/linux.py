@@ -38,8 +38,7 @@ def main(args=tuple(sys.argv)):
     os.makedirs(pkg_dir, exist_ok=True)
 
     cmd = ['python3', os.path.join('/', 'bypy'), 'main']
-    cmd += list(args)
-    rsync.main(sources_dir, pkg_dir, output_dir, cmd)
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, list(args))
 
 
 if __name__ == '__main__':

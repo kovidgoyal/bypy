@@ -127,10 +127,14 @@ def daemonize():
         raise SystemExit(f'fork #2 failed: {e}')
 
 
+def worker_single_instance():
+    return single_instance('bypy_worker')
+
+
 def worker_main(args):
     report_dir = os.environ['BYPY_WORKER']
     status_file_path = os.path.join(report_dir, 'status')
-    if not single_instance('bypy_worker'):
+    if not worker_single_instance():
         atomic_write(status_file_path, 'EEXIST')
         raise SystemExit(1)
     if hasattr(os, 'fork'):
@@ -260,6 +264,9 @@ def main(orig_args):
 
         if args.deps == ['program']:
             build_program(args)
+        elif args.deps == ['bypy-worker-status']:
+            has_other = not worker_single_instance()
+            raise SystemExit(1 if has_other else 0)
         else:
             if 'BYPY_WORKER' in os.environ:
                 worker_main(args)

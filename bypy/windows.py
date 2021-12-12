@@ -62,8 +62,8 @@ def main(args=tuple(sys.argv)):
         f'BYPY_ROOT={win_prefix}', f'BUILD_ARCH={arch}',
         f'PYTHON_TWO={python2}', f'PERL={perl}', f'RUBY={ruby}',
         f'MESA={mesa}',
-    ] + list(args)
-    rsync.main(sources_dir, pkg_dir, output_dir, cmd, prefix=prefix, name=f'sw{arch}')
+    ]
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, list(args), prefix=prefix, name=f'sw{arch}')
 
 
 if __name__ == '__main__':
