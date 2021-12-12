@@ -91,21 +91,40 @@ def call(*cmd, echo=True):
         raise SystemExit(ret)
 
 
-def single_instance(name):
-    import fcntl
-    address = '\0' + name.replace(' ', '_')
-    sock = socket.socket(family=socket.AF_UNIX)
-    try:
-        sock.bind(address)
-    except socket.error as err:
-        if getattr(err, 'errno', None) == errno.EADDRINUSE:
-            return False
-        raise
-    fd = sock.fileno()
-    old_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
-    fcntl.fcntl(fd, fcntl.F_SETFD, old_flags | fcntl.FD_CLOEXEC)
-    atexit.register(sock.close)
-    return True
+if ismacos:
+    def _clean_lock_file(file_obj):
+        with suppress(OSError):
+            os.remove(file_obj.name)
+        with suppress(OSError):
+            file_obj.close()
+
+    def single_instance(name):
+        import fcntl
+        path = os.path.realpath(f'/tmp/si-lock-{name}')
+        f = open(path, 'w')
+        try:
+            fcntl.lockf(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except Exception:
+            f.close()
+            raise
+        else:
+            atexit.register(_clean_lock_file, f)
+else:
+    def single_instance(name):
+        import fcntl
+        address = '\0' + name.replace(' ', '_')
+        sock = socket.socket(family=socket.AF_UNIX)
+        try:
+            sock.bind(address)
+        except socket.error as err:
+            if getattr(err, 'errno', None) == errno.EADDRINUSE:
+                return False
+            raise
+        fd = sock.fileno()
+        old_flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+        fcntl.fcntl(fd, fcntl.F_SETFD, old_flags | fcntl.FD_CLOEXEC)
+        atexit.register(sock.close)
+        return True
 
 
 def atomic_write(path, data):
