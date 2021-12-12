@@ -7,6 +7,7 @@ import atexit
 import ctypes
 import errno
 import glob
+import json
 import os
 import re
 import shlex
@@ -17,16 +18,18 @@ import struct
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import zipfile
 from contextlib import closing, contextmanager, suppress
 from functools import partial
 
-from .constants import (CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX,
-                        PYTHON, UNIVERSAL_ARCHES, build_dir, cpu_count,
-                        current_build_arch, is64bit, is_arm_half_of_lipo_build,
-                        islinux, ismacos, iswindows, mkdtemp,
-                        python_major_minor_version, worker_env)
+from .constants import (
+    CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX, PYTHON, UNIVERSAL_ARCHES,
+    build_dir, cpu_count, current_build_arch, is64bit,
+    is_arm_half_of_lipo_build, islinux, ismacos, iswindows, mkdtemp,
+    python_major_minor_version, worker_env
+)
 
 if iswindows:
     import msvcrt
@@ -105,6 +108,15 @@ def single_instance(name):
     return True
 
 
+def atomic_write(path, data):
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    path = os.path.abspath(path)
+    with tempfile.NamedTemporaryFile(dir=os.path.dirname(path), delete=False) as tf:
+        tf.write(data)
+    os.replace(tf.name, path)
+
+
 def current_env(library_path=False):
     env = os.environ.copy()
     env.update(worker_env)
@@ -149,7 +161,19 @@ def set_title(x):
         print('''\033]2;%s\007''' % x)
 
 
+class RunShell(Exception):
+
+    def __init__(self, library_path, cwd, env):
+        Exception.__init__(self, 'Run the shell')
+        self.library_path = library_path
+        self.cwd = cwd
+        self.env = env
+        self.serialized = json.dumps({'library_path': library_path, 'cwd': cwd, 'env': env})
+
+
 def run_shell(library_path=False, cwd=None, env=None):
+    if 'BYPY_WORKER' in os.environ:
+        raise RunShell(library_path, cwd, env)
     sys.stderr.flush(), sys.stdout.flush()
     if not isatty():
         raise SystemExit('STDOUT is not a tty, aborting...')

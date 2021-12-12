@@ -39,6 +39,7 @@ if iswindows:
     is64bit = os.environ['BUILD_ARCH'] == '64'
     SW += '64' if is64bit else '32'
 OUTPUT_DIR = os.path.join(SW, 'dist')
+WORKER_DIR = os.path.join(SW, 'worker')
 PKG = os.path.join(SW, 'pkg')
 BYPY = os.path.join(ROOT, 'bypy')
 SRC = os.path.join(ROOT, 'src')

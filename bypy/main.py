@@ -3,17 +3,25 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import argparse
+import json
 import os
 import runpy
 import shutil
+import signal
 import subprocess
 import sys
+import tempfile
+import threading
+import time
 
 from .constants import (
-    OS_NAME, OUTPUT_DIR, PREFIX, ROOT, SRC, SW, build_dir, islinux
+    OS_NAME, OUTPUT_DIR, PREFIX, ROOT, SRC, SW, WORKER_DIR, build_dir, islinux,
+    iswindows
 )
 from .deps import init_env, main as deps_main
-from .utils import mkdtemp, rmtree, run_shell
+from .utils import (
+    RunShell, atomic_write, mkdtemp, rmtree, run_shell, single_instance
+)
 
 
 def option_parser():
@@ -96,9 +104,149 @@ def build_program(args):
         subprocess.run('sudo fstrim --all -v'.split())
 
 
-def main(args):
-    args = option_parser().parse_args(args[2:])
+def daemonize():
+    try:
+        pid = os.fork()
+        if pid > 0:
+            # exit first parent
+            sys.exit(0)
+    except OSError as e:
+        raise SystemExit(f'fork #1 failed: {e}')
+
+    # decouple from parent environment
+    os.setsid()
+    os.umask(0)
+
+    # do second fork
+    try:
+        pid = os.fork()
+        if pid > 0:
+            # exit from second parent
+            sys.exit(0)
+    except OSError as e:
+        raise SystemExit(f'fork #2 failed: {e}')
+
+
+def worker_main(args):
+    report_dir = os.environ['BYPY_WORKER']
+    status_file_path = os.path.join(report_dir, 'status')
+    if not single_instance('bypy_worker'):
+        atomic_write(status_file_path, 'EEXIST')
+        raise SystemExit(1)
+    if hasattr(os, 'fork'):
+        daemonize()
+    data = {'pid': os.getpid()}
+    if hasattr(os, 'getsid'):
+        data['sid'] = os.getsid(0)
+    if hasattr(os, 'getpgid'):
+        data['pgid'] = os.getpgid(0)
+    atomic_write(status_file_path, json.dumps(data))
+    atomic_write(os.path.join(WORKER_DIR, 'current_dir'), f'{report_dir}')
+    rpath = os.path.join(report_dir, 'result')
+    try:
+        deps_main(args)
+    except RunShell as rs:
+        atomic_write(rpath, 'RUNSHELL:' + rs.serialized)
+        return
+    except (Exception, SystemExit) as e:
+        atomic_write(rpath, 'ERROR:' + str(e))
+        raise
+    else:
+        atomic_write(rpath, 'OK:')
+
+
+def tail(report_dir, tail_end, rewind):
+    with open(os.path.join(report_dir, 'output'), encoding='utf-8', errors='replace') as f:
+        f.seek(-2048 if rewind else 0, os.SEEK_END)
+        sleep_time = 0.05
+        while not tail_end.is_set():
+            data = f.read(4096)
+            if data:
+                sleep_time = 0.05
+                print(end=data)
+            else:
+                print(end='', flush=True)
+                sleep_time = min(sleep_time * 2, 1)
+                tail_end.wait(sleep_time)
+        data = f.read()
+        if data:
+            print(end=data, flush=True)
+
+
+def clear_worker_dir(report_dir):
+    if os.path.exists(report_dir):
+        rmtree(report_dir)
+    os.remove(os.path.join(WORKER_DIR, 'current_dir'))
+
+
+def handle_status(report_dir):
+    with open(os.path.join(report_dir, 'status')) as f:
+        status = f.read()
+    rewind = False
+    if status == 'EEXIST':
+        rewind = True
+        with open(os.path.join(WORKER_DIR, 'current_dir')) as f:
+            report_dir = f.read().strip()
+        with open(os.path.join(report_dir, 'status')) as f:
+            status = f.read()
+    worker = json.loads(status)
+    rpath = os.path.join(report_dir, 'result')
+    tail_end = threading.Event()
+    tailer = threading.Thread(target=tail, args=(report_dir, tail_end, rewind))
+    tailer.start()
+    try:
+        while not os.path.exists(rpath):
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        if iswindows:
+            subprocess.call(['taskkill', '/F', '/T', '/PID', str(worker['pid'])])
+        else:
+            os.killpg(int(worker['pgid']), signal.SIGINT)
+        clear_worker_dir(report_dir)
+        return
+    finally:
+        tail_end.set()
+        tailer.join()
+    rpath = os.path.join(report_dir, 'result')
+    time.sleep(0.1)  # give the worker process time to die
+    result = open(rpath).read()
+    rtype, data = result.split(':', 1)
+    clear_worker_dir(report_dir)
+    if rtype != 'OK':
+        if rtype == 'ERROR':
+            raise SystemExit(data)
+        run_shell(**json.loads(data))
+        raise SystemExit(1)
+
+
+def run_worker(args, orig_args):
+    orig_args = list(orig_args)
+    orig_args.insert(1, 'main')
+    tdir = tempfile.mkdtemp(dir=WORKER_DIR)
+    d = os.path.dirname
+    env = dict(os.environ)
+    env['BYPY_WORKER'] = tdir
+    cmd = [sys.executable, d(d(os.path.abspath(__file__)))] + orig_args[1:]
+    with open(os.path.join(tdir, 'output'), 'wb') as output:
+        p = subprocess.Popen(cmd, env=env, stdout=output, stderr=subprocess.STDOUT)
+    start = time.monotonic()
+    status = os.path.join(tdir, 'status')
+    while time.monotonic() - start < 5:
+        if os.path.exists(status):
+            return handle_status(tdir)
+        time.sleep(0.02)
+    if p.poll() is None:
+        p.kill()
+    print(cmd, file=sys.stderr)
+    with open(os.path.join(tdir, 'output')) as f:
+        print(end=f.read(), flush=True, file=sys.stderr)
+    raise SystemExit('Timed out waiting for worker to write status')
+
+
+def main(orig_args):
+    args = option_parser().parse_args(orig_args[2:])
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(WORKER_DIR, exist_ok=True)
 
     try:
         if args.shell or args.deps == ['shell']:
@@ -110,7 +258,10 @@ def main(args):
         if args.deps == ['program']:
             build_program(args)
         else:
-            deps_main(args)
+            if 'BYPY_WORKER' in os.environ:
+                worker_main(args)
+            else:
+                run_worker(args, orig_args)
     finally:
         cs = os.path.expanduser('~/code-signing')
         if os.path.exists(cs):
