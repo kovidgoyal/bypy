@@ -202,12 +202,15 @@ def handle_status(report_dir):
             subprocess.call(['taskkill', '/F', '/T', '/PID', str(worker['pid'])])
         else:
             os.killpg(int(worker['pgid']), signal.SIGINT)
+        tail_end.set()
+        tailer.join()
+        print('', flush=True)
+        print('\n\x1b[32mInterrupted by user, killing all worker processes and aborting\x1b[m', file=sys.stderr, flush=True)
         clear_worker_dir(report_dir)
         return
     finally:
         tail_end.set()
         tailer.join()
-    rpath = os.path.join(report_dir, 'result')
     time.sleep(0.1)  # give the worker process time to die
     result = open(rpath).read()
     rtype, data = result.split(':', 1)
