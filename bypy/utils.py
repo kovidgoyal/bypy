@@ -100,7 +100,7 @@ if ismacos:
 
     def single_instance(name):
         import fcntl
-        path = os.path.realpath(f'/tmp/si-lock-{name}')
+        path = os.path.realpath(f'/tmp/si-lock-{name.replace(" ", "_")}')
         f = open(path, 'w')
         try:
             fcntl.lockf(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -109,6 +109,35 @@ if ismacos:
             raise
         else:
             atexit.register(_clean_lock_file, f)
+elif iswindows:
+    import ctypes
+    from ctypes import wintypes
+
+    def handlecheck(result, func, args):
+        if result == INVALID_HANDLE_VALUE:
+            raise ctypes.WinError(ctypes.get_last_error())
+        return result
+
+    CreateMutexW = ctypes.windll.kernel32.CreateMutexW
+    CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPWSTR]
+    CreateMutexW.restype = wintypes.HANDLE
+    CreateMutexW.errcheck = handlecheck
+    CloseHandle = ctypes.windll.kernel32.CloseHandle
+    CloseHandle.argtypes = [wintypes.HANDLE]
+    CloseHandle.restype = wintypes.BOOL
+    INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
+    ERROR_ALREADY_EXISTS = 0xB7
+
+    def single_instance(name):
+        q = f'bypy_si_{name.replace(" ", "_")}'
+        try:
+            h = CreateMutexW(None, False, q)
+        except OSError as err:
+            if err.winerror == ERROR_ALREADY_EXISTS:
+                return False
+            raise
+        atexit.register(CloseHandle, h)
+        return True
 else:
     def single_instance(name):
         import fcntl
