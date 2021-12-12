@@ -6,6 +6,7 @@ import os
 import shlex
 import subprocess
 import sys
+import time
 
 from virtual_machine.run import server_from_spec, ssh_command_to
 
@@ -65,7 +66,7 @@ class Rsync(object):
 
     def from_vm(self, from_, to, excludes=frozenset()):
         f = self.server + ':' + from_
-        self(f, to, excludes)
+        return self.rsync_command(f, to, excludes)
 
     def ensure_remote_dirs(self, *dirs):
         if dirs:
@@ -73,9 +74,9 @@ class Rsync(object):
 
     def to_vm(self, from_, to, excludes=frozenset()):
         t = self.server + ':' + to
-        self(from_, t, excludes)
+        return self.rsync_command(from_, t, excludes)
 
-    def __call__(self, from_, to, excludes=frozenset()):
+    def rsync_command(self, from_, to, excludes=frozenset()):
         ssh = shlex.join(ssh_command_to(server=self.server, port=self.port)[:-1])
         if isinstance(excludes, type('')):
             excludes = excludes.split()
@@ -84,16 +85,25 @@ class Rsync(object):
         cmd = [
             'rsync', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded'
         ] + excludes + [from_ + '/', to]
-        # print(' '.join(cmd))
-        print('Syncing', from_, flush=True)
-        p = subprocess.Popen(cmd)
-        if p.wait() != 0:
-            q = shlex.join(cmd)
-            raise SystemExit(
-                f'The cmd {q} failed with error code: {p.returncode}')
+        return cmd
+
+
+def run_sync_jobs(cmds):
+    workers = [
+        (cmd, subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
+        for cmd in cmds
+    ]
+    for (cmd, w) in workers:
+        w.wait()
+    for (cmd, w) in workers:
+        if w.returncode != 0:
+            print(f'The command {cmd} failed')
+            sys.stderr.buffer.write(w.stdout.read())
+            raise SystemExit(w.returncode)
 
 
 def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
+    start = time.monotonic()
     print('Mirroring data to the VM...', flush=True)
     prefix = prefix.rstrip('/') + '/'
     src_dir = os.path.dirname(base_dir())
@@ -102,7 +112,7 @@ def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
 
     def a(src, to, excludes=frozenset()):
         dirs_to_ensure.append(to)
-        to_vm_calls.append((src, to, excludes))
+        to_vm_calls.append(rsync.to_vm(src, to, excludes))
 
     if os.path.exists(os.path.join(src_dir, 'setup.py')):
         excludes = get_rsync_conf()['to_vm_excludes']
@@ -118,13 +128,18 @@ def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
         if os.path.exists(code_signing):
             a(code_signing, '~/code-signing')
     rsync.ensure_remote_dirs(*dirs_to_ensure)
-    for src, to, excludes in to_vm_calls:
-        rsync.to_vm(src, to, excludes)
+    run_sync_jobs(to_vm_calls)
+    print(f'Mirroring took {time.monotonic() - start:.1f} seconds', flush=True)
 
 
 def from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix='/', name='sw'):
+    start = time.monotonic()
     print('Mirroring data from VM...', flush=True)
     prefix = prefix.rstrip('/') + '/'
-    rsync.from_vm(prefix + name + '/dist', output_dir)
-    rsync.from_vm(prefix + 'sources', sources_dir)
-    rsync.from_vm(prefix + name + '/pkg', pkg_dir)
+    cmds = []
+    a = cmds.append
+    a(rsync.from_vm(prefix + name + '/dist', output_dir))
+    a(rsync.from_vm(prefix + 'sources', sources_dir))
+    a(rsync.from_vm(prefix + name + '/pkg', pkg_dir))
+    run_sync_jobs(cmds)
+    print(f'Mirroring took {time.monotonic() - start:.1f} seconds', flush=True)
