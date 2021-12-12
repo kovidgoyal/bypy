@@ -67,8 +67,11 @@ class Rsync(object):
         f = self.server + ':' + from_
         self(f, to, excludes)
 
+    def ensure_remote_dirs(self, *dirs):
+        if dirs:
+            self.run_via_ssh('mkdir', '-p', *dirs)
+
     def to_vm(self, from_, to, excludes=frozenset()):
-        self.run_via_ssh('mkdir', '-p', to)
         t = self.server + ':' + to
         self(from_, t, excludes)
 
@@ -94,19 +97,29 @@ def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
     print('Mirroring data to the VM...', flush=True)
     prefix = prefix.rstrip('/') + '/'
     src_dir = os.path.dirname(base_dir())
+    dirs_to_ensure = []
+    to_vm_calls = []
+
+    def a(src, to, excludes=frozenset()):
+        dirs_to_ensure.append(to)
+        to_vm_calls.append((src, to, excludes))
+
     if os.path.exists(os.path.join(src_dir, 'setup.py')):
         excludes = get_rsync_conf()['to_vm_excludes']
-        rsync.to_vm(src_dir, prefix + 'src', '/bypy/b ' + excludes)
+        a(src_dir, prefix + 'src', '/bypy/b ' + excludes)
 
     base = os.path.dirname(os.path.abspath(__file__))
-    rsync.to_vm(os.path.dirname(base), prefix + 'bypy')
-    rsync.to_vm(sources_dir, prefix + 'sources')
-    rsync.to_vm(pkg_dir, prefix + name + '/pkg')
+    a(os.path.dirname(base), prefix + 'bypy')
+    a(sources_dir, prefix + 'sources')
+    a(pkg_dir, prefix + name + '/pkg')
     if 'PENV' in os.environ:
         code_signing = os.path.expanduser(os.path.join(
             os.environ['PENV'], 'code-signing'))
         if os.path.exists(code_signing):
-            rsync.to_vm(code_signing, '~/code-signing')
+            a(code_signing, '~/code-signing')
+    rsync.ensure_remote_dirs(*dirs_to_ensure)
+    for src, to, excludes in to_vm_calls:
+        rsync.to_vm(src, to, excludes)
 
 
 def from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix='/', name='sw'):
