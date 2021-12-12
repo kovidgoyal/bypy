@@ -264,9 +264,11 @@ def main(orig_args):
 
         if args.deps == ['program']:
             build_program(args)
-        elif args.deps == ['bypy-worker-status']:
+        elif args.deps and args.deps[0] == 'bypy-worker-status':
+            for x in args.deps[1:]:
+                os.makedirs(x, exist_ok=True)
             has_other = not worker_single_instance()
-            raise SystemExit(1 if has_other else 0)
+            raise SystemExit(13 if has_other else 0)
         else:
             if 'BYPY_WORKER' in os.environ:
                 worker_main(args)

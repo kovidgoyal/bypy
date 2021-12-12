@@ -51,11 +51,8 @@ class Rsync(object):
             return subprocess.run(cmd)
 
     def main(self, sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix='/', name='sw'):
-        cp = self.run_via_ssh(*cmd_prefix, args[0], 'bypy-worker-status', raise_exception=False)
-        if cp.returncode == 1:
-            print('An existing job is running, reconnecting to that job...', flush=True)
-        else:
-            to_vm(self, sources_dir, pkg_dir, prefix=prefix, name=name)
+        ws_cmd = list(cmd_prefix) + args[:1] + ['bypy-worker-status']
+        to_vm(self, ws_cmd, sources_dir, pkg_dir, prefix=prefix, name=name)
         cp = self.run_via_ssh(*cmd_prefix, *args, allocate_tty=True, raise_exception=False)
         while True:
             try:
@@ -71,10 +68,6 @@ class Rsync(object):
     def from_vm(self, from_, to, excludes=frozenset()):
         f = self.server + ':' + from_
         return self.rsync_command(f, to, excludes)
-
-    def ensure_remote_dirs(self, *dirs):
-        if dirs:
-            self.run_via_ssh('mkdir', '-p', *dirs)
 
     def to_vm(self, from_, to, excludes=frozenset()):
         t = self.server + ':' + to
@@ -106,7 +99,7 @@ def run_sync_jobs(cmds):
             raise SystemExit(w.returncode)
 
 
-def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
+def to_vm(rsync, initial_cmd, sources_dir, pkg_dir, prefix='/', name='sw'):
     start = time.monotonic()
     print('Mirroring data to the VM...', flush=True)
     prefix = prefix.rstrip('/') + '/'
@@ -131,9 +124,15 @@ def to_vm(rsync, sources_dir, pkg_dir, prefix='/', name='sw'):
             os.environ['PENV'], 'code-signing'))
         if os.path.exists(code_signing):
             a(code_signing, '~/code-signing')
-    rsync.ensure_remote_dirs(*dirs_to_ensure)
-    run_sync_jobs(to_vm_calls)
-    print(f'Mirroring took {time.monotonic() - start:.1f} seconds', flush=True)
+    initial_cmd += dirs_to_ensure
+    cp = rsync.run_via_ssh(*initial_cmd, raise_exception=False)
+    if cp.returncode == 0:
+        run_sync_jobs(to_vm_calls)
+        print(f'Mirroring took {time.monotonic() - start:.1f} seconds', flush=True)
+    elif cp.returncode == 1:
+        raise SystemExit(1)
+    elif cp.returncode == 13:
+        print('There is an existing job running, reconnecting to that job...', flush=True)
 
 
 def from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix='/', name='sw'):
