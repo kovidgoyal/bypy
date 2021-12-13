@@ -3,6 +3,7 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import argparse
+import atexit
 import json
 import os
 import runpy
@@ -250,34 +251,38 @@ def run_worker(args, orig_args):
     raise SystemExit('Timed out waiting for worker to write status')
 
 
+def delete_code_signing_certs():
+    cs = os.path.expanduser('~/code-signing')
+    if os.path.exists(cs):
+        shutil.rmtree(cs, ignore_errors=True)
+
+
 def main(orig_args):
     args = option_parser().parse_args(orig_args[2:])
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(WORKER_DIR, exist_ok=True)
+    building_program = args.deps == ['program']
+    if building_program:
+        atexit.register(delete_code_signing_certs)
+    else:
+        delete_code_signing_certs()
 
-    try:
-        if args.shell or args.deps == ['shell']:
-            init_env()
-            os.chdir(ROOT)
-            run_shell(cwd=PREFIX)
-            return
-
-        if args.deps == ['program']:
-            build_program(args)
-        elif args.deps and args.deps[0] == 'bypy-worker-status':
-            for x in args.deps[1:]:
-                os.makedirs(x, exist_ok=True)
-            has_other = not worker_single_instance()
-            raise SystemExit(13 if has_other else 0)
+    if building_program:
+        build_program(args)
+    elif args.shell or args.deps == ['shell']:
+        init_env()
+        os.chdir(ROOT)
+        run_shell(cwd=PREFIX)
+    elif args.deps and args.deps[0] == 'bypy-worker-status':
+        for x in args.deps[1:]:
+            os.makedirs(os.path.expanduser(x), exist_ok=True)
+        has_other = not worker_single_instance()
+        raise SystemExit(13 if has_other else 0)
+    else:
+        if 'BYPY_WORKER' in os.environ:
+            worker_main(args)
         else:
-            if 'BYPY_WORKER' in os.environ:
-                worker_main(args)
-            else:
-                run_worker(args, orig_args)
-    finally:
-        cs = os.path.expanduser('~/code-signing')
-        if os.path.exists(cs):
-            shutil.rmtree(cs, ignore_errors=True)
+            run_worker(args, orig_args)
 
 
 if __name__ == '__main__':
