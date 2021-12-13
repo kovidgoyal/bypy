@@ -334,7 +334,10 @@ if __name__ == '__main__':
     parser.add_argument('--running-remotely', action='store_true', help='For internal use')
     args = parser.parse_args()
     is_running_remotely = args.running_remotely
+    loc = args.location
+    if not loc.startswith('ssh:') and not os.path.isabs(loc):
+        loc = os.path.join('/vms', loc)
     try:
-        main(args.action, args.location)
+        main(args.action, loc)
     except KeyboardInterrupt:
         raise SystemExit('Exiting because of Ctrl-C')
