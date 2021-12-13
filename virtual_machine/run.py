@@ -262,7 +262,7 @@ def shell(spec, timeout=60):
 
 
 def shutdown_vm_dir(vm_dir):
-    timeout = 10
+    timeout = 20
     start = monotonic()
     monitor_path = monitor_template.format(vm_dir)
     if not os.path.exists(monitor_path):
