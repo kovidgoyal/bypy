@@ -3,6 +3,7 @@
 # License: GPLv3 Copyright: 2020, Kovid Goyal <kovid at kovidgoyal.net>
 
 import atexit
+import json
 import os
 import pwd
 import shlex
@@ -132,10 +133,12 @@ def startup(vm_dir, timeout=30):
     return monitor_path
 
 
-def ssh_port_for_vm_dir(vm_dir):
+def ssh_port_for_vm_dir(vm_dir, start_if_not_running=True):
     monitor_path = monitor_template.format(vm_dir)
     just_started = False
     if not os.path.exists(monitor_path):
+        if not start_if_not_running:
+            return -1
         startup(vm_dir)
         just_started = True
     ans = get_ssh_port(monitor_path)
@@ -229,6 +232,14 @@ def ssh_port(spec):
     return ssh_port_for_vm_dir(spec)
 
 
+@remote_or_local('shutdown_data', str)
+def shutdown_data(spec):
+    m = metadata_from_vm_dir(spec)
+    system = m['os']
+    cmd = shutdown_cmd_for_os(system)
+    return json.dumps({'metadata': m, 'cmd': cmd, 'port': ssh_port_for_vm_dir(spec)})
+
+
 def server_from_spec(spec):
     from urllib.parse import urlparse
     p = urlparse(spec)
@@ -271,16 +282,7 @@ def shutdown_vm_dir(vm_dir):
     m = metadata_from_vm_dir(vm_dir)
     system = m['os']
     print('Shutting down', system, file=sys.stderr)
-    if system == 'linux':
-        run_monitor_command(monitor_path, 'system_powerdown')
-    else:
-        port = ssh_port_for_vm_dir(vm_dir)
-        cmd = shutdown_cmd_for_os(system)
-        cmd = ['ssh'] + disable_known_hosts + [f'ssh://{BUILD_VM_USER}@localhost:{port}'] + cmd
-        cp = subprocess.run(cmd)
-        if cp.returncode != 0:
-            print('Shutdown command:', shlex.join(cmd), 'failed, halting VM', file=sys.stderr)
-            start = -10 * timeout
+    run_monitor_command(monitor_path, 'system_powerdown')
     while os.path.exists(monitor_path) and monotonic() - start < timeout:
         sleep(0.1)
     if os.path.exists(monitor_path):
@@ -289,9 +291,28 @@ def shutdown_vm_dir(vm_dir):
         run_monitor_command(monitor_path, 'quit')
 
 
-@remote_or_local('shutdown')
+@remote_or_local
+def ensure_halted(vm_dir):
+    timeout = 20
+    start = monotonic()
+    monitor_path = monitor_template.format(vm_dir)
+    while os.path.exists(monitor_path) and monotonic() - start < timeout:
+        sleep(0.1)
+    if os.path.exists(monitor_path):
+        if start >= 0:
+            print(vm_dir, 'failed to shutdown in', timeout, 'seconds. Halting', file=sys.stderr)
+        run_monitor_command(monitor_path, 'quit')
+
+
 def shutdown(spec):
-    shutdown_vm_dir(spec)
+    data = json.loads(shutdown_data(spec))
+    if data['port'] > 0:
+        cmd = data['cmd']
+        cmd = ['ssh'] + disable_known_hosts + [f'ssh://{BUILD_VM_USER}@localhost:{data["port"]}'] + cmd
+        cp = subprocess.run(cmd)
+        if cp.returncode != 0:
+            print('Shutdown command:', shlex.join(cmd), 'failed, halting VM', file=sys.stderr)
+    ensure_halted(spec)
 
 
 @remote_or_local('shutdown_all')
@@ -310,6 +331,7 @@ def shutdown_all(spec):
 
 actions['wait_for_ssh'] = actions['run'] = wait_for_ssh
 actions['shell'] = shell
+actions['shutdown'] = shutdown
 
 
 def main(action, vm_spec):
