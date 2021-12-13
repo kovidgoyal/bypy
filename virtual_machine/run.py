@@ -308,7 +308,7 @@ def shutdown_all(spec):
         w.join()
 
 
-actions['wait_for_ssh'] = wait_for_ssh
+actions['wait_for_ssh'] = actions['run'] = wait_for_ssh
 actions['shell'] = shell
 
 
