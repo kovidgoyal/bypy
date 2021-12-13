@@ -104,11 +104,14 @@ if ismacos:
         f = open(path, 'w')
         try:
             fcntl.lockf(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except Exception:
+        except OSError as err:
             f.close()
-            raise
+            if err.errno not in (errno.EAGAIN, errno.EACCES):
+                raise
+            return False
         else:
             atexit.register(_clean_lock_file, f)
+            return True
 elif iswindows:
     import ctypes
     from ctypes import wintypes
