@@ -54,15 +54,7 @@ class Rsync(object):
         ws_cmd = list(cmd_prefix) + args[:1] + ['bypy-worker-status']
         to_vm(self, ws_cmd, sources_dir, pkg_dir, prefix=prefix, name=name)
         cp = self.run_via_ssh(*cmd_prefix, *args, allocate_tty=True, raise_exception=False)
-        while True:
-            try:
-                from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
-                break
-            except Exception as e:
-                print(f'Downloading data from VM failed: {e}', file=sys.stderr)
-                ans = input('Would you like to try downloading again [y/n]? ')
-                if ans.lower() not in ('', 'y'):
-                    break
+        from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
         raise SystemExit(cp.returncode)
 
     def from_vm(self, from_, to, excludes=frozenset()):
@@ -85,18 +77,29 @@ class Rsync(object):
         return cmd
 
 
-def run_sync_jobs(cmds):
-    workers = [
-        (cmd, subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
-        for cmd in cmds
-    ]
-    for (cmd, w) in workers:
-        w.wait()
-    for (cmd, w) in workers:
-        if w.returncode != 0:
-            print(f'The command {cmd} failed')
-            sys.stderr.buffer.write(w.stdout.read())
-            raise SystemExit(w.returncode)
+def run_sync_jobs(cmds, retry=False):
+    while True:
+        workers = [
+            (cmd, subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
+            for cmd in cmds
+        ]
+        for (cmd, w) in workers:
+            w.wait()
+        failures = []
+        for (cmd, w) in workers:
+            if w.returncode != 0:
+                failures.append((cmd, w.stdout.read()))
+        if failures:
+            for (cmd, w) in failures:
+                print(f'The command {cmd} failed')
+                sys.stderr.buffer.write(w.stdout.read())
+            if retry:
+                q = input('Would you like to retry downloading data from the VM? [y/n] ')
+                if q == 'y':
+                    continue
+            raise SystemExit(1)
+        else:
+            break
 
 
 def to_vm(rsync, initial_cmd, sources_dir, pkg_dir, prefix='/', name='sw'):
