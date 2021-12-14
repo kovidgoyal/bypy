@@ -192,27 +192,38 @@ def ssh_command_to(*args, user=BUILD_VM_USER, server='localhost', port=22, alloc
 actions = {}
 
 
+def is_local(parsed_spec):
+    server = parsed_spec.hostname or 'localhost'
+    return server in ('localhost', '127.0.0.1', '::1')
+
+
+def parse_ssh_spec(spec, port=22):
+    from urllib.parse import urlparse
+    p = urlparse(spec)
+    if p.scheme not in ('', 'ssh'):
+        raise ValueError(f'Not a valid SSH URL: {spec}')
+    path = p.path
+    if not path:
+        raise ValueError(f'No path specified in SSH URL: {spec}')
+    if is_local(p):
+        return path, []
+    server = p.hostname or 'localhost'
+    if p.username:
+        user = p.username
+    else:
+        user = pwd.getpwuid(os.geteuid()).pw_name
+    port = p.port or port
+    return path, ssh_command_to(port=port, server=server, user=user)
+
+
 def remote_or_local(name, stdout_converter=None):
 
     def wrapper(func):
         @wraps(func)
         def f(spec):
-            from urllib.parse import urlparse
-            p = urlparse(spec)
-            if p.scheme not in ('', 'ssh'):
-                raise ValueError(f'Not a valid SSH URL: {spec}')
-            path = p.path
-            if not path:
-                raise ValueError(f'No path specified in SSH URL: {spec}')
-            server = p.hostname or 'localhost'
-            if server in ('localhost', '127.0.0.1', '::1'):
+            path, cmd = parse_ssh_spec(spec)
+            if not cmd:
                 return func(path)
-            if p.username:
-                user = p.username
-            else:
-                user = pwd.getpwuid(os.geteuid()).pw_name
-            port = p.port or 22
-            cmd = ssh_command_to(port=port, server=server, user=user)
             rcmd = ['python', '-', '--running-remotely', f'{name}', path]
             with open(__file__) as f:
                 script = f.read()
@@ -237,7 +248,7 @@ def shutdown_data(spec):
     m = metadata_from_vm_dir(spec)
     system = m['os']
     cmd = shutdown_cmd_for_os(system)
-    return json.dumps({'metadata': m, 'cmd': cmd, 'port': ssh_port_for_vm_dir(spec)})
+    return json.dumps({'metadata': m, 'cmd': cmd, 'port': ssh_port_for_vm_dir(spec, start_if_not_running=False)})
 
 
 def server_from_spec(spec):
@@ -291,7 +302,7 @@ def shutdown_vm_dir(vm_dir):
         run_monitor_command(monitor_path, 'quit')
 
 
-@remote_or_local
+@remote_or_local('ensure_halted')
 def ensure_halted(vm_dir):
     timeout = 20
     start = monotonic()
@@ -305,14 +316,20 @@ def ensure_halted(vm_dir):
 
 
 def shutdown(spec):
+    from urllib.parse import urlparse
+    p = urlparse(spec)
+    if is_local(p):
+        shutdown_vm_dir(spec)
+        return
     data = json.loads(shutdown_data(spec))
     if data['port'] > 0:
-        cmd = data['cmd']
-        cmd = ['ssh'] + disable_known_hosts + [f'ssh://{BUILD_VM_USER}@localhost:{data["port"]}'] + cmd
-        cp = subprocess.run(cmd)
-        if cp.returncode != 0:
-            print('Shutdown command:', shlex.join(cmd), 'failed, halting VM', file=sys.stderr)
-    ensure_halted(spec)
+        cmd = ssh_command_to(server=p.hostname, port=data['port'])
+        cmd += data['cmd']
+        print(shlex.join(cmd))
+        subprocess.run(cmd)
+        ensure_halted(spec)
+    else:
+        print('Server not running')
 
 
 @remote_or_local('shutdown_all')
