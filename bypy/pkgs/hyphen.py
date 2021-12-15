@@ -2,8 +2,11 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from bypy.constants import CL, LIB, build_dir, iswindows
-from bypy.utils import run, install_binaries, copy_headers
+from bypy.constants import CL, LIB, iswindows
+from bypy.utils import run, install_binaries, copy_headers, simple_build
+
+
+needs_lipo = True
 
 
 def main(args):
@@ -14,6 +17,7 @@ def main(args):
         install_binaries('hyphen.lib')
         copy_headers('hyphen.h')
         return
-    run('./configure', f'--prefix={build_dir()}', '--disable-static')
-    run('make', 'install-libLTLIBRARIES')
-    run('make', 'install-includeHEADERS')
+    simple_build(
+        ('--disable-static',), make_args=('install-libLTLIBRARIES', 'install-includeHEADERS'),
+        do_install=False,
+    )

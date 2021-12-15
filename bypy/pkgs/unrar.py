@@ -6,6 +6,8 @@ from bypy.constants import ismacos, iswindows
 from bypy.utils import (copy_headers, install_binaries, msbuild,
                         replace_in_file, run)
 
+needs_lipo = True
+
 
 def main(args):
     replace_in_file('dll.cpp', 'WideToChar', 'WideToUtf')

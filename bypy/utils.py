@@ -374,7 +374,7 @@ def simple_build(
         configure_args=(), make_args=(), install_args=(),
         library_path=None, override_prefix=None, no_parallel=False,
         configure_name='./configure', relocate_pkgconfig=True,
-        autogen_name='./autogen.sh'
+        autogen_name='./autogen.sh', do_install=True
 ):
     if isinstance(configure_args, str):
         configure_args = split(configure_args)
@@ -396,10 +396,11 @@ def simple_build(
         override_prefix or build_dir()), *configure_args)
     make_opts = [] if no_parallel else split(MAKEOPTS)
     run('make', *(make_opts + list(make_args)))
-    mi = ['make'] + list(install_args) + ['install']
-    run(*mi, library_path=library_path)
-    if relocate_pkgconfig:
-        relocate_pkgconfig_files()
+    if do_install:
+        mi = ['make'] + list(install_args) + ['install']
+        run(*mi, library_path=library_path)
+        if relocate_pkgconfig:
+            relocate_pkgconfig_files()
 
 
 def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):

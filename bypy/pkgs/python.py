@@ -174,6 +174,10 @@ def filter_pkg(parts):
         for p in parts:
             if p.startswith('plat-'):
                 return True
+    if ismacos:
+        # this is a non-universal python launcher
+        if parts and parts[-1].endswith('-intel64'):
+            return True
     return False
 
 
