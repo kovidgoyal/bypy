@@ -7,10 +7,15 @@ import os
 import re
 import shutil
 
-from bypy.constants import (LIBDIR, MAKEOPTS, PREFIX, build_dir, cygwin_paths,
-                            is64bit, ismacos, iswindows)
-from bypy.utils import (dos2unix, install_binaries, msbuild, replace_in_file,
-                        run, simple_build, walk)
+from bypy.constants import (
+    LIBDIR, PREFIX, build_dir, cygwin_paths, is64bit, iswindows, lipo_data
+)
+from bypy.utils import (
+    dos2unix, install_binaries, msbuild, replace_in_file, run, simple_build,
+    walk
+)
+
+needs_lipo = True
 
 
 def solution_build():
@@ -59,17 +64,16 @@ def main(args):
 
     if iswindows:
         solution_build()
-    elif ismacos:
-        run('./runConfigureICU MacOSX --disable-samples --prefix=' +
-            build_dir())
-        run('make ' + MAKEOPTS)
-        run('make install')
     else:
-        simple_build(
+        build_loc = os.getcwd()
+        conf = (
             '--prefix=/usr --sysconfdir=/etc --mandir=/usr/share/man'
-            ' --sbindir=/usr/bin',
-            install_args='DESTDIR=' + build_dir(),
-            relocate_pkgconfig=False)
+            ' --sbindir=/usr/bin')
+        if 'first_build_dir' in lipo_data:
+            conf += ' --with-cross-build=' + lipo_data['first_build_dir']
+
+        simple_build(
+            conf, install_args='DESTDIR=' + build_dir(), relocate_pkgconfig=False)
         usr = os.path.join(build_dir(), 'usr')
         os.rename(os.path.join(usr, 'include'),
                   os.path.join(build_dir(), 'include'))
@@ -80,6 +84,9 @@ def main(args):
                                 re.compile(br'^prefix\s*=\s*/usr', flags=re.M),
                                 f'prefix={PREFIX}')
         shutil.rmtree(usr)
+
+        if 'first_build_dir' not in lipo_data:
+            lipo_data['first_build_dir'] = build_loc
 
 
 def install_name_change(name, is_dependency):
