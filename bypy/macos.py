@@ -39,7 +39,7 @@ def main(args=tuple(sys.argv)):
             shutdown(vm)
             return
     port = wait_for_ssh(vm)
-    rsync = Rsync(vm, port)
+    rsync = Rsync(vm, port, rsync_cmd='/usr/local/bin/rsync')
     output_dir = os.path.join(base_dir(), 'b', 'macos', 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'macos', 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')

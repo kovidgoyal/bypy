@@ -39,8 +39,9 @@ class Rsync(object):
     excludes = frozenset({
         '*.pyc', '*.pyo', '*.swp', '*.swo', '*.pyj-cached', '*~', '.git'})
 
-    def __init__(self, spec, port):
+    def __init__(self, spec, port, rsync_cmd=''):
         self.server = server_from_spec(spec)
+        self.remote_rsync_cmd = rsync_cmd
         self.port = port
 
     def run_via_ssh(self, *args, allocate_tty=False, raise_exception=True):
@@ -73,8 +74,10 @@ class Rsync(object):
         excludes = ['--exclude=' + x for x in excludes]
         cmd = [
             'rsync', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded'
-        ] + excludes + [from_ + '/', to]
-        return cmd
+        ]
+        if self.remote_rsync_cmd:
+            cmd += ['--rsync-path', self.remote_rsync_cmd]
+        return cmd + [from_ + '/', to]
 
 
 def run_sync_jobs(cmds, retry=False):
