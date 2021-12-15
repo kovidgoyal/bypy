@@ -73,7 +73,7 @@ class Rsync(object):
         excludes = frozenset(excludes) | self.excludes
         excludes = ['--exclude=' + x for x in excludes]
         cmd = [
-            'rsync', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded'
+            'rsync', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded', '--chmod', 'og-w',
         ]
         if self.remote_rsync_cmd:
             cmd += ['--rsync-path', self.remote_rsync_cmd]
