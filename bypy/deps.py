@@ -8,7 +8,7 @@ import sys
 from operator import itemgetter
 
 from .constants import (PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir,
-                        ismacos, mkdtemp)
+                        ismacos, mkdtemp, lipo_data)
 from .download_sources import download, read_deps
 from .utils import (RunFailure, create_package, ensure_clear_dir,
                     extract_source_and_chdir, fix_install_names,
@@ -104,6 +104,7 @@ def build_dep(dep, args, dest_dir=PREFIX):
     with CleanupDirs() as cleanup:
         if needs_lipo:
             output_dirs = []
+            lipo_data.clear()
             for arch in UNIVERSAL_ARCHES:
                 output_dirs.append(build_once(
                     dep, m, args, cleanup, target=arch))

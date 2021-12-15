@@ -165,6 +165,9 @@ def is_arm_half_of_lipo_build():
         current_build_arch() or '')
 
 
+lipo_data = {}
+
+
 @lru_cache()
 def python_major_minor_version():
     from .download_sources import read_deps, ok_dep
