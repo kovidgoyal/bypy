@@ -7,6 +7,8 @@ import os
 from bypy.constants import NMAKE, PERL, iswindows
 from bypy.utils import run, install_binaries
 
+allow_non_universal = True
+
 if iswindows:
     def main(args):
         run(
