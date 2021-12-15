@@ -5,6 +5,8 @@
 from bypy.constants import PREFIX, build_dir
 from bypy.utils import replace_in_file, simple_build, walk
 
+needs_lipo = True
+
 
 def main(args):
     simple_build('--program-prefix=g')
