@@ -8,6 +8,9 @@ from bypy.constants import PREFIX, is64bit, iswindows, ismacos
 from bypy.utils import cmake_build, replace_in_file, windows_cmake_build
 
 
+needs_lipo = True
+
+
 def main(args):
     if not iswindows:
         kw = {
