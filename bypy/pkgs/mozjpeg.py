@@ -4,7 +4,7 @@
 
 import os
 
-from bypy.constants import BIN, ismacos
+from bypy.constants import ismacos
 from bypy.utils import (cmake_build, install_binaries, iswindows,
                         windows_cmake_build, build_dir)
 
@@ -19,10 +19,10 @@ def main(args):
                          'bin',
                          fname_map=lambda x: 'cjpeg-calibre.exe')
     else:
-        env = {}
+        kw = {}
         if ismacos:
-            env['PATH'] = BIN + os.pathsep + os.environ['PATH']
+            kw['PNG_SUPPORTED'] = 'FALSE'
         cmake_build(
-            env=env, ENABLE_SHARED='FALSE',
-            override_prefix=os.path.join(build_dir(), 'private', 'mozjpeg')
+            ENABLE_SHARED='FALSE',
+            override_prefix=os.path.join(build_dir(), 'private', 'mozjpeg'), **kw
         )
