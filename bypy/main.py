@@ -221,9 +221,8 @@ def handle_status(report_dir):
     rtype, data = result.split(':', 1)
     clear_worker_dir(report_dir)
     if rtype != 'OK':
-        if rtype == 'ERROR':
+        if rtype in 'ERROR':
             raise SystemExit(data)
-        run_shell(**json.loads(data))
         raise SystemExit(1)
 
 
