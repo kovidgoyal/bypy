@@ -116,7 +116,6 @@ def daemonize():
 
     # decouple from parent environment
     os.setsid()
-    os.umask(0)
 
     # do second fork
     try:
