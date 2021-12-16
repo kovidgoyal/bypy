@@ -7,13 +7,16 @@ import os
 import sys
 from operator import itemgetter
 
-from .constants import (PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir,
-                        ismacos, mkdtemp, lipo_data)
+from .constants import (
+    PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir, current_build_arch,
+    ismacos, lipo_data, mkdtemp
+)
 from .download_sources import download, read_deps
-from .utils import (RunFailure, create_package, ensure_clear_dir,
-                    extract_source_and_chdir, fix_install_names,
-                    install_package, lipo, python_build, python_install,
-                    qt_build, rmtree, run_shell, set_title, simple_build)
+from .utils import (
+    RunFailure, create_package, ensure_clear_dir, extract_source_and_chdir,
+    fix_install_names, install_package, lipo, python_build, python_install,
+    qt_build, rmtree, run_shell, set_title, simple_build
+)
 
 
 def pkg_path(dep):
@@ -96,6 +99,7 @@ def build_once(dep, m, args, cleanup, target=None):
 
 
 def build_dep(dep, args, dest_dir=PREFIX):
+    current_build_arch(None)
     dep_name = dep['name']
     owd = os.getcwd()
     m = module_for_dep(dep)

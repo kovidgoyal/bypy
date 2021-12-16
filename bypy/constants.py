@@ -149,14 +149,16 @@ def mkdtemp(prefix=''):
     return tempfile.mkdtemp(prefix=prefix, dir=tdir)
 
 
-def current_build_arch():
+def current_build_arch(val=False):
+    if val is not False:
+        current_build_arch.ans = val
     return getattr(current_build_arch, 'ans', None)
 
 
 def build_dir(newval=None, current_arch=None):
     if newval is not None:
         build_dir.ans = newval
-        current_build_arch.ans = current_arch
+        current_build_arch(current_arch)
     return getattr(build_dir, 'ans', None)
 
 

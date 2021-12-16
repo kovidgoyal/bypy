@@ -236,6 +236,8 @@ def run_shell(library_path=False, cwd=None, env=None):
         paths = paths + cygwin_paths
         env['PATH'] = os.pathsep.join(paths)
     try:
+        if not os.path.isdir(cwd):
+            cwd = None
         try:
             return subprocess.Popen([sh, '-il'], env=env, cwd=cwd).wait()
         except KeyboardInterrupt:
@@ -868,7 +870,10 @@ def cmake_build(
         'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
     if len(UNIVERSAL_ARCHES) > 1 and ismacos:
-        defs['CMAKE_OSX_ARCHITECTURES'] = ';'.join(UNIVERSAL_ARCHES)
+        if current_build_arch():
+            defs['CMAKE_OSX_ARCHITECTURES'] = current_build_arch()
+        else:
+            defs['CMAKE_OSX_ARCHITECTURES'] = ';'.join(UNIVERSAL_ARCHES)
     if iswindows:
         cmd = [CMAKE, '-G', "NMake Makefiles"]
     else:
