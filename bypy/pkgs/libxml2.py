@@ -11,6 +11,9 @@ from bypy.utils import (install_binaries, install_tree, replace_in_file, run,
                         simple_build, walk)
 
 
+needs_lipo = True
+
+
 def main(args):
     if iswindows:
         run(*('cscript.exe configure.js include={0}/include'

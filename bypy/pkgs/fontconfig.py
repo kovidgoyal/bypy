@@ -13,7 +13,7 @@ needs_lipo = True
 
 
 def main(args):
-    # the makefile stupidly uses a comma as a separator which breaks when there
+    # the makefile stupidly uses a comma as a separator for sed which breaks when there
     # are multiple entries being substituted
     replace_in_file('Makefile.am', re.compile(rb"'s,.+?'"), lambda m: m.group().replace(b',', b'`'))
     replace_in_file('Makefile.in', re.compile(rb"'s,.+?'"), lambda m: m.group().replace(b',', b'`'))

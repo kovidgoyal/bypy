@@ -9,6 +9,9 @@ from bypy.constants import iswindows
 from bypy.utils import copy_headers, install_binaries, msbuild, simple_build
 
 
+needs_lipo = True
+
+
 def main(args):
     if iswindows:
         shutil.rmtree('lib'), shutil.rmtree('lib64')
