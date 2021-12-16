@@ -871,6 +871,12 @@ def cmake_build(
         'CMAKE_SYSTEM_PREFIX_PATH': PREFIX,
         'CMAKE_INSTALL_PREFIX': override_prefix or build_dir(),
     }
+    if ismacos:
+        defs.update({
+            # tell cmake to use our zlib
+            'CMAKE_POLICY_DEFAULT_CMP0074': 'NEW',
+            'ZLIB_ROOT': f'{PREFIX}',
+        })
     if len(UNIVERSAL_ARCHES) > 1 and ismacos:
         if current_build_arch():
             defs['CMAKE_OSX_ARCHITECTURES'] = current_build_arch()
