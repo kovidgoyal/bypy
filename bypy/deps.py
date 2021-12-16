@@ -63,7 +63,7 @@ class CleanupDirs:
 def build_once(dep, m, args, cleanup, target=None):
     base = dep['name']
     if target:
-        base = f'{base},{target},'
+        base += f'.{target}.'
     output_dir = make_build_dir(base)
     build_dir(output_dir, target)
     cleanup(output_dir)
@@ -110,8 +110,8 @@ def build_dep(dep, args, dest_dir=PREFIX):
             output_dirs = []
             lipo_data.clear()
             for arch in UNIVERSAL_ARCHES:
-                output_dirs.append(build_once(
-                    dep, m, args, cleanup, target=arch))
+                output_dirs.append((arch, build_once(
+                    dep, m, args, cleanup, target=arch)))
             build_dir(make_build_dir(dep_name))
             getattr(m, 'lipo', lipo)(output_dirs)
         else:

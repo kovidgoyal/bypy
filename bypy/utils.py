@@ -233,7 +233,7 @@ def run_shell(library_path=False, cwd=None, env=None):
         paths = paths + cygwin_paths
         env['PATH'] = os.pathsep.join(paths)
     try:
-        if not os.path.isdir(cwd):
+        if cwd and not os.path.isdir(cwd):
             cwd = None
         try:
             return subprocess.Popen([sh, '-il'], env=env, cwd=cwd).wait()
@@ -1042,21 +1042,17 @@ def binaries_in(base):
             yield os.path.relpath(os.path.abspath(x), base)
 
 
-def arch_for_output_dir(x):
-    return os.path.basename(x).split(',')[1]
-
-
 def lipo(output_dirs):
     output_dir = build_dir()
     binary_collections = set()
-    for x in output_dirs:
+    for xa, x in output_dirs:
         binary_collections.add(frozenset(binaries_in(x)))
     if len(binary_collections) > 1:
         raise SystemExit(
             'The set of binaries is different across different'
             ' target architectures, cannot lipo them')
     binaries = tuple(binary_collections)[0]
-    install_package(output_dirs[0], output_dir)
+    install_package(output_dirs[0][1], output_dir)
 
     for binary in binaries:
         dst = os.path.join(output_dir, binary)
@@ -1064,8 +1060,7 @@ def lipo(output_dirs):
             os.remove(dst)
         cmd = ['lipo']
         all_arches = []
-        for x in output_dirs:
-            arch = arch_for_output_dir(x)
+        for arch, x in output_dirs:
             all_arches.append(arch)
             cmd.extend(('-arch', arch, os.path.join(x, binary)))
         cmd += ['-create', '-output', dst]
