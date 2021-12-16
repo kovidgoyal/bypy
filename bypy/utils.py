@@ -208,8 +208,7 @@ isatty.no_tty = False
 
 
 def set_title(x):
-    if isatty():
-        print('''\033]2;%s\007''' % x)
+    print('''\033]2;%s\007''' % x)
 
 
 class RunShell(Exception):
