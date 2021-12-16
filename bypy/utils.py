@@ -71,11 +71,9 @@ ensure_dir = partial(os.makedirs, exist_ok=True)
 
 
 def print_cmd(cmd):
-    isatty = sys.stdout.isatty()
     end = '\n'
-    if isatty:
-        print('\033[92m', end='')
-        end = '\033[m' + end
+    print('\033[92m', end='')
+    end = '\033[m' + end
     print(*cmd, end=end, flush=True)
 
 
