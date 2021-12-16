@@ -6,6 +6,9 @@ from bypy.constants import iswindows, NMAKE
 from bypy.utils import simple_build, run, install_binaries, copy_headers
 
 
+needs_lipo = True
+
+
 def main(args):
     if iswindows:
         run(
