@@ -6,10 +6,13 @@ from bypy.constants import iswindows, NMAKE
 from bypy.utils import simple_build, run, install_binaries
 
 
+needs_lipo = True
+
+
 def main(args):
     if iswindows:
         run(f'"{NMAKE}" -f build\\visualc.mk')
         install_binaries('src\\optipng\\optipng.exe', 'bin',
                          fname_map=lambda x: 'optipng-calibre.exe')
     else:
-        simple_build('-with-system-libs')
+        simple_build('-with-system-libs', use_envvars_for_lipo=True)

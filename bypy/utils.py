@@ -373,7 +373,8 @@ def simple_build(
         configure_args=(), make_args=(), install_args=(),
         library_path=None, override_prefix=None, no_parallel=False,
         configure_name='./configure', relocate_pkgconfig=True,
-        autogen_name='./autogen.sh', do_install=True
+        autogen_name='./autogen.sh', do_install=True,
+        use_envvars_for_lipo=False
 ):
     if isinstance(configure_args, str):
         configure_args = split(configure_args)
@@ -385,14 +386,18 @@ def simple_build(
         install_args = split(install_args)
     if not os.path.exists(configure_name) and os.path.exists(autogen_name):
         run(autogen_name)
+    env = {}
     if is_arm_half_of_lipo_build():
         flags = f'{worker_env["CFLAGS"]} -arch {current_build_arch()}'
-        configure_args += [
-            '--build=x86_64-apple-darwin', '--host=aarch64-apple-darwin',
-            f'CXXFLAGS={flags}', f'CFLAGS={flags}',
-        ]
+        if use_envvars_for_lipo:
+            env.update({'CFLAGS': flags, 'CXXFLAGS': flags, 'LDFLAGS': f'{worker_env["LDFLAGS"]} -arch {current_build_arch()}'})
+        else:
+            configure_args += [
+                '--build=x86_64-apple-darwin', '--host=aarch64-apple-darwin',
+                f'CXXFLAGS={flags}', f'CFLAGS={flags}',
+            ]
     run(configure_name, '--prefix=' + (
-        override_prefix or build_dir()), *configure_args)
+        override_prefix or build_dir()), *configure_args, env=env)
     make_opts = [] if no_parallel else split(MAKEOPTS)
     run('make', *(make_opts + list(make_args)))
     if do_install:
