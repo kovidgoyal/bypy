@@ -236,7 +236,7 @@ def run_worker(args, orig_args):
     env['BYPY_WORKER'] = tdir
     cmd = [sys.executable, d(d(os.path.abspath(__file__)))] + orig_args[1:]
     with open(os.path.join(tdir, 'output'), 'wb') as output:
-        p = subprocess.Popen(cmd, env=env, stdout=output, stderr=subprocess.STDOUT)
+        p = subprocess.Popen(cmd, env=env, stdout=output, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
     start = time.monotonic()
     status = os.path.join(tdir, 'status')
     while time.monotonic() - start < 5:
