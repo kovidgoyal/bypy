@@ -10,6 +10,9 @@ from bypy.constants import build_dir, iswindows
 from bypy.utils import install_binaries, msbuild, replace_in_file, simple_build
 
 
+needs_lipo = True
+
+
 def main(args):
     if iswindows:
         for f in (
