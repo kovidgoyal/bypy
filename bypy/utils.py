@@ -667,7 +667,7 @@ def create_package(module, outpath):
                 f'The file {x} is not a universal binary.'
                 f' Copied from {src_dir}.'
                 f' It only has arches: {arches}', file=sys.stderr)
-            run_shell(cwd=outpath)
+            shutil.rmtree(outpath)
             raise SystemExit('Failed to build universal binary')
 
 
