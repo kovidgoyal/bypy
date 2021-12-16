@@ -173,11 +173,11 @@ def main(parsed_args):
     accept_func = unbuilt
     all_deps = read_deps()
     all_dep_names = frozenset(map(itemgetter('name'), all_deps))
-    if parsed_args.deps:
-        accept_func = accept_func_from_names(parsed_args.deps)
-        if (frozenset(parsed_args.deps) - {'qt'}) - all_dep_names:
+    if parsed_args.dependencies:
+        accept_func = accept_func_from_names(parsed_args.dependencies)
+        if (frozenset(parsed_args.dependencies) - {'qt'}) - all_dep_names:
             raise SystemExit('Unknown dependencies: {}'.format(
-                frozenset(parsed_args.deps) - all_dep_names))
+                frozenset(parsed_args.dependencies) - all_dep_names))
     deps_to_build = tuple(filter(accept_func, all_deps))
     if not deps_to_build:
         raise SystemExit('No buildable deps were specified')

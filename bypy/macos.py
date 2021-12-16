@@ -3,13 +3,12 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
-import sys
 
 from virtual_machine.run import shutdown, wait_for_ssh
 
 from .conf import parse_conf_file
 from .constants import base_dir
-from .utils import single_instance
+from .utils import single_instance, setup_build_parser
 from .vms import Rsync, get_vm_spec
 
 
@@ -26,18 +25,16 @@ def singleinstance():
     return single_instance(name)
 
 
-def main(args=tuple(sys.argv)):
-    if not singleinstance():
-        raise SystemExit('Another instance of the macOS container is running')
-    conf = get_conf()
-    prefix, python = conf['root'], conf['python']
+def setup_parser(p):
+    setup_build_parser(p)
+    p.set_defaults(func=main)
+
+
+def main(args):
     vm = get_vm_spec('macos')
-    universal = conf.get('universal') == 'true'
-    deploy_target = conf.get('deploy_target', '')
-    if len(args) > 1:
-        if args[1] == 'shutdown':
-            shutdown(vm)
-            return
+    if args.action == 'shutdown':
+        shutdown(vm)
+        return
     port = wait_for_ssh(vm)
     rsync = Rsync(vm, port, rsync_cmd='/usr/local/bin/rsync')
     output_dir = os.path.join(base_dir(), 'b', 'macos', 'dist')
@@ -47,15 +44,22 @@ def main(args=tuple(sys.argv)):
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(pkg_dir, exist_ok=True)
 
-    cmd = [
-        python, os.path.join(prefix, 'bypy'), 'main',
-        f'BYPY_ROOT={prefix}']
+    conf = get_conf()
+    prefix, python = conf['root'], conf['python']
+    universal = conf.get('universal') == 'true'
+    deploy_target = conf.get('deploy_target', '')
+    cmd = [python, os.path.join(prefix, 'bypy'), f'BYPY_ROOT={prefix}']
     if universal:
         cmd.append('BYPY_UNIVERSAL=true')
     if deploy_target:
         cmd.append(f'BYPY_DEPLOY_TARGET={deploy_target}')
-    rsync.main(sources_dir, pkg_dir, output_dir, cmd, list(args), prefix=prefix)
 
+    if args.action == 'shell':
+        if args.send_to_vm:
+            rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, only_send=True)
+        rsync.run_via_ssh(allocate_tty=True)
+        return
 
-if __name__ == '__main__':
-    main()
+    if not singleinstance():
+        raise SystemExit('Another instance of the macOS container is running')
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix)

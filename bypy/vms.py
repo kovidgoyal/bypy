@@ -12,6 +12,7 @@ from virtual_machine.run import server_from_spec, ssh_command_to
 
 from .conf import parse_conf_file
 from .constants import base_dir
+from .utils import cmdline_for_dependencies, cmdline_for_program
 
 
 def get_rsync_conf():
@@ -34,6 +35,12 @@ def get_vm_spec(system, arch=''):
     return ans
 
 
+def remote_cmd(args):
+    if args.action == 'dependencies':
+        return cmdline_for_dependencies(args)
+    return cmdline_for_program(args)
+
+
 class Rsync(object):
 
     excludes = frozenset({
@@ -51,10 +58,12 @@ class Rsync(object):
         else:
             return subprocess.run(cmd)
 
-    def main(self, sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix='/', name='sw'):
-        ws_cmd = list(cmd_prefix) + args[:1] + ['bypy-worker-status']
+    def main(self, sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix='/', name='sw', only_send=False):
+        ws_cmd = list(cmd_prefix) + ['worker-status']
         to_vm(self, ws_cmd, sources_dir, pkg_dir, prefix=prefix, name=name)
-        cp = self.run_via_ssh(*cmd_prefix, *args, allocate_tty=True, raise_exception=False)
+        if only_send:
+            return
+        cp = self.run_via_ssh(*cmd_prefix, *remote_cmd(args), allocate_tty=True, raise_exception=False)
         from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
         raise SystemExit(cp.returncode)
 

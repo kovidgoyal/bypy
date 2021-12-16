@@ -1078,3 +1078,71 @@ def lipo(output_dirs):
         run(*cmd)
         cmd = ['lipo', dst, '-verify_arch'] + all_arches
         run(*cmd)
+
+
+def setup_program_parser(pa):
+    a = pa.add_argument
+    a('--dont-strip',
+      default=False,
+      action='store_true',
+      help='Dont strip the binaries when building')
+    a('--compression-level',
+      default='9',
+      choices=list('123456789'),
+      help='Level of compression for the Linux tarball')
+    a('--skip-tests',
+      default=False,
+      action='store_true',
+      help='Skip the tests when building')
+    a('--sign-installers',
+      default=False,
+      action='store_true',
+      help='Sign the binary installer, needs signing keys in the VMs')
+    a('--notarize',
+      default=False,
+      action='store_true',
+      help='Send the app for notarization to the platform vendor')
+    a('--build-only',
+      help='Build only a single extension module when building'
+      ' program, useful for development')
+
+
+def cmdline_for_program(args):
+    ans = ['program', '--compression-level', args.compression_level]
+    for x in ('dont_strip', 'skip_tests', 'sign_installers', 'notarize'):
+        if getattr(args, x):
+            ans.append('--' + x.replace('_', '-'))
+    if args.build_only:
+        ans.extend(('--build-only', args.build_only))
+    return ans
+
+
+def setup_dependencies_parser(p):
+    from .download_sources import read_deps
+    try:
+        deps = read_deps()
+    except FileNotFoundError:
+        deps = ()
+    choices = (x['name'] for x in deps)
+    p.add_argument(
+        'dependencies', nargs='*',
+        help='The dependencies to build. If none are specified missing dependencies only are built. Available deps:' +
+        ' '.join(choices)
+    )
+
+
+def cmdline_for_dependencies(args):
+    return ['dependencies'] + args.dependencies
+
+
+def setup_build_parser(p):
+    s = p.add_subparsers(dest='action', required=True)
+    sp = s.add_parser('shell', help='Open a shell in the build VM')
+    sp.add_argument('--send-to-vm', action='store_true', help='Sync data from here to the VM')
+
+    pa = s.add_parser('program', help='Build the actual program')
+    setup_program_parser(pa)
+    s.add_parser('shutdown', help='Shutdown the VM', aliases=['halt', 'poweroff'])
+
+    setup_dependencies_parser(s.add_parser('dependencies', aliases=['deps']))
+    return s

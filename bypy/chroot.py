@@ -60,15 +60,6 @@ def install_modern_cmake(image_name):
     yield 'end_custom_apt'
 
 
-def process_args(args):
-    args = list(args)
-    arch = '64'
-    if len(args) > 1 and args[1] in RECOGNIZED_ARCHES:
-        arch = args[1]
-        del args[1]
-    return arch, args
-
-
 def p(x):
     return shlex.split(x) if isinstance(x, str) else list(x)
 

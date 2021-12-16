@@ -3,44 +3,50 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
-import sys
 
 from virtual_machine.run import shutdown, wait_for_ssh
 
-from .chroot import Chroot, process_args
+from .chroot import Chroot, RECOGNIZED_ARCHES
 from .constants import base_dir
 from .vms import Rsync, get_vm_spec
+from .utils import setup_build_parser
 
 
-def main(args=tuple(sys.argv)):
-    arch, args = process_args(args)
-    vm = get_vm_spec('linux', arch)
-    chroot = Chroot(arch)
-    if not chroot.single_instance():
-        raise SystemExit('Another instance of the Linux container is running')
-    output_dir = os.path.join(base_dir(), 'b', 'linux', arch, 'dist')
-    pkg_dir = os.path.join(base_dir(), 'b', 'linux', arch, 'pkg')
+def setup_parser(p):
+    p.add_argument('--arch', default='64', choices=RECOGNIZED_ARCHES, help='The architecture to build for')
+    s = setup_build_parser(p)
+    s.add_parser('vm', help='Build the Linux VM automatically')
+    p.set_defaults(func=main)
+
+
+def main(args):
+    vm = get_vm_spec('linux', args.arch)
+    if args.action == 'shutdown':
+        shutdown(vm)
+        return
+    chroot = Chroot(args.arch)
+    output_dir = os.path.join(base_dir(), 'b', 'linux', args.arch, 'dist')
+    pkg_dir = os.path.join(base_dir(), 'b', 'linux', args.arch, 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
     os.makedirs(sources_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(pkg_dir, exist_ok=True)
-    special_arg = args[1] if len(args) > 1 else ''
 
-    if special_arg == 'shutdown':
-        shutdown(vm)
-        return
-    if special_arg == 'vm':
+    if args.action == 'vm':
         chroot.build_vm()
         return
 
-    chroot.ensure_vm_is_built(vm)
-
+    cmd = ['python3', os.path.join('/', 'bypy')]
     port = wait_for_ssh(vm)
     rsync = Rsync(vm, port)
 
-    cmd = ['python3', os.path.join('/', 'bypy'), 'main']
-    rsync.main(sources_dir, pkg_dir, output_dir, cmd, list(args))
+    if args.action == 'shell':
+        if args.send_to_vm:
+            rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, only_send=True)
+        rsync.run_via_ssh(allocate_tty=True)
+        return
 
+    if not chroot.single_instance():
+        raise SystemExit('Another instance of the Linux container is running')
 
-if __name__ == '__main__':
-    main()
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, args)

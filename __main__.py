@@ -2,21 +2,12 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
-import importlib
+import argparse
 import os
 import re
 import sys
 
-if len(sys.argv) < 2:
-    raise SystemExit('Must provide a sub-command')
-
 args = list(sys.argv)
-subcommand = args[1]
-del args[1]
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-
 remove = []
 for i, arg in enumerate(tuple(args)):
     m = re.match('([A-Z_]+)=(.+)', arg)
@@ -28,6 +19,15 @@ for r in reversed(remove):
 
 
 try:
+    from bypy.linux import setup_parser as linux_setup_parser
+    from bypy.macos import setup_parser as macos_setup_parser
+    from bypy.windows import setup_parser as windows_setup_parser
+    from bypy.main import setup_program_parser, setup_worker_status_parser, setup_build_deps_parser
+    from virtual_machine.run import setup_parser as vm_setup_parser
+except ImportError:
+    raise  # this is here just to silence pyflakes
+
+try:
     import certifi
 except ImportError:
     pass
@@ -35,15 +35,15 @@ else:
     os.environ['SSL_CERT_FILE'] = certifi.where()
 
 
-if subcommand == 'vm':
-    from virtual_machine.run import main
-    action, vm_spec = sys.argv[-2:]
-    main(action, vm_spec)
-    sys.exit(0)
-else:
-    try:
-        main = importlib.import_module(f'bypy.{subcommand}').main
-    except (ImportError, AttributeError):
-        raise SystemExit(f'Unknown sub-command: {subcommand}')
-    main(args)
-    sys.exit(0)
+p = argparse.ArgumentParser(prog='bypy')
+s = p.add_subparsers(required=True)
+vm_setup_parser(s.add_parser('vm', help='Control the build Virtual Machines'))
+linux_setup_parser(s.add_parser('linux', help='Build in a Linux VM'))
+macos_setup_parser(s.add_parser('macos', help='Build in a macOS VM'))
+windows_setup_parser(s.add_parser('windows', help='Build in a Windows VM', aliases=['win']))
+setup_worker_status_parser(s.add_parser('worker-status', help='Check the status of the bypy dependency build worker'))
+setup_program_parser(s.add_parser('program', help='Build the program'))
+setup_build_deps_parser(s.add_parser('dependencies', aliases=['deps'], help='Build the dependencies'))
+
+parsed_args = p.parse_args(args[1:])
+parsed_args.func(parsed_args)

@@ -351,17 +351,25 @@ actions['shell'] = shell
 actions['shutdown'] = shutdown
 
 
-def main(action, vm_spec):
+def real_main(action, vm_spec):
     ret = actions[action](vm_spec)
     if ret is not None:
         print(ret)
 
 
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(
-        prog='run.py' if sys.argv[0] == '-' else sys.argv[0],
-        description='Control the execution of Virtual Machines')
+def main(args):
+    global is_running_remotely
+    is_running_remotely = args.running_remotely
+    loc = args.location
+    if not loc.startswith('ssh:') and not os.path.isabs(loc):
+        loc = os.path.join('/vms', loc)
+    try:
+        real_main(args.action, loc)
+    except KeyboardInterrupt:
+        raise SystemExit('Exiting because of Ctrl-C')
+
+
+def setup_parser(parser):
     parser.add_argument(
         'action',
         choices=list(actions),
@@ -371,12 +379,14 @@ if __name__ == '__main__':
         ' ssh://user@host/path/to/vm/dir or just /path/to/vm/dir for local virtual machines.'
     )
     parser.add_argument('--running-remotely', action='store_true', help='For internal use')
+    parser.set_defaults(func=main)
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(
+        prog='run.py' if sys.argv[0] == '-' else sys.argv[0],
+        description='Control the execution of Virtual Machines')
+    setup_parser(parser)
     args = parser.parse_args()
-    is_running_remotely = args.running_remotely
-    loc = args.location
-    if not loc.startswith('ssh:') and not os.path.isabs(loc):
-        loc = os.path.join('/vms', loc)
-    try:
-        main(args.action, loc)
-    except KeyboardInterrupt:
-        raise SystemExit('Exiting because of Ctrl-C')
+    args.func(args)

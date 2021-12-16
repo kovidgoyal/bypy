@@ -81,7 +81,8 @@ def populate_qt_dep(dep, qt_version):
 
 @lru_cache()
 def read_deps(only_buildable=True):
-    with open(os.path.join(SRC, 'bypy', 'sources.json')) as f:
+    src = SRC if os.path.exists(SRC) else os.getcwd()
+    with open(os.path.join(src, 'bypy', 'sources.json')) as f:
         data = json.load(f)
     qt_version = None
     for dep in data:

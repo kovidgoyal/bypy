@@ -2,7 +2,6 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
-import argparse
 import atexit
 import json
 import os
@@ -16,59 +15,19 @@ import threading
 import time
 
 from .constants import (
-    OS_NAME, OUTPUT_DIR, PREFIX, ROOT, SRC, SW, WORKER_DIR, build_dir, islinux,
-    iswindows
+    OS_NAME, OUTPUT_DIR, SRC, SW, WORKER_DIR, build_dir, islinux, iswindows
 )
 from .deps import init_env, main as deps_main
 from .utils import (
-    RunShell, atomic_write, mkdtemp, rmtree, run_shell, single_instance
+    RunShell, atomic_write, mkdtemp, rmtree, run_shell,
+    setup_dependencies_parser, single_instance
 )
 
 
-def option_parser():
-    parser = argparse.ArgumentParser(description='Build dependencies')
-    a = parser.add_argument
-    a('deps', nargs='*', default=[], help='Which dependencies to build')
-    a('--shell',
-      default=False,
-      action='store_true',
-      help='Start a shell in the container')
-    a('--clean',
-      default=False,
-      action='store_true',
-      help='Remove previously built packages')
-    a('--dont-strip',
-      default=False,
-      action='store_true',
-      help='Dont strip the binaries when building')
-    a('--compression-level',
-      default='9',
-      choices=list('123456789'),
-      help='Level of compression for the Linux tarball')
-    a('--skip-tests',
-      default=False,
-      action='store_true',
-      help='Skip the tests when building')
-    a('--sign-installers',
-      default=False,
-      action='store_true',
-      help='Sign the binary installer, needs signing keys in the VMs')
-    a('--notarize',
-      default=False,
-      action='store_true',
-      help='Send the app for notarization to the platform vendor')
-    a('--no-tty',
-      default=False,
-      action='store_true',
-      help='Assume stdout is not a tty regardless of isatty()')
-    a('--build-only',
-      help='Build only a single extension module when building'
-      ' program, useful for development')
-    return parser
-
-
 def build_program(args):
+    atexit.register(delete_code_signing_certs)
     init_env()
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     init_env_module = runpy.run_path(os.path.join(
         SRC, 'bypy', 'init_env.py'),
         run_name='program')
@@ -225,14 +184,11 @@ def handle_status(report_dir):
         raise SystemExit(1)
 
 
-def run_worker(args, orig_args):
-    orig_args = list(orig_args)
-    orig_args.insert(1, 'main')
+def run_worker(args):
     tdir = tempfile.mkdtemp(dir=WORKER_DIR)
-    d = os.path.dirname
     env = dict(os.environ)
     env['BYPY_WORKER'] = tdir
-    cmd = [sys.executable, d(d(os.path.abspath(__file__)))] + orig_args[1:]
+    cmd = [sys.executable] + list(sys.argv)
     with open(os.path.join(tdir, 'output'), 'wb') as output:
         p = subprocess.Popen(cmd, env=env, stdout=output, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
     start = time.monotonic()
@@ -255,33 +211,34 @@ def delete_code_signing_certs():
         shutil.rmtree(cs, ignore_errors=True)
 
 
-def main(orig_args):
-    args = option_parser().parse_args(orig_args[2:])
+def check_worker_status(args):
+    for x in args.directories:
+        os.makedirs(os.path.expanduser(x), exist_ok=True)
+    has_other = not worker_single_instance()
+    raise SystemExit(13 if has_other else 0)
+
+
+def setup_worker_status_parser(p):
+    p.add_argument('directories', nargs='*', help='List of directories to create')
+    p.set_defaults(func=check_worker_status)
+
+
+def setup_build_deps_parser(p):
+    setup_dependencies_parser(p)
+    p.set_defaults(func=build_deps)
+
+
+def setup_program_parser(p):
+    from .utils import setup_program_parser as spp
+    spp(p)
+    p.set_defaults(func=build_program)
+
+
+def build_deps(args):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(WORKER_DIR, exist_ok=True)
-    building_program = args.deps == ['program']
-    if building_program:
-        atexit.register(delete_code_signing_certs)
+    delete_code_signing_certs()
+    if 'BYPY_WORKER' in os.environ:
+        worker_main(args)
     else:
-        delete_code_signing_certs()
-
-    if building_program:
-        build_program(args)
-    elif args.shell or args.deps == ['shell']:
-        init_env()
-        os.chdir(ROOT)
-        run_shell(cwd=PREFIX)
-    elif args.deps and args.deps[0] == 'bypy-worker-status':
-        for x in args.deps[1:]:
-            os.makedirs(os.path.expanduser(x), exist_ok=True)
-        has_other = not worker_single_instance()
-        raise SystemExit(13 if has_other else 0)
-    else:
-        if 'BYPY_WORKER' in os.environ:
-            worker_main(args)
-        else:
-            run_worker(args, orig_args)
-
-
-if __name__ == '__main__':
-    main(sys.argv)
+        run_worker(args)
