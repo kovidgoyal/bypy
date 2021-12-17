@@ -138,17 +138,17 @@ def unbuilt(dep):
 
 def install_packages(which_deps, dest_dir=PREFIX):
     ensure_clear_dir(dest_dir)
-    if not which_deps:
+    paths = {dep['name']: pkg_path(dep) for dep in which_deps if os.path.exists(pkg_path(dep))}
+    if not paths:
         return
-    print(f'Installing {len(which_deps)} previously compiled packages:',
+    print(f'Installing {len(paths)} previously compiled packages:',
           end=' ')
     sys.stdout.flush()
     for dep in which_deps:
-        pkg = pkg_path(dep)
-        if os.path.exists(pkg):
-            print(dep['name'], end=', ')
-            sys.stdout.flush()
-            install_package(pkg, dest_dir)
+        pkg = paths[dep['name']]
+        print(dep['name'], end=', ')
+        sys.stdout.flush()
+        install_package(pkg, dest_dir)
     print()
     sys.stdout.flush()
 
