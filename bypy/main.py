@@ -71,6 +71,13 @@ def run_worker(args):
     logpath = os.path.join(WORKER_DIR, 'screenlog.0')
     if p.wait(1) is not None:
         # start a new session
+        with open(os.path.expanduser('~/.screenrc'), 'w') as f:
+            # allow scrolling with mousewheel/touchpad
+            print('termcapinfo xterm* ti@:te@', file=f)
+            # dont display startup message
+            print('startup_message off', file=f)
+            # use the alternate screen
+            print('altscreen on', file=f)
         cmd = [screen, '-L', '-a', '-A', '-h', '6000', '-U', '-S', SCREEN_NAME]
         cmd += [sys.executable, BYPY] + sys.argv[1:]
         env = dict(os.environ)
