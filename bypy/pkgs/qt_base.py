@@ -4,23 +4,29 @@
 
 import os
 
-from bypy.constants import (BIN, CMAKE, PREFIX, build_dir, islinux, ismacos,
-                            iswindows)
-from bypy.utils import (relocate_pkgconfig_files, replace_in_file, run,
-                        run_shell)
+from bypy.constants import (
+    BIN, CMAKE, PREFIX, UNIVERSAL_ARCHES, build_dir, islinux, ismacos,
+    iswindows
+)
+from bypy.utils import (
+    relocate_pkgconfig_files, replace_in_file, run, run_shell
+)
 
 
 def cmake(args):
-    # Mapping of configure args to cmake directoves comes from the file
+    # Mapping of configure args to cmake directives comes from the file
     # cmake/configure-cmake-mapping.md in the qtbase source code.
     cmake_defines = {
         'CMAKE_INSTALL_PREFIX': os.path.join(build_dir(), 'qt'),
+        'CMAKE_SYSTEM_PREFIX_PATH': PREFIX,
+        'CMAKE_BUILD_TYPE': 'Release',
         'QT_BUILD_EXAMPLES': 'FALSE',
         'QT_BUILD_TESTS': 'FALSE',
-        'CMAKE_BUILD_TYPE': 'Release',
         'OPENSSL_ROOT_DIR': PREFIX,
         'ICU_ROOT': PREFIX,
-        'CMAKE_SYSTEM_PREFIX_PATH': PREFIX,
+        'ZLIB_ROOT': PREFIX,
+        'JPEG_ROOT': PREFIX,
+        'PNG_ROOT': PREFIX,
         'INPUT_sql_odbc': 'no',
         'INPUT_sql_psql': 'no',
         'INPUT_icu': 'yes',
@@ -40,18 +46,28 @@ def cmake(args):
             'INPUT_pkg_config': 'yes',
             # 'INPUT_wflags': 'l,-rpath-link,/sw/sw/lib--',
         })
+    if ismacos:
+        if len(UNIVERSAL_ARCHES) > 1:
+            cmake_defines['CMAKE_OSX_ARCHITECTURES'] = ';'.join(UNIVERSAL_ARCHES)
+        cmake_defines.update({
+            'FEATURE_framework': 'ON',
+            'FEATURE_pkg_config': 'OFF',
+            'INPUT_openssl': 'no',
+            'FEATURE_securetransport': 'ON',
+            'FEATURE_fontconfig': 'OFF',
+        })
     os.mkdir('build'), os.chdir('build')
     cmd = [CMAKE] + [f'-D{k}={v}' for k, v in cmake_defines.items()] + [
         '-G', 'Ninja', '..']
     run(*cmd, library_path=True, append_to_path=BIN)
     run_shell  # ()
     if iswindows:
-        run('cmake --build . --parallel',
+        run(CMAKE, '--build', '.', '--parallel',
             append_to_path=f'{PREFIX}/private/gnuwin32/bin')
     else:
-        run('cmake --build . --parallel',
+        run(CMAKE, '--build', '.', '--parallel',
             library_path=True, append_to_path=BIN)
-    run('cmake --install .')
+    run(CMAKE, '--install', '.')
     with open(os.path.join(build_dir(), 'qt', 'bin', 'qt.conf'), 'wb') as f:
         f.write(b"[Paths]\nPrefix = ..\n")
 

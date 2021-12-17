@@ -832,7 +832,7 @@ def cmake_build(
         defs.update({
             # tell cmake to use our zlib
             'CMAKE_POLICY_DEFAULT_CMP0074': 'NEW',
-            'ZLIB_ROOT': f'{PREFIX}',
+            'ZLIB_ROOT': PREFIX,
         })
     if len(UNIVERSAL_ARCHES) > 1 and ismacos:
         if current_build_arch():
