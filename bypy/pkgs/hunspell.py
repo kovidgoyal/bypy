@@ -5,9 +5,12 @@
 import os
 
 from bypy.constants import BIN, ismacos
-from bypy.utils import (ModifiedEnv, copy_headers, current_dir,
-                        install_binaries, iswindows, msbuild, run,
-                        simple_build, walk)
+from bypy.utils import (
+    ModifiedEnv, copy_headers, current_dir, install_binaries, iswindows,
+    msbuild, run, simple_build, walk
+)
+
+needs_lipo = True
 
 
 def main(args):
