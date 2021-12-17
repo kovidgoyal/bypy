@@ -7,6 +7,7 @@ import shlex
 import subprocess
 import sys
 import time
+import threading
 
 from virtual_machine.run import server_from_spec, ssh_command_to
 
@@ -82,29 +83,41 @@ class Rsync(object):
         excludes = frozenset(excludes) | self.excludes
         excludes = ['--exclude=' + x for x in excludes]
         cmd = [
-            'rsync', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded', '--chmod', 'og-w',
+            'rsync', '--stats', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded', '--chmod', 'og-w',
         ]
         if self.remote_rsync_cmd:
             cmd += ['--rsync-path', self.remote_rsync_cmd]
         return cmd + [from_ + '/', to]
 
 
+class SyncWorker(threading.Thread):
+
+    def __init__(self, cmd):
+        self.cmd = cmd
+        super().__init__(self, name='SyncWorker')
+        self.start()
+
+    def run(self):
+        start = time.monotonic()
+        p = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.returncode = p.wait()
+        self.time_taken = time.monotonic() - start
+        self.stdout = p.stdout.read()
+
+
 def run_sync_jobs(cmds, retry=False):
     while True:
-        workers = [
-            (cmd, subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT))
-            for cmd in cmds
-        ]
-        for (cmd, w) in workers:
-            w.wait()
+        workers = list(map(SyncWorker, cmds))
         failures = []
-        for (cmd, w) in workers:
+        for w in workers:
+            w.join()
             if w.returncode != 0:
-                failures.append((cmd, w.stdout.read()))
+                failures.append(w)
         if failures:
-            for (cmd, w) in failures:
-                print(f'The command {cmd} failed')
-                sys.stderr.buffer.write(w)
+            for w in failures:
+                print(f'The command {w.cmd} failed')
+                sys.stderr.buffer.write(w.stdout)
+                sys.stderr.flush()
             if retry:
                 q = input('Would you like to retry downloading data from the VM? [y/n] ')
                 if q == 'y':
@@ -112,6 +125,10 @@ def run_sync_jobs(cmds, retry=False):
             raise SystemExit(1)
         else:
             break
+    workers.sort(key=lambda w: w.time_taken)
+    print('The slowest sync was:', shlex.join(workers[-1].cmd))
+    sys.stdout.buffer.write(workers[-1].stdout)
+    sys.stdout.flush()
 
 
 def to_vm(rsync, initial_cmd, sources_dir, pkg_dir, prefix='/', name='sw'):
