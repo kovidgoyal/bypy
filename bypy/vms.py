@@ -163,5 +163,5 @@ def from_vm(rsync, sources_dir, pkg_dir, output_dir, prefix='/', name='sw'):
     a(rsync.from_vm(prefix + name + '/dist', output_dir))
     a(rsync.from_vm(prefix + 'sources', sources_dir))
     a(rsync.from_vm(prefix + name + '/pkg', pkg_dir))
-    run_sync_jobs(cmds)
+    run_sync_jobs(cmds, retry=True)
     print(f'Mirroring took {time.monotonic() - start:.1f} seconds', flush=True)
