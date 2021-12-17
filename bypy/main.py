@@ -68,17 +68,23 @@ def run_worker(args):
     # first try to re-attach to a running session
     cmd = [screen, '-q', '-S', SCREEN_NAME, '-r']
     p = subprocess.Popen(cmd)
-    if p.wait(1) is None:
-        raise SystemExit(p.wait())
-    # start a new session
-    cmd = [screen, '-L', '-a', '-A', '-h', '6000', '-U', '-S', SCREEN_NAME]
-    cmd += [sys.executable, BYPY] + sys.argv[1:]
-    os.environ['BYPY_WORKER'] = os.getcwd()
-    os.chdir(WORKER_DIR)  # so that screen log file is in worker dir
-    with suppress(OSError):
-        # remove any existing screen log from a previous run
-        os.remove('screenlog.0')
-    os.execvp(screen, cmd)
+    logpath = os.path.join(WORKER_DIR, 'screenlog.0')
+    if p.wait(1) is not None:
+        # start a new session
+        cmd = [screen, '-L', '-a', '-A', '-h', '6000', '-U', '-S', SCREEN_NAME]
+        cmd += [sys.executable, BYPY] + sys.argv[1:]
+        env = dict(os.environ)
+        env['BYPY_WORKER'] = os.getcwd()
+        with suppress(OSError):
+            # remove any existing screen log from a previous run
+            os.remove(logpath)
+        # cwd so that screen log file is in worker dir
+        p = subprocess.Popen(cmd, cwd=WORKER_DIR, env=env)
+    rc = p.wait()
+    with open(logpath, 'rb') as f:
+        sys.stdout.buffer.write(f.read())
+    sys.stdout.flush()
+    raise SystemExit(rc)
 
 
 def delete_code_signing_certs():
