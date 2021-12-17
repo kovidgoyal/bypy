@@ -26,12 +26,13 @@ After the OS is installed:
 
 * turn on SSH, install vimrc and zshrc and ssh authorized_keys.
 
-* Edit /etc/ssh/sshd_config and set the following to allow only key based login::
+* Edit /etc/ssh/sshd_config and set the following to allow only key based login,
+  UsePAM yes is needed to use ``screen``::
 
     PermitUserEnvironment yes
     PasswordAuthentication no
     ChallengeResponseAuthentication no
-    UsePAM no
+    UsePAM yes
 
 * Create the file ~/.ssh/environment::
 

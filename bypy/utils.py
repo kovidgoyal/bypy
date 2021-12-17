@@ -7,7 +7,6 @@ import atexit
 import ctypes
 import errno
 import glob
-import json
 import os
 import re
 import shlex
@@ -32,7 +31,6 @@ from .constants import (
 )
 
 if iswindows:
-    import msvcrt
     from ctypes import wintypes
     k32 = ctypes.windll.kernel32
     get_file_type = k32.GetFileType
@@ -178,53 +176,12 @@ def current_env(library_path=False):
     return env
 
 
-def isatty():
-    if isatty.no_tty:
-        return False
-    f = sys.stdout
-    if f.isatty():
-        return True
-    if not iswindows:
-        return False
-    # Check for a cygwin ssh pipe
-    buf = ctypes.create_string_buffer(1024)
-    h = msvcrt.get_osfhandle(f.fileno())
-    if get_file_type(h) != 3:
-        return False
-    ret = get_file_info_by_handle(h, 2, buf, ctypes.sizeof(buf))
-    if not ret:
-        raise ctypes.WinError()
-    data = buf.raw
-    name = data[4:].decode('utf-16').rstrip(u'\0')
-    parts = name.split('-')
-    return (
-        parts[0] == r'\cygwin' and parts[2].startswith('pty') and
-        parts[4] == 'master')
-
-
-isatty.no_tty = False
-
-
 def set_title(x):
     print('''\033]2;%s\007''' % x)
 
 
-class RunShell(Exception):
-
-    def __init__(self, library_path, cwd, env):
-        Exception.__init__(self, 'Run the shell')
-        self.library_path = library_path
-        self.cwd = cwd
-        self.env = env
-        self.serialized = json.dumps({'library_path': library_path, 'cwd': cwd, 'env': env})
-
-
 def run_shell(library_path=False, cwd=None, env=None):
-    if 'BYPY_WORKER' in os.environ:
-        raise RunShell(library_path, cwd, env)
     sys.stderr.flush(), sys.stdout.flush()
-    if not isatty():
-        raise SystemExit('STDOUT is not a tty, aborting...')
     sh = 'C:/cygwin64/bin/zsh' if iswindows else '/bin/zsh'
     env = env or current_env(library_path=library_path)
     if iswindows:
