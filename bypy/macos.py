@@ -48,7 +48,7 @@ def main(args):
     prefix, python = conf['root'], conf['python']
     universal = conf.get('universal') == 'true'
     deploy_target = conf.get('deploy_target', '')
-    cmd = [python, os.path.join(prefix, 'bypy'), f'BYPY_ROOT={prefix}']
+    cmd = [python, os.path.join(prefix, 'bypy'), f'BYPY_ROOT={prefix}', 'BYPY_ARCH=macos']
     if universal:
         cmd.append('BYPY_UNIVERSAL=true')
     if deploy_target:
@@ -57,8 +57,14 @@ def main(args):
     if args.action == 'shell':
         if args.send_to_vm:
             rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, only_send=True)
-        rsync.run_via_ssh(allocate_tty=True)
-        return
+        script = f'''\
+export BYPY_ARCH=macos
+export BYPY_ROOT={prefix}
+cd "{prefix}"
+exec "$SHELL" -il
+'''
+        cp = rsync.run_via_ssh(script, allocate_tty=True, raise_exception=False)
+        raise SystemExit(cp.returncode)
 
     if not singleinstance():
         raise SystemExit('Another instance of the macOS container is running')
