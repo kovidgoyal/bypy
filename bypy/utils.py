@@ -24,8 +24,8 @@ from contextlib import closing, contextmanager, suppress
 from functools import partial
 
 from .constants import (
-    CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX, PYTHON, UNIVERSAL_ARCHES,
-    build_dir, cpu_count, current_build_arch, is64bit,
+    BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX, PYTHON,
+    UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch, is64bit,
     is_arm_half_of_lipo_build, islinux, ismacos, iswindows, mkdtemp,
     python_major_minor_version, worker_env
 )
@@ -369,7 +369,7 @@ def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):
     # source dir
     os.mkdir('build')
     os.chdir('build')
-    append_to_path = [os.path.join(PREFIX, 'qt', 'bin')]
+    append_to_path = [os.path.join(PREFIX, 'qt', 'bin'), BIN]
     run('qt-configure-module', '..', '-help',
         append_to_path=append_to_path, library_path=True)
     run('qt-configure-module', '..', '-list-features',
@@ -394,9 +394,9 @@ def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):
             if f.endswith('.ninja'):
                 replace_in_file(
                     f, 'ninja -C', f'ninja -j {num} -C', missing_ok=True)
-    run('cmake --build . --parallel',
+    run(CMAKE, '--build', '.', '--parallel',
         library_path=True, append_to_path=append_to_path, env=env)
-    run(f'cmake --install . --prefix {build_dir()}/qt', env=env)
+    run(CMAKE, '--install', '.', '--prefix', f'{build_dir()}/qt', env=env)
     relocate_pkgconfig_files()
     # if iswindows:
     #     if for_webengine:
