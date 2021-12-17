@@ -40,6 +40,8 @@ def main(args):
                     'SET(FREETYPE_INCLUDE_DIR "{0}/include/freetype2")\n'
                     'SET(FREETYPE_LIBRARIES "{0}/lib/libfreetype.dylib")'
                 ).format(PREFIX))
+            replace_in_file(
+                'src/podofo/base/PdfDate.cpp', 'struct tm _tm{}', 'struct tm _tm = {0}')
 
         cmake_build(
             make_args='podofo_shared',
