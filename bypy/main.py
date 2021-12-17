@@ -69,7 +69,11 @@ def run_worker(args):
     cmd = [screen, '-q', '-S', SCREEN_NAME, '-r']
     p = subprocess.Popen(cmd)
     logpath = os.path.join(WORKER_DIR, 'screenlog.0')
-    if p.wait(1) is not None:
+    try:
+        rc = p.wait(1)
+    except Exception:
+        rc = None
+    if rc is not None:
         # start a new session
         with open(os.path.expanduser('~/.screenrc'), 'w') as f:
             # allow scrolling with mousewheel/touchpad
