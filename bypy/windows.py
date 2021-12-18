@@ -57,17 +57,15 @@ def main(args):
     path = win_prefix[2:].replace('\\', '/').replace('//', '/')
     prefix = f'/cygdrive/{drive}{path}'
     win_prefix = win_prefix.replace('/', os.sep)
+    ba = f'windows-{args.arch}'
     cmd = [
         python, os.path.join(win_prefix, 'bypy'),
         f'BYPY_ROOT={win_prefix}', f'BUILD_ARCH={args.arch}',
         f'PYTHON_TWO={python2}', f'PERL={perl}', f'RUBY={ruby}',
-        f'MESA={mesa}',
+        f'MESA={mesa}', f'BYPY_ARCH={ba}',
     ]
     if args.action == 'shell':
-        if args.send_to_vm:
-            rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, name=f'sw{args.arch}', only_send=True)
-        rsync.run_via_ssh(allocate_tty=True)
-        return
+        return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args, prefix=prefix, name=f'sw{args.arch}')
 
     if not singleinstance():
         raise SystemExit(

@@ -22,7 +22,7 @@ try:
     from bypy.linux import setup_parser as linux_setup_parser
     from bypy.macos import setup_parser as macos_setup_parser
     from bypy.windows import setup_parser as windows_setup_parser
-    from bypy.main import setup_program_parser, setup_worker_status_parser, setup_build_deps_parser
+    from bypy.main import setup_program_parser, setup_worker_status_parser, setup_build_deps_parser, setup_shell_parser
     from virtual_machine.run import setup_parser as vm_setup_parser
 except ImportError:
     raise  # this is here just to silence pyflakes
@@ -44,6 +44,6 @@ windows_setup_parser(s.add_parser('windows', help='Build in a Windows VM', alias
 setup_worker_status_parser(s.add_parser('worker-status', help='Check the status of the bypy dependency build worker'))
 setup_program_parser(s.add_parser('program', help='Build the program'))
 setup_build_deps_parser(s.add_parser('dependencies', aliases=['deps'], help='Build the dependencies'))
-
+setup_shell_parser(s.add_parser('shell', help='Run a shell with a completely initialized environment'))
 parsed_args = p.parse_args(args[1:])
 parsed_args.func(parsed_args)

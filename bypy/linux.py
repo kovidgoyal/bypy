@@ -36,15 +36,13 @@ def main(args):
         chroot.build_vm()
         return
 
-    cmd = ['python3', os.path.join('/', 'bypy')]
+    ba = f'linux-{args.arch}'
+    cmd = ['python3', os.path.join('/', 'bypy'), f'BYPY_ARCH={ba}']
     port = wait_for_ssh(vm)
     rsync = Rsync(vm, port)
 
     if args.action == 'shell':
-        if args.send_to_vm:
-            rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, only_send=True)
-        rsync.run_via_ssh(allocate_tty=True)
-        return
+        return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args)
 
     if not chroot.single_instance():
         raise SystemExit('Another instance of the Linux container is running')

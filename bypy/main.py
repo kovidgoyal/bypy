@@ -11,7 +11,7 @@ import sys
 from contextlib import suppress
 
 from .constants import (
-    BYPY, OS_NAME, OUTPUT_DIR, SRC, SW, WORKER_DIR, build_dir, islinux
+    BYPY, OS_NAME, OUTPUT_DIR, SRC, SW, WORKER_DIR, build_dir, islinux, ROOT
 )
 from .deps import init_env, main as deps_main
 from .utils import mkdtemp, rmtree, run_shell, setup_dependencies_parser
@@ -126,6 +126,16 @@ def setup_program_parser(p):
     from .utils import setup_program_parser as spp
     spp(p)
     p.set_defaults(func=build_program)
+
+
+def shell(args):
+    init_env()
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    run_shell(library_path=True, cwd=ROOT)
+
+
+def setup_shell_parser(p):
+    p.set_defaults(func=shell)
 
 
 def build_deps(args):

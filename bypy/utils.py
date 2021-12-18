@@ -1095,7 +1095,8 @@ def cmdline_for_dependencies(args):
 def setup_build_parser(p):
     s = p.add_subparsers(dest='action', required=True)
     sp = s.add_parser('shell', help='Open a shell in the build VM')
-    sp.add_argument('--send-to-vm', action='store_true', help='Sync data from here to the VM')
+    sp.add_argument('--full', action='store_true', help='Create a full shell environment with all packages installed and synced')
+    sp.add_argument('--from-vm', action='store_true', help='After the shell exits sync data from the vm')
 
     pa = s.add_parser('program', help='Build the actual program')
     setup_program_parser(pa)

@@ -39,6 +39,8 @@ def get_vm_spec(system, arch=''):
 def remote_cmd(args):
     if args.action == 'dependencies':
         return cmdline_for_dependencies(args)
+    if args.action == 'shell':
+        return ['shell']
     return cmdline_for_program(args)
 
 
@@ -59,13 +61,27 @@ class Rsync(object):
         else:
             return subprocess.run(cmd)
 
-    def main(self, sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix='/', name='sw', only_send=False):
+    def run_shell(self, sources_dir, pkg_dir, output_dir, cmd_prefix, arch, args, prefix='/', name='sw'):
+        if args.full:
+            self.main(sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix=prefix, name=name, get_from_vm=args.from_vm)
+        else:
+            script = f'''\
+export BYPY_ARCH={arch}
+export BYPY_ROOT={prefix}
+cd "{prefix}"
+exec "$SHELL" -il
+            '''
+            cp = self.run_via_ssh(script, allocate_tty=True, raise_exception=False)
+            if args.from_vm:
+                from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
+            raise SystemExit(cp.returncode)
+
+    def main(self, sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix='/', name='sw', get_from_vm=True):
         ws_cmd = list(cmd_prefix) + ['worker-status']
         to_vm(self, ws_cmd, sources_dir, pkg_dir, prefix=prefix, name=name)
-        if only_send:
-            return
         cp = self.run_via_ssh(*cmd_prefix, *remote_cmd(args), allocate_tty=True, raise_exception=False)
-        from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
+        if get_from_vm:
+            from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
         raise SystemExit(cp.returncode)
 
     def from_vm(self, from_, to, excludes=frozenset()):
@@ -83,7 +99,7 @@ class Rsync(object):
         excludes = frozenset(excludes) | self.excludes
         excludes = ['--exclude=' + x for x in excludes]
         cmd = [
-            'rsync', '--stats', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded', '--chmod', 'og-w',
+            'rsync', '--info=stats', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded', '--chmod', 'og-w',
         ]
         if self.remote_rsync_cmd:
             cmd += ['--rsync-path', self.remote_rsync_cmd]
@@ -94,7 +110,7 @@ class SyncWorker(threading.Thread):
 
     def __init__(self, cmd):
         self.cmd = cmd
-        super().__init__(self, name='SyncWorker')
+        super().__init__(name='SyncWorker')
         self.start()
 
     def run(self):
