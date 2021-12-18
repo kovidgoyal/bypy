@@ -145,6 +145,8 @@ def install_packages(which_deps, dest_dir=PREFIX):
           end=' ')
     sys.stdout.flush()
     for dep in which_deps:
+        if dep['name'] not in paths:
+            continue
         pkg = paths[dep['name']]
         print(dep['name'], end=', ')
         sys.stdout.flush()
