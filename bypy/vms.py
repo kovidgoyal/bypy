@@ -122,6 +122,7 @@ class SyncWorker(threading.Thread):
 
 
 def run_sync_jobs(cmds, retry=False):
+    cmds = tuple(list(cmd) for cmd in cmds)
     while True:
         workers = list(map(SyncWorker, cmds))
         failures = []
@@ -137,6 +138,10 @@ def run_sync_jobs(cmds, retry=False):
                 sys.stderr.flush()
             if retry:
                 q = input('Would you like to retry downloading data from the VM? [y/n] ')
+                for cmd in cmds:
+                    if '-S' in cmd:
+                        idx = cmd.index('-S')
+                        del cmd[idx:idx+2]
                 if q == 'y':
                     continue
             raise SystemExit(1)
