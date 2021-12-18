@@ -131,7 +131,8 @@ def run_sync_jobs(cmds, retry=False):
                 failures.append(w)
         if failures:
             for w in failures:
-                print(f'The command {w.cmd} failed')
+                qc = shlex.join(w.cmd[-2:])
+                print(f'The command {qc} failed')
                 sys.stderr.buffer.write(w.stdout)
                 sys.stderr.flush()
             if retry:
