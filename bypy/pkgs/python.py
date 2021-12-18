@@ -50,6 +50,10 @@ def unix_python(args):
             'installapps: install_Python install_PythonLauncher install_IDLE',
             'installapps: install_Python'
         )
+        # needed to build universal 3rd party python extensions. See
+        # _supports_arm64_builds() in _osx_support.py
+        replace_in_file(
+            'Lib/_osx_support.py', 'osx_version >= (11, 0)', 'osx_version >= (10, 15)')
         install_args = (f'PYTHONAPPSDIR={build_dir()}',)
 
     with ModifiedEnv(**env):
