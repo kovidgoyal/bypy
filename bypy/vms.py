@@ -103,7 +103,7 @@ exec "$SHELL" -il
         ]
         if self.remote_rsync_cmd:
             cmd += ['--rsync-path', self.remote_rsync_cmd]
-        return cmd + [from_ + '/', to]
+        return cmd + excludes + [from_ + '/', to]
 
 
 class SyncWorker(threading.Thread):
@@ -142,8 +142,8 @@ def run_sync_jobs(cmds, retry=False):
         else:
             break
     workers.sort(key=lambda w: w.time_taken)
-    print('The slowest sync was:', shlex.join(workers[-1].cmd))
-    sys.stdout.buffer.write(workers[-1].stdout)
+    print('The slowest sync was:', shlex.join(workers[-1].cmd[-2:]))
+    sys.stdout.buffer.write(workers[-1].stdout.strip())
     sys.stdout.flush()
 
 
