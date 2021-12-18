@@ -179,11 +179,11 @@ def ssh_command_to(*args, user=BUILD_VM_USER, server='localhost', port=22, alloc
     ssh = ['ssh', '-p', port, '-o', f'ConnectTimeout={timeout}'] + disable_known_hosts
     if use_master:
         ssh += ['-S', socket]
-    if use_master and address not in ssh_masters:
-        ssh_masters.add(address)
-        atexit.register(
-            end_ssh_master, address, socket,
-            subprocess.Popen(ssh + ['-M', '-N', server]))
+        if address not in ssh_masters:
+            ssh_masters.add(address)
+            atexit.register(
+                end_ssh_master, address, socket,
+                subprocess.Popen(ssh + ['-M', '-N', server]))
     if allocate_tty:
         ssh.append('-t')
     return ssh + [server] + list(args)
