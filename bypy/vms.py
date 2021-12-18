@@ -144,7 +144,7 @@ def run_sync_jobs(cmds, retry=False):
     workers.sort(key=lambda w: w.time_taken)
     print('The slowest sync was:', shlex.join(workers[-1].cmd[-2:]))
     sys.stdout.buffer.write(workers[-1].stdout.strip())
-    sys.stdout.flush()
+    print(flush=True)
 
 
 def to_vm(rsync, initial_cmd, sources_dir, pkg_dir, prefix='/', name='sw'):
