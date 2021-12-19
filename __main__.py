@@ -22,6 +22,7 @@ try:
     from bypy.linux import setup_parser as linux_setup_parser
     from bypy.macos import setup_parser as macos_setup_parser
     from bypy.windows import setup_parser as windows_setup_parser
+    from bypy.export import setup_parser as export_setup_parser
     from bypy.main import setup_program_parser, setup_worker_status_parser, setup_build_deps_parser, setup_shell_parser
     from virtual_machine.run import setup_parser as vm_setup_parser
 except ImportError:
@@ -41,6 +42,7 @@ vm_setup_parser(s.add_parser('vm', help='Control the build Virtual Machines'))
 linux_setup_parser(s.add_parser('linux', help='Build in a Linux VM'))
 macos_setup_parser(s.add_parser('macos', help='Build in a macOS VM'))
 windows_setup_parser(s.add_parser('windows', help='Build in a Windows VM', aliases=['win']))
+export_setup_parser(s.add_parser('export', help='Export built deps to a CI server'))
 setup_worker_status_parser(s.add_parser('worker-status', help='Check the status of the bypy dependency build worker'))
 setup_program_parser(s.add_parser('program', help='Build the program'))
 setup_build_deps_parser(s.add_parser('dependencies', aliases=['deps'], help='Build the dependencies'))

@@ -41,22 +41,16 @@ def create_bundle(osname, bitness, dest):
                 os.unlink(tf.name + '.xz')
 
 
+def setup_parser(p):
+    p.add_argument('dest', help='The destination, for example: hostname:/path')
+    p.add_argument('which_os', choices=('macos', 'linux', 'windows'), help='Which OS to build for')
+    p.add_argument('--arch', default='64', choices=('64', '32', 'arm64'), help='The CPU architecture')
+    p.set_defaults(func=main)
+
+
 def main(args):
-    dest = args[-1]
-    del args[-1]
+    dest = args.dest
     if ':' not in dest:
         raise SystemExit('Usage: export hostname:/path')
 
-    if len(args) > 1:
-        which = args[1]
-        if which not in ('macos', 'windows', 'linux'):
-            raise SystemExit(f'Unknown OS: {which}')
-        bitness = '64'
-        if len(args) > 2 and args[2] == '32':
-            bitness = '32'
-        groups = [(which, bitness)]
-    else:
-        groups = [('macos', '64'), ('linux', '64'), ('windows', '64')]
-
-    for osname, bitness in groups:
-        create_bundle(osname, bitness, dest)
+    create_bundle(args.which_os, args.arch, dest)
