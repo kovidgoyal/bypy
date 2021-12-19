@@ -913,8 +913,12 @@ def apply_patch(name, level=0, reverse=False, convert_line_endings=False):
 
 
 def apply_patches(prefix, level=1, reverse=False, convert_line_endings=False):
-    for p in glob.glob(prefix + '*.patch'):
+    applied = False
+    for p in glob.glob(os.path.join(PATCHES, prefix + '*.patch')):
         apply_patch(p, level=level, reverse=reverse, convert_line_endings=convert_line_endings)
+        applied = True
+    if not applied:
+        raise ValueError('Failed to find any patches with prefix: ' + prefix)
 
 
 def install_tree(src, dest_parent='include', ignore=None):
