@@ -195,7 +195,7 @@ def main(parsed_args):
         try:
             build_dep(dep, parsed_args)
             built_names.add(dep['name'])
-            print(f'{dep["name"]} successfully built!')
+            print(f'\x1b[36m{dep["name"]} successfully built!\x1b[m')
         finally:
             remaining = tuple(
                     d['name'] for d in deps_to_build
