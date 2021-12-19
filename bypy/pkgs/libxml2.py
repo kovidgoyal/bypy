@@ -6,15 +6,18 @@
 import os
 import re
 
-from bypy.constants import PREFIX, build_dir, iswindows, NMAKE
-from bypy.utils import (install_binaries, install_tree, replace_in_file, run,
-                        simple_build, walk)
-
+from bypy.constants import NMAKE, PREFIX, build_dir, iswindows
+from bypy.utils import (
+    apply_patches, install_binaries, install_tree, replace_in_file, run,
+    simple_build, walk
+)
 
 needs_lipo = True
 
 
 def main(args):
+    # various cherry picks from HEAD that fix regression in the latest release
+    apply_patches('libxml2' + os.sep)
     if iswindows:
         run(*('cscript.exe configure.js include={0}/include'
             ' lib={0}/lib prefix={0} zlib=yes iconv=yes'.format(

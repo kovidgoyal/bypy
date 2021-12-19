@@ -1,0 +1,26 @@
+commit 3e1aad4fe584747fd7d17cc7b2863a78e2d21a77
+Author: Nick Wellnhofer <wellnhofer@aevum.de>
+Date:   Wed Jun 2 17:31:49 2021 +0200
+
+    Fix XPath recursion limit
+    
+    Fix accounting of recursion depth when parsing XPath expressions.
+    
+    This silly bug introduced in commit 804c5297 could lead to spurious
+    errors when parsing larger expressions or XSLT documents.
+    
+    Should fix #264.
+
+diff --git a/xpath.c b/xpath.c
+index 7497ba07..1aa2f1ab 100644
+--- a/xpath.c
++++ b/xpath.c
+@@ -10983,7 +10983,7 @@ xmlXPathCompileExpr(xmlXPathParserContextPtr ctxt, int sort) {
+     }
+ 
+     if (xpctxt != NULL)
+-        xpctxt->depth -= 1;
++        xpctxt->depth -= 10;
+ }
+ 
+ /**

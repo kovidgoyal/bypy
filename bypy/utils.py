@@ -912,6 +912,11 @@ def apply_patch(name, level=0, reverse=False, convert_line_endings=False):
     run(*args)
 
 
+def apply_patches(prefix, level=1, reverse=False, convert_line_endings=False):
+    for p in glob.glob(prefix + '*.patch'):
+        apply_patch(p, level=level, reverse=reverse, convert_line_endings=convert_line_endings)
+
+
 def install_tree(src, dest_parent='include', ignore=None):
     dest_parent = os.path.join(build_dir(), dest_parent)
     dst = os.path.join(dest_parent, os.path.basename(src))
