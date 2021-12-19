@@ -136,7 +136,7 @@ def run_sync_jobs(cmds, retry=False):
                 print(f'The command {qc} failed')
                 sys.stderr.buffer.write(w.stdout)
                 sys.stderr.flush()
-            if retry:
+            if retry and sys.stdout.isatty():
                 q = input('Would you like to retry downloading data from the VM? [y/n] ')
                 for cmd in cmds:
                     if '-S' in cmd:
