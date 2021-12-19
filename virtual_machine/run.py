@@ -294,6 +294,8 @@ def shutdown_vm_dir(vm_dir):
     system = m['os']
     print('Shutting down', system, file=sys.stderr)
     run_monitor_command(monitor_path, 'system_powerdown')
+    if not m['is_accelerated']:
+        timeout *= 2
     while os.path.exists(monitor_path) and monotonic() - start < timeout:
         sleep(0.1)
     if os.path.exists(monitor_path):
