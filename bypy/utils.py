@@ -914,7 +914,8 @@ def apply_patch(name, level=0, reverse=False, convert_line_endings=False):
 
 def apply_patches(prefix, level=1, reverse=False, convert_line_endings=False):
     applied = False
-    for p in glob.glob(os.path.join(PATCHES, prefix + '*.patch')):
+    for p in sorted(glob.glob(os.path.join(PATCHES, prefix + '*.patch'))):
+        print('Applying patch:', os.path.basename(p))
         apply_patch(p, level=level, reverse=reverse, convert_line_endings=convert_line_endings)
         applied = True
     if not applied:
