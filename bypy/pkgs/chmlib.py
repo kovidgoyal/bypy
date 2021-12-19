@@ -28,7 +28,7 @@ def main(args):
         replace_in_file(
             'configure',
             'if test $ac_cv_func_malloc_0_nonnull = yes; then',
-            'if 1; then'
+            'if test 1; then'
         )
         replace_in_file('src/chm_lib.c', 'pread64', 'pread')
         apply_patch('chmlib-integer-types.patch', level=1)  # needed for aarch64
