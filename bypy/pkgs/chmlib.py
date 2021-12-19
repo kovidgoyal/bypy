@@ -23,6 +23,13 @@ def main(args):
         copy_headers('chm_lib.h')
         copy_headers('lzx.h', 'src')
     else:
+        # test for malloc breaks on macos universal.
+        # All system we care about have malloc anyway
+        replace_in_file(
+            'configure',
+            'if test $ac_cv_func_malloc_0_nonnull = yes; then',
+            'if 1; then'
+        )
         replace_in_file('src/chm_lib.c', 'pread64', 'pread')
         apply_patch('chmlib-integer-types.patch', level=1)  # needed for aarch64
         # updated config.guess is needed for aarch64
