@@ -270,7 +270,10 @@ def wait_for_ssh(spec, timeout=60):
     start = monotonic()
     print(f'Waiting for master connection to SSH server at {server}:{port}...', file=sys.stderr)
     while monotonic() - start < timeout:
-        cp = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        try:
+            cp = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        except KeyboardInterrupt:
+            raise SystemExit('Interrupted by user')
         if cp.returncode == 0:
             time = monotonic() - start
             print(f'Connected in {time:.1f} seconds', file=sys.stderr)
