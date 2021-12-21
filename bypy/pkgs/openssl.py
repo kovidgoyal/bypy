@@ -23,17 +23,17 @@ def main(args):
         run('make ' + MAKEOPTS)
         run('make install_sw')
     elif iswindows:
-        conf = 'perl.exe Configure VC-WIN32 enable-static-engine'.split()
+        conf = f'{PERL} Configure VC-WIN32 enable-static-engine'.split()
         if is64bit:
             conf[2] = 'VC-WIN64A'
         else:
             conf.append('no-asm')
         conf.append('--prefix=' + build_dir())
         perl_path = os.path.dirname(PERL)
-        run(*conf, append_to_path=perl_path)
-        run(NMAKE, append_to_path=perl_path)
-        run(NMAKE, 'test', append_to_path=perl_path)
-        run(NMAKE, 'install', append_to_path=perl_path)
+        run(*conf, prepend_to_path=perl_path)
+        run(NMAKE, prepend_to_path=perl_path)
+        run(NMAKE, 'test', prepend_to_path=perl_path)
+        run(NMAKE, 'install', prepend_to_path=perl_path)
     else:
         optflags = ['enable-ec_nistp_64_gcc_128'] if is64bit else []
         # need --libdir=lib because on focal it becomes lib64 otherwise
