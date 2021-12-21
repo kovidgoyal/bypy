@@ -11,7 +11,8 @@ import sys
 from contextlib import suppress
 
 from .constants import (
-    BYPY, OS_NAME, OUTPUT_DIR, SRC, SW, WORKER_DIR, build_dir, islinux, ROOT
+    BYPY, OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, WORKER_DIR, build_dir, islinux,
+    iswindows
 )
 from .deps import init_env, main as deps_main
 from .utils import mkdtemp, rmtree, run_shell, setup_dependencies_parser
@@ -93,7 +94,12 @@ def run_worker(args):
         p = subprocess.Popen(cmd, cwd=WORKER_DIR, env=env)
     rc = p.wait()
     with open(logpath, 'rb') as f:
-        sys.stdout.buffer.write(f.read())
+        raw = f.read()
+    if iswindows:
+        # screen's log converts ESC into ← probably similar to
+        # https://github.com/rprichard/winpty/issues/47
+        raw.replace('←['.encode('utf-8'), b'\x1b[')
+    sys.stdout.buffer.write(raw)
     sys.stdout.flush()
     raise SystemExit(rc)
 
