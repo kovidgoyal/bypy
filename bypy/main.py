@@ -92,9 +92,9 @@ def run_worker(args):
         # cwd so that screen log file is in worker dir
         p = subprocess.Popen(cmd, cwd=WORKER_DIR, env=env)
     rc = p.wait()
-    with open(logpath, 'rb') as f:
-        raw = f.read()
-    sys.stdout.buffer.write(raw)
+    # We do this via SH because running SH leaves the python stdout pipe in a funny
+    # state where it substitutes U+2190 for ESC bytes. Running via cat avoids that
+    subprocess.Popen(['cat', logpath]).wait()
     sys.stdout.flush()
     raise SystemExit(rc)
 
