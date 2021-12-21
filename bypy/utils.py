@@ -225,6 +225,11 @@ def run(*args, **kw):
             append_to_path = append_to_path.split(os.pathsep)
         env['PATH'] = os.pathsep.join(
             env['PATH'].split(os.pathsep) + list(append_to_path))
+    prepend_to_path = kw.get('prepend_to_path')
+    if prepend_to_path:
+        if isinstance(prepend_to_path, str):
+            prepend_to_path = prepend_to_path.split(os.pathsep)
+        env['PATH'] = os.pathsep.join(list(prepend_to_path) + env['PATH'].split(os.pathsep))
     stdout = subprocess.PIPE if kw.get('get_output') else None
     stdin = subprocess.PIPE if kw.get('stdin') else None
     p = subprocess.Popen(
