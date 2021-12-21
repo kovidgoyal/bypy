@@ -186,6 +186,7 @@ def to_vm(rsync, initial_cmd, sources_dir, pkg_dir, prefix='/', name='sw'):
     elif cp.returncode in (1, 2):
         # initial creation when bypy is not present or outdated in the VM
         print('Running initial cmd to sync data to VM failed', initial_cmd, file=sys.stderr, flush=True)
+        print('Doing a non-bypy based sync...', initial_cmd, file=sys.stderr, flush=True)
         rsync.run_via_ssh('mkdir', '-p', *dirs_to_ensure)
         run_sync_jobs(to_vm_calls)
         print(f'Mirroring took {time.monotonic() - start:.1f} seconds', flush=True)
