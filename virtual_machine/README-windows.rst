@@ -70,6 +70,7 @@ it, run::
     editrights.exe -a SeCreateTokenPrivilege -u kovid
     editrights.exe -a SeTcbPrivilege -u kovid
     editrights.exe -a SeServiceLogonRight -u kovid
+    editrights.exe -a SeCreateSymbolicLinkPrivilege -u kovid
     ssh-host-config
 
 Say no for StrictMode and yes or default for all other questions. Run::
