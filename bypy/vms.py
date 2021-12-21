@@ -6,8 +6,10 @@ import os
 import shlex
 import subprocess
 import sys
-import time
 import threading
+import time
+
+from contextlib import contextmanager
 
 from virtual_machine.run import server_from_spec, ssh_command_to
 
@@ -54,12 +56,23 @@ class Rsync(object):
         self.remote_rsync_cmd = rsync_cmd
         self.port = port
 
+    @contextmanager
+    def restore_tty_state(self):
+        try:
+            yield
+        finally:
+            # turn off cursor key mode, zsh tends to leave the terminal in that
+            # mode when exited with a EOF (ctrl-d)
+            sys.stdout.write('\x1b[?1l')
+            sys.stdout.flush()
+
     def run_via_ssh(self, *args, allocate_tty=False, raise_exception=True):
         cmd = ssh_command_to(*args, server=self.server, port=self.port, allocate_tty=allocate_tty)
-        if raise_exception:
-            subprocess.check_call(cmd)
-        else:
-            return subprocess.run(cmd)
+        with self.restore_tty_state():
+            if raise_exception:
+                subprocess.check_call(cmd)
+            else:
+                return subprocess.run(cmd)
 
     def run_shell(self, sources_dir, pkg_dir, output_dir, cmd_prefix, arch, args, prefix='/', name='sw'):
         if args.full:

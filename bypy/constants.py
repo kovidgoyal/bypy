@@ -46,6 +46,7 @@ SRC = os.path.join(ROOT, 'src')
 OS_NAME = 'windows' if iswindows else ('macos' if ismacos else 'linux')
 SOURCES = os.path.join(ROOT, 'sources')
 PATCHES = os.path.join(BYPY, 'patches')
+SH = 'C:/cygwin64/bin/zsh' if iswindows else '/bin/zsh'
 if iswindows:
     os.environ['TMPDIR'] = os.environ['TEMP'] = os.environ['TMP'] = tempfile.tempdir = r'C:\t\t'  # noqa
 PREFIX = os.path.join(SW, 'sw')

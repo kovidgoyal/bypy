@@ -24,7 +24,7 @@ from contextlib import closing, contextmanager, suppress
 from functools import partial
 
 from .constants import (
-    BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX, PYTHON,
+    BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX, PYTHON, SH,
     UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch, is64bit,
     is_arm_half_of_lipo_build, islinux, ismacos, iswindows, mkdtemp,
     python_major_minor_version, worker_env
@@ -182,25 +182,20 @@ def set_title(x):
 
 def run_shell(library_path=False, cwd=None, env=None):
     sys.stderr.flush(), sys.stdout.flush()
-    sh = 'C:/cygwin64/bin/zsh' if iswindows else '/bin/zsh'
     env = env or current_env(library_path=library_path)
     if iswindows:
         from .constants import cygwin_paths
         paths = env['PATH'].split(os.pathsep)
         paths = paths + cygwin_paths
         env['PATH'] = os.pathsep.join(paths)
-    try:
-        if cwd and not os.path.isdir(cwd):
-            cwd = None
-        try:
-            return subprocess.Popen([sh, '-il'], env=env, cwd=cwd).wait()
-        except KeyboardInterrupt:
-            return 0
-    finally:
-        # turn off cursor key mode, zsh tends to leave the terminal in that
-        # mode when exited with a EOF (ctrl-d)
         sys.stdout.write('\x1b[?1l')
         sys.stdout.flush()
+    if cwd and not os.path.isdir(cwd):
+        cwd = None
+    try:
+        return subprocess.Popen([SH, '-il'], env=env, cwd=cwd).wait()
+    except KeyboardInterrupt:
+        return 0
 
 
 class RunFailure(subprocess.CalledProcessError):
