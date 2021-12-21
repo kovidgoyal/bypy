@@ -5,7 +5,6 @@
 import atexit
 import json
 import os
-import pwd
 import shlex
 import socket
 import subprocess
@@ -20,6 +19,13 @@ machine_spec_template = '{}/machine-spec'
 BUILD_VM_USER = 'kovid'
 ssh_masters = set()
 disable_known_hosts = ['-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-o', 'LogLevel=ERROR']
+
+try:
+    import pwd
+except ModuleNotFoundError:
+    USER = os.environ.get('USER', 'kovid')
+else:
+    USER = pwd.getpwuid(os.geteuid()).pw_name
 
 
 def os_from_machine_spec(raw):
@@ -120,7 +126,7 @@ def startup(vm_dir, timeout=30):
     cmdline = ['screen', '-U', '-d', '-m', '-S', session_name] + cmdline
     # print(shlex.join(cmdline), file=sys.stderr)
     p = subprocess.Popen(cmdline, cwd=vm_dir)
-    user = pwd.getpwuid(os.geteuid()).pw_name
+    user = USER
     print(f'VM started, attach to its console with: screen -r {session_name} (as the user "{user}")', file=sys.stderr)
     print('Waiting for monitor socket creation', monitor_path, '...', file=sys.stderr)
     rc = p.wait()
@@ -211,7 +217,7 @@ def parse_ssh_spec(spec, port=22):
     if p.username:
         user = p.username
     else:
-        user = pwd.getpwuid(os.geteuid()).pw_name
+        user = USER
     port = p.port or port
     return path, ssh_command_to(port=port, server=server, user=user)
 

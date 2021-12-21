@@ -6,13 +6,20 @@ import base64
 import glob
 import json
 import os
-import pwd
 import shlex
 from urllib.request import urlopen
 
 from .conf import parse_conf_file
 from .constants import base_dir
 from .utils import single_instance
+
+try:
+    import pwd
+except ModuleNotFoundError:
+    USER = os.environ.get('USER', 'kovid')
+else:
+    USER = pwd.getpwuid(os.geteuid()).pw_name
+
 
 RECOGNIZED_ARCHES = {
     'arm64': 'qemu-aarch64',
@@ -142,7 +149,7 @@ class Chroot:
                 'content': content, 'permissions': permissions, 'defer': defer})
 
         file('/etc/environment', f'\nBYPY_ARCH="{self.image_arch}"', append=True)
-        user = pwd.getpwuid(os.geteuid()).pw_name
+        user = USER
         for user_file in ('.zshrc', '.vimrc'):
             path = os.path.expanduser(f'~/{user_file}')
             if os.path.exists(path):
