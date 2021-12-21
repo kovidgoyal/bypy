@@ -4,7 +4,7 @@ and save as windows-install.iso
 
 Download the VirtIO drivers ISO from:
 https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/
-and save as virtio.iso
+and save as virtio-win.iso
 
 Create the SystemDisk with::
 
@@ -19,7 +19,7 @@ Use the following ``install.sh``::
     -m 8G \
     -drive file=SystemDisk.qcow2,index=0,media=disk,if=virtio \
     -drive file=windows-install.iso,index=1,media=cdrom \
-    -drive file=virtio.iso,index=2,media=cdrom \
+    -drive file=virtio-win.iso,index=2,media=cdrom \
     -nic user,model=virtio-net-pci \
     -rtc base=localtime,clock=host \
     -usb -device usb-tablet
@@ -49,7 +49,7 @@ To setup Windows for use in a VM
 3) Under Virus and threat protection turn off everything
 4) Start->Control Panel->search for power options
    - change to high performance plan and customize it to disable sleep and harddisk turn off
-5) Start->gpedit.msc->Computer Configuration\Administrative Templates\Windows Components\Windows Update double click configure automatic updates and set it to disabled and click apply and then OK
+5) Start->gpedit.msc->Computer Configuration\Administrative Templates\Windows Components\Windows Update double click "Configure automatic updates" and set it to disabled and click apply and then OK
 5) Start->Settings->User accounts->Sign in options->Require sign in->Never
 6) Start->Settings->System->About->Rename this PC
 
@@ -59,7 +59,7 @@ https://support.microsoft.com/en-in/help/324737/how-to-turn-on-automatic-logon-i
 Install Cygwin
 ----------------
 
-Install cygwin with the packages: vim, dos2unix, rsync, openssh, unzip, wget, make, zsh, patch, bash-completion, curl
+Install cygwin with the packages: vim, dos2unix, rsync, openssh, unzip, wget, make, zsh, patch, bash-completion, curl, screen
 
 Edit /etc/nsswitch.conf and change db_shell to /bin/zsh
 
@@ -76,13 +76,15 @@ Say no for StrictMode and yes or default for all other questions. Run::
 
     net start cygsshd
 
-Now restart the VM with, changing the SSH port 22003 to whatever you like::
+Now restart the VM with::
 
     qemu-system-x86_64 \
     --enable-kvm \
     -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time \
     -smp cores=2,threads=4 \
     -m 8G \
+    -k en-us \
+    -monitor unix:monitor.socket,server,nowait \
     -drive file=SystemDisk.qcow2,index=0,media=disk,if=virtio \
     -nic user,model=virtio-net-pci,hostfwd=tcp:0.0.0.0:0-:22 \
     -rtc base=localtime,clock=host \
