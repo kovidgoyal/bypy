@@ -136,30 +136,23 @@ class SyncWorker(threading.Thread):
 
 def run_sync_jobs(cmds, retry=False):
     cmds = tuple(list(cmd) for cmd in cmds)
-    while True:
-        workers = list(map(SyncWorker, cmds))
-        failures = []
-        for w in workers:
-            w.join()
-            if w.returncode != 0:
-                failures.append(w)
-        if failures:
-            for w in failures:
-                qc = shlex.join(w.cmd[-2:])
-                print(f'The command {qc} failed')
-                sys.stderr.buffer.write(w.stdout)
-                sys.stderr.flush()
-            if retry and sys.stdout.isatty():
-                q = input('Would you like to retry downloading data from the VM? [y/n] ')
-                for cmd in cmds:
-                    if '-S' in cmd:
-                        idx = cmd.index('-S')
-                        del cmd[idx:idx+2]
-                if q == 'y':
-                    continue
-            raise SystemExit(1)
-        else:
-            break
+    workers = list(map(SyncWorker, cmds))
+    failures = []
+    for w in workers:
+        w.join()
+        if w.returncode != 0:
+            failures.append(w)
+    if failures:
+        for w in failures:
+            qc = shlex.join(w.cmd[-2:])
+            print(f'The command {qc} failed')
+            sys.stderr.buffer.write(w.stdout)
+            sys.stderr.flush()
+        if retry:
+            print('\x1b[31mSyncing from VM failed. You can retry the sync by running::\x1b[m')
+            print('\n\tpython ../bypy <whatever> shell --from-vm')
+            print('\nYou can also reconnect to the running job by starting the shell and then running: screen -r')
+        raise SystemExit(1)
     workers.sort(key=lambda w: w.time_taken)
     print('The slowest sync was:', shlex.join(workers[-1].cmd[-2:]))
     sys.stdout.buffer.write(workers[-1].stdout.strip())
