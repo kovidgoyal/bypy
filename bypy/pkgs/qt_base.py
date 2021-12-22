@@ -20,6 +20,7 @@ def cmake(args):
         'CMAKE_INSTALL_PREFIX': os.path.join(build_dir(), 'qt'),
         'CMAKE_SYSTEM_PREFIX_PATH': PREFIX,
         'CMAKE_BUILD_TYPE': 'Release',
+        'CMAKE_INTERPROCEDURAL_OPTIMIZATION': 'ON',  # LTO build
         'QT_BUILD_EXAMPLES': 'FALSE',
         'QT_BUILD_TESTS': 'FALSE',
         'OPENSSL_ROOT_DIR': PREFIX,
