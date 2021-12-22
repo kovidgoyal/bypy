@@ -65,6 +65,8 @@ def screen_exe():
 
 def run_worker(args):
     screen = screen_exe()
+    # wipe any dead sessions
+    subprocess.Popen([screen, '-wipe']).wait()
     # first try to re-attach to a running session
     cmd = [screen, '-q', '-S', SCREEN_NAME, '-r']
     p = subprocess.Popen(cmd)
