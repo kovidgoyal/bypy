@@ -93,7 +93,7 @@ def build_once(dep, m, args, cleanup, target=None):
         traceback.print_exc()
         print('\nDropping you into a shell')
         sys.stdout.flush(), sys.stderr.flush()
-        run_shell()
+        run_shell(cwd=build_dir())
         raise SystemExit(1)
     return output_dir
 
