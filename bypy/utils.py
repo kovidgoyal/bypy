@@ -24,7 +24,7 @@ from contextlib import closing, contextmanager, suppress
 from functools import partial
 
 from .constants import (
-    BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, PATCHES, PREFIX, PYTHON, SH,
+    BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, NODEJS, PATCHES, PREFIX, PYTHON, SH,
     UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch, is64bit,
     is_arm_half_of_lipo_build, islinux, ismacos, iswindows, mkdtemp,
     python_major_minor_version, worker_env
@@ -378,6 +378,7 @@ def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):
         append_to_path.append(os.path.dirname(os.environ['PYTHON_TWO']))
         if for_webengine:
             append_to_path.insert(0, f'{PREFIX}/private/gnuwin32/bin')
+            append_to_path.append(os.path.dirname(NODEJS))
     if for_webengine:
         pass  # configure_args += ' -no-feature-webengine-jumbo-build'
     run(
