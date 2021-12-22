@@ -62,6 +62,7 @@ CMAKE = 'cmake'
 NMAKE = 'nmake'
 PERL = 'perl'
 RUBY = 'ruby'
+NODEJS = 'node'
 NASM = 'nasm'
 CL = 'cl.exe'
 LINK = 'link.exe'
@@ -82,6 +83,7 @@ if iswindows:
     vcvars_env = query_vcvarsall(is64bit)
     PERL = os.environ.get('PERL', 'perl.exe')
     RUBY = os.environ.get('RUBY', 'ruby.exe')
+    NODEJS = os.environ.get('NODEJS', 'node.exe')
     # Remove cygwin paths from environment
     paths = [
         p.replace('/', os.sep) for p in vcvars_env['PATH'].split(os.pathsep)]

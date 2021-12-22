@@ -51,6 +51,7 @@ def main(args):
     win_prefix, python = conf['root'], conf['python']
     perl, ruby = conf.get('perl', 'perl.exe'), conf.get('ruby', 'ruby.exe')
     mesa = conf.get('mesa', 'C:/mesa')
+    nodejs = conf.get('nodejs', 'node.exe')
     python2 = conf.get('python2', 'C:/Python27/python.exe')
 
     drive = win_prefix[0].lower()
@@ -62,7 +63,7 @@ def main(args):
         python, os.path.join(win_prefix, 'bypy'),
         f'BYPY_ROOT={win_prefix}', f'BUILD_ARCH={args.arch}',
         f'PYTHON_TWO={python2}', f'PERL={perl}', f'RUBY={ruby}',
-        f'MESA={mesa}', f'BYPY_ARCH={ba}',
+        f'MESA={mesa}', f'BYPY_ARCH={ba}', f'NODEJS={nodejs}'
     ]
     if args.action == 'shell':
         return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args, prefix=prefix, name=f'sw{args.arch}')
