@@ -70,7 +70,7 @@ def run_worker(args):
     p = subprocess.Popen(cmd)
     logpath = os.path.join(WORKER_DIR, 'screenlog.0')
     try:
-        rc = p.wait(1)
+        rc = p.wait(5)
     except Exception:
         rc = None
     if rc is not None:
