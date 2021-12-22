@@ -24,8 +24,8 @@ from contextlib import closing, contextmanager, suppress
 from functools import partial
 
 from .constants import (
-    BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, NODEJS, PATCHES, PREFIX, PYTHON, SH,
-    UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch, is64bit,
+    BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, NODEJS, PATCHES, PERL, PREFIX, PYTHON,
+    SH, UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch, is64bit,
     is_arm_half_of_lipo_build, islinux, ismacos, iswindows, mkdtemp,
     python_major_minor_version, worker_env
 )
@@ -370,11 +370,16 @@ def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):
     os.mkdir('build')
     os.chdir('build')
     append_to_path = [os.path.join(PREFIX, 'qt', 'bin'), BIN]
-    run('qt-configure-module', '..', '-help',
+    prepend_to_path = []
+    qcm = os.path.join(PREFIX, 'qt', 'bin', 'qt-configure-module')
+    if iswindows:
+        qcm += '.bat'
+    run(qcm, '..', '-help',
         append_to_path=append_to_path, library_path=True)
-    run('qt-configure-module', '..', '-list-features',
+    run(qcm, '..', '-list-features',
         append_to_path=append_to_path, library_path=True)
     if iswindows:
+        prepend_to_path.append(os.path.dirname(PERL))
         append_to_path.append(os.path.dirname(os.environ['PYTHON_TWO']))
         if for_webengine:
             append_to_path.insert(0, f'{PREFIX}/private/gnuwin32/bin')
@@ -382,9 +387,9 @@ def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):
     if for_webengine:
         pass  # configure_args += ' -no-feature-webengine-jumbo-build'
     run(
-        'qt-configure-module', '..', *shlex.split(configure_args.strip()),
+        qcm, '..', *shlex.split(configure_args.strip()),
         library_path=True, append_to_path=append_to_path or None,
-        env=env
+        env=env, prepend_to_path=prepend_to_path or None,
     )
     if for_webengine:
         # configure_args += ' -no-feature-webengine-jumbo-build'

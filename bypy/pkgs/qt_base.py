@@ -6,7 +6,7 @@ import os
 
 from bypy.constants import (
     BIN, CMAKE, PREFIX, UNIVERSAL_ARCHES, build_dir, islinux, ismacos,
-    iswindows
+    iswindows, PERL
 )
 from bypy.utils import (
     relocate_pkgconfig_files, replace_in_file, run, run_shell
@@ -57,15 +57,25 @@ def cmake(args):
             'FEATURE_securetransport': 'ON',
             'FEATURE_fontconfig': 'OFF',
         })
+    if iswindows:
+        cmake_defines.update({
+            'INPUT_openssl': 'no',
+            'FEATURE_pkg_config': 'OFF',
+            'FEATURE_schannel': 'ON',
+            'FEATURE_fontconfig': 'OFF',
+        })
     os.mkdir('build'), os.chdir('build')
     cmd = [CMAKE] + [f'-D{k}={v}' for k, v in cmake_defines.items()] + [
         '-G', 'Ninja', '..']
-    run(*cmd, library_path=True, append_to_path=BIN)
-    run_shell  # ()
     if iswindows:
+        run(*cmd, library_path=True, append_to_path=BIN, prepend_to_path=os.path.dirname(PERL))
+        run_shell  # ()
         run(CMAKE, '--build', '.', '--parallel',
+            prepend_to_path=os.path.dirname(PERL),
             append_to_path=f'{PREFIX}/private/gnuwin32/bin')
     else:
+        run(*cmd, library_path=True, append_to_path=BIN)
+        run_shell  # ()
         run(CMAKE, '--build', '.', '--parallel',
             library_path=True, append_to_path=BIN)
     run(CMAKE, '--install', '.')
@@ -106,52 +116,6 @@ def main(args):
             r'+ QString::fromLatin1("\\app\\bin\\"));')
     cmake(args)
     relocate_pkgconfig_files()
-    # cflags, ldflags = CFLAGS, LDFLAGS
-    # cmake_args = ''
-    # if ismacos:
-    #     ldflags = '-L' + LIBDIR
-    # os.mkdir('build'), os.chdir('build')
-    # configure = os.path.abspath(
-    #     '..\\configure.bat') if iswindows else '../configure'
-    # conf = configure + (
-    #     ' -prefix {}/qt -release'
-    #     ' -nomake examples -nomake tests -no-sql-odbc -no-sql-psql'
-    #     ' -icu -qt-harfbuzz -qt-doubleconversion').format(build_dir())
-    # if islinux:
-    #     # Gold linker is needed for Qt 5.13.0 because of
-    #     # https://bugreports.qt.io/browse/QTBUG-76196
-    #     conf += (
-    #         ' -bundled-xcb-xinput -xcb -glib -openssl -openssl-linked'
-    #         ' -qt-pcre -xkbcommon -libinput -linker gold -pkg-config')
-    #     cmake_args += f'-D OPENSSL_ROOT_DIR={PREFIX}'
-    # elif ismacos:
-    #     conf += ' -no-pkg-config -framework -no-openssl -securetransport'
-    #     ' -no-freetype -no-fontconfig '
-    # elif iswindows:
-    #     # Qt links incorrectly against libpng and libjpeg, so use the bundled
-    #     # copy Use dynamic OpenGl, as per:
-    #     # https://doc.qt.io/qt-5/windows-requirements.html#dynamically-loading-graphics-drivers
-    #     conf += (' -schannel -no-openssl -directwrite -ltcg -mp'
-    #              ' -no-plugin-manifests -no-freetype -no-fontconfig'
-    #              ' -qt-libpng -qt-libjpeg ')
-    #     cflags = '-I {}/include'.format(PREFIX).replace(os.sep, '/')
-    #     ldflags = '-L {}/lib'.format(PREFIX).replace(os.sep, '/')
-    # conf += ' ' + cflags + ' ' + ldflags
-    # if cmake_args:
-    #     conf += f'-- {cmake_args}'
-    # run(conf, library_path=True)
-    # # run_shell()
-    # run_shell
-    # if iswindows:
-    #     run('cmake --build . --parallel',
-    #         append_to_path=f'{PREFIX}/private/gnuwin32/bin')
-    #     run('cmake --install .')
-    #     shutil.copy2('../src/3rdparty/sqlite/sqlite3.c',
-    #                  os.path.join(build_dir(), 'qt'))
-    # else:
-    #     run('cmake --build . --parallel',
-    #         library_path=True, append_to_path=BIN)
-    #     run('cmake --install .')
 
 
 def modify_exclude_extensions(extensions):
