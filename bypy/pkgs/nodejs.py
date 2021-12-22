@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # License: GPLv3 Copyright: 2021, Kovid Goyal <kovid at kovidgoyal.net>
 
-from ..utils import simple_build
+from ..constants import iswindows
+from ..utils import simple_build, run
 
 
 allow_non_universal = True
 
 
 def main(args):
-    simple_build()
+    if not iswindows:
+        return simple_build()
+    run('.\\vcbuild.bat')
