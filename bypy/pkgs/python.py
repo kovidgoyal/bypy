@@ -132,7 +132,7 @@ def windows_python(args):
         replace_in_file(
             'Lib\\mimetypes.py',
             re.compile(br'try:.*?import\s+winreg.*?None', re.DOTALL),
-            r'_winreg = None')
+            r'_winreg = _mimetypes_read_windows_registry = None')
 
         bindir = 'PCbuild\\amd64' if is64bit else 'PCbuild\\win32'
         install_binaries(bindir + os.sep + '*.exe', 'private\\python')
