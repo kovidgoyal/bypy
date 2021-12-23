@@ -81,6 +81,11 @@ def cmake(args):
     run(CMAKE, '--install', '.')
     with open(os.path.join(build_dir(), 'qt', 'bin', 'qt.conf'), 'wb') as f:
         f.write(b"[Paths]\nPrefix = ..\n")
+        if iswindows:
+            # this is needed for qmake as otherwise qmake sets QT_INSTALL_LIBS
+            # to bin which breaks building of PyQt. Hopefully if and when PyQt
+            # moves off qmake this can be removed
+            f.write(b'Libraries = lib\n')
 
 
 def main(args):

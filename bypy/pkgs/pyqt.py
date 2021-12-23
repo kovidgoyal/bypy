@@ -20,10 +20,6 @@ def run_sip_install(for_webengine=False):
     ).split()
     if iswindows:
         args.append('--link-full-dll')
-        raw = list(open(f'{qt_bin}/qt.conf'))
-        raw.append('Libraries = lib')
-        with open(f'{qt_bin}/qt6.conf', 'w') as qt_conf:
-            qt_conf.writelines(raw)
     if for_webengine:
         args.extend('--disable QtWebEngineQuick'.split())
     else:
@@ -42,8 +38,6 @@ def run_sip_install(for_webengine=False):
         run('make ' + MAKEOPTS, cwd='build')
         run(f'make INSTALL_ROOT="{build_dir()}" install',
             cwd='build', library_path=True)
-    if iswindows:
-        os.remove(qt_conf.name)
     python_install()
 
 
