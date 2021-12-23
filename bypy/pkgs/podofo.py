@@ -25,7 +25,7 @@ def main(args):
             nmake_target='podofo_shared'
         )
         copy_headers('build/podofo_config.h', 'include/podofo')
-        copy_headers('src/*', 'include/podofo')
+        copy_headers('src/podofo/*', 'include/podofo')
         for f in walk():
             if f.endswith('.dll'):
                 install_binaries(f, 'bin')
