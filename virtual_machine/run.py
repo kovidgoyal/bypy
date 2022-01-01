@@ -263,10 +263,10 @@ def server_from_spec(spec):
     return p.hostname or 'localhost'
 
 
-def wait_for_ssh(spec, timeout=60):
+def wait_for_ssh(spec, timeout=180):
     port = ssh_port(spec)
     server = server_from_spec(spec)
-    cmd = ssh_command_to('date', server=server, port=port, timeout=180)
+    cmd = ssh_command_to('date', server=server, port=port, timeout=timeout)
     start = monotonic()
     print(f'Waiting for master connection to SSH server at {server}:{port}...', file=sys.stderr)
     while monotonic() - start < timeout:
