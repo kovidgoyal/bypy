@@ -151,7 +151,7 @@ def ssh_port_for_vm_dir(vm_dir, start_if_not_running=True):
     if just_started:
         print('Waiting for SSH server to come up...', file=sys.stderr)
         start = monotonic()
-        timeout = 180
+        timeout = 240
         while True:
             cp = subprocess.run(ssh_command_to(port=ans, use_master=False) + ['date'], capture_output=True)
             if cp.returncode == 0:
