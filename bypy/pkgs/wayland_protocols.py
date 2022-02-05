@@ -5,11 +5,11 @@
 import os
 
 from ..constants import build_dir
-from ..utils import simple_build
+from ..utils import meson_build
 
 
 def main(args):
-    simple_build()
+    meson_build('--default-library=shared -Dtests=false')
     pcdir = os.path.join(build_dir(), 'lib/pkgconfig')
     os.makedirs(pcdir)
     pc = os.path.join(build_dir(), 'share/pkgconfig/wayland-protocols.pc')

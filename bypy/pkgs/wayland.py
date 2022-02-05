@@ -2,8 +2,8 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2020, Kovid Goyal <kovid at kovidgoyal.net>
 
-from ..utils import simple_build
+from ..utils import meson_build
 
 
 def main(args):
-    simple_build('--disable-documentation --disable-static')
+    meson_build('--default-library=shared -Dtests=false -Ddocumentation=false -Ddtd_validation=false')
