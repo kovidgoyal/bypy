@@ -113,7 +113,7 @@ class Chroot:
         # Basic build environment
         yield p(
             'apt-get install -y build-essential software-properties-common'
-            ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https'
+            ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https patchelf'
             ' dh-autoreconf gperf strace sudo vim screen zsh-syntax-highlighting'
         )
         for cmd in install_modern_python(self.image_name):
