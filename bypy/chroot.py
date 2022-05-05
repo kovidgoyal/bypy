@@ -149,6 +149,7 @@ class Chroot:
                 'content': content, 'permissions': permissions, 'defer': defer})
 
         file('/etc/environment', f'\nBYPY_ARCH="{self.image_arch}"', append=True)
+        file('/etc/systemd/journald.conf', 'SystemMaxUse=16M', append=True)
         user = USER
         for user_file in ('.zshrc', '.vimrc'):
             path = os.path.expanduser(f'~/{user_file}')
