@@ -777,7 +777,7 @@ error:
 }
 
 static void
-bypy_initialize_interpreter(
+bypy_initialize_interpreter_with_xoptions(
         const wchar_t *program_name, const wchar_t *home, const wchar_t *run_module, const wchar_t *libdir,
         int argc,
 #ifdef _WIN32
@@ -785,6 +785,7 @@ bypy_initialize_interpreter(
 #else
         char* const *argv
 #endif
+        , int num_xoptions, wchar_t **xoptions
 ) {
 #define CHECK_STATUS if (PyStatus_Exception(status)) { PyConfig_Clear(&config); Py_ExitStatusException(status); }
     PyStatus status;
@@ -817,6 +818,10 @@ bypy_initialize_interpreter(
     status = PyConfig_SetBytesArgv(&config, argc, argv);
 #endif
     CHECK_STATUS;
+    if (num_xoptions > 0) {
+        status = PyConfig_SetWideStringList(&config, &config.xoptions, num_xoptions, xoptions);
+        CHECK_STATUS;
+    }
     status = Py_InitializeFromConfig(&config);
     CHECK_STATUS;
 
@@ -848,4 +853,17 @@ bypy_run_interpreter(void) {
 #endif
 	free_frozen_data();
     return ret;
+}
+
+static inline void
+bypy_initialize_interpreter(
+        const wchar_t *program_name, const wchar_t *home, const wchar_t *run_module, const wchar_t *libdir,
+        int argc,
+#ifdef _WIN32
+        wchar_t* const *argv
+#else
+        char* const *argv
+#endif
+) {
+    bypy_initialize_interpreter_with_xoptions(program_name, home, run_module, libdir, argc, argv, 0, NULL);
 }
