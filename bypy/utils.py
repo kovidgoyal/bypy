@@ -314,16 +314,16 @@ def extract_source_and_chdir(source):
     return tdir
 
 
-def relocate_pkgconfig_files():
+def relocate_pkgconfig_files(prefix=PREFIX):
     for path in walk(build_dir()):
         if path.endswith('.pc'):
             if re.search(
-                    f'^prefix={PREFIX}$', open(path).read(),
+                    f'^prefix={prefix}$', open(path).read(),
                     flags=re.M) is None:
-                replace_in_file(path, build_dir(), PREFIX)
+                replace_in_file(path, build_dir(), prefix)
         if path.endswith('.cmake'):
             if build_dir() in open(path).read():
-                replace_in_file(path, build_dir(), PREFIX)
+                replace_in_file(path, build_dir(), prefix)
 
 
 def simple_build(
@@ -403,7 +403,7 @@ def qt_build(configure_args='', for_webengine=False, num_jobs=None, **env):
     run(CMAKE, '--build', '.', '--parallel',
         library_path=True, append_to_path=append_to_path, env=env)
     run(CMAKE, '--install', '.', '--prefix', f'{build_dir()}/qt', env=env)
-    relocate_pkgconfig_files()
+    relocate_pkgconfig_files(prefix=PREFIX + '/qt')
     # if iswindows:
     #     if for_webengine:
     #         os.mkdir('process')
