@@ -120,7 +120,8 @@ class Chroot:
             yield p(cmd)
         for cmd in install_modern_cmake(self.image_name):
             yield p(cmd)
-        yield p('python3 -m pip install ninja meson')
+        # html5lib needed for qt-webengine
+        yield p('python3 -m pip install ninja meson html5lib')
 
         deps = self.conf['deps']
         if isinstance(deps, (list, tuple)):
