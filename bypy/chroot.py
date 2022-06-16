@@ -174,7 +174,10 @@ class Chroot:
             'fqdn': f'{self.vm_name}.localdomain',
             'package_upgrade': True,
             'groups': ['crusers'],
-            'mounts': [["LABEL=datadisk", "/sw"]],
+            'mounts': [
+                ["LABEL=datadisk", "/sw"],
+                '/sw/tmp /tmp none defaults,bind 0 0'.split(),
+            ],
             'apt': {
                 'preserve_sources_list': True,
                 'sources': sources,
@@ -216,12 +219,12 @@ class Chroot:
 
         a('apt-get clean')
         a('mkdir /sw/src /sw/sources /sw/bypy')
+        a('mkdir -p /sw/tmp')
         a('ln -s /sw/src /src')
         a('ln -s /sw/sources /sources')
         a('ln -s /sw/bypy /bypy')
         a(f'chown -R {user}:crusers /sw')
-        a('mv /tmp /sw')
-        a('ln -s /sw/tmp /tmp')
+        a('chmod a+trwx /sw/tmp')
         a('sh -c "rm -f /etc/resolv.conf; echo nameserver 8.8.4.4 > /etc/resolv.conf; echo nameserver 8.8.8.8 >> /etc/resolv.conf;'
           ' chattr +i /etc/resolv.conf; cat /etc/resolv.conf"')
         a('fstrim -v --all')
