@@ -150,6 +150,7 @@ class Chroot:
 
         file('/etc/environment', f'\nBYPY_ARCH="{self.image_arch}"', append=True)
         file('/etc/systemd/journald.conf', '\nSystemMaxUse=16M', append=True)
+        file('/etc/apt/apt.conf.d/20auto-upgrades', 'APT::Periodic::Update-Package-Lists "0";\nAPT::Periodic::Unattended-Upgrade "0";')
         user = USER
         for user_file in ('.zshrc', '.vimrc'):
             path = os.path.expanduser(f'~/{user_file}')
