@@ -1120,3 +1120,35 @@ def setup_build_parser(p):
 
     setup_dependencies_parser(s.add_parser('dependencies', aliases=['deps']))
     return s
+
+
+def total_physical_ram():
+    if islinux:
+        with open('/proc/meminfo') as f:
+            raw = f.read()
+        return int(re.search(r'^MemTotal:\s+(\d+)', raw, flags=re.M).group(1)) * 1024
+    if ismacos:
+        raw = subprocess.check_output(['sysctl', 'hw.memsize']).decode()
+        return int(raw.strip().split()[-1])
+    from ctypes import windll, Structure, sizeof, byref
+    from ctypes.wintypes import DWORD, ULARGE_INTEGER
+
+    class MEMORYSTATUSEX(Structure):
+        _fields_ = [
+            ('dwLength', DWORD),
+            ('dwMemoryLoad', DWORD),
+            ('ullTotalPhys', ULARGE_INTEGER),
+            ('ullAvailPhys', ULARGE_INTEGER),
+            ('ullTotalPageFile', ULARGE_INTEGER),
+            ('ullAvailPageFile', ULARGE_INTEGER),
+            ('ullTotalVirtual', ULARGE_INTEGER),
+            ('ullAvailVirtual', ULARGE_INTEGER),
+            ('ullAvailExtendedVirtual', ULARGE_INTEGER),
+        ]
+
+    def GlobalMemoryStatusEx():
+        x = MEMORYSTATUSEX()
+        x.dwLength = sizeof(x)
+        windll.kernel32.GlobalMemoryStatusEx(byref(x))
+        return x
+    return GlobalMemoryStatusEx().ullTotalPhys
