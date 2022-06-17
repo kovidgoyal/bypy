@@ -4,15 +4,15 @@
 
 
 from bypy.constants import islinux
-from bypy.utils import qt_build, apply_patch
+from bypy.utils import qt_build, total_physical_ram
 
 
 def main(args):
+    if total_physical_ram() < (15.5 * 1024**3):
+        raise SystemExit('Need at least 16GB of RAM to build qt-webengine')
     conf = '-feature-qtwebengine-build -feature-qtwebengine-widgets-build'
     conf += ' -no-feature-qtwebengine-quick-build'
     if islinux:
-        # see https://bugs.launchpad.net/calibre/+bug/1939958
-        apply_patch('crbug1213452.diff', level=1)
         # use system ICU otherwise there is 10MB duplication and we have to
         # make resources/icudtl.dat available in the application
         conf += ' -webengine-icu'
