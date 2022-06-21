@@ -394,7 +394,6 @@ def qt_build(configure_args='', for_webengine=False, **env):
         env=env, prepend_to_path=prepend_to_path or None,
     )
     if for_webengine:
-        # configure_args += ' -no-feature-webengine-jumbo-build'
         # ninja by default creates cpu_count + 2 jobs, max RAM per job is thus
         # RAM/num_jobs. Linking webengine requires several GB of RAM -- ka blammo
         num = 4 if islinux else 2
