@@ -617,6 +617,12 @@ def create_package(module, outpath):
             else:
                 dirnames.remove(d)
 
+        if hasattr(module, 'is_ok_to_check_universal_arches'):
+            is_ok_to_check_universal_arches = module.is_ok_to_check_universal_arches
+        else:
+            def always_ok(x):
+                return True
+            is_ok_to_check_universal_arches = always_ok
         for f in filenames:
             name = get_name(f)
             if is_ok(name):
@@ -626,7 +632,7 @@ def create_package(module, outpath):
                       no_hardlinks=islinux)
                 full_path = os.path.realpath(os.path.join(outpath, name))
                 if check_universal_binaries and full_path not in dylibs and (
-                        name.endswith('.dylib') or is_macho_binary(full_path)):
+                        name.endswith('.dylib') or is_macho_binary(full_path)) and is_ok_to_check_universal_arches(full_path):
                     dylibs.add(full_path)
     expected = set(UNIVERSAL_ARCHES)
     for x in dylibs:

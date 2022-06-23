@@ -3,6 +3,7 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 
+import os
 from bypy.constants import islinux
 from bypy.utils import qt_build, total_physical_ram
 
@@ -18,3 +19,7 @@ def main(args):
         conf += ' -webengine-icu'
 
     qt_build(conf, for_webengine=True)
+
+
+def is_ok_to_check_universal_arches(x):
+    return os.path.basename(x) not in ('gn',)
