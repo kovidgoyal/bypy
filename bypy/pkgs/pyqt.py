@@ -6,9 +6,9 @@ import os
 import re
 
 from bypy.constants import (
-    MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir, iswindows
+    MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir, ismacos, iswindows
 )
-from bypy.utils import python_install, replace_in_file, run, walk
+from bypy.utils import apply_patch, python_install, replace_in_file, run, walk
 
 
 def run_sip_install(for_webengine=False):
@@ -42,6 +42,8 @@ def run_sip_install(for_webengine=False):
 
 
 def main(args):
+    if ismacos:
+        apply_patch('pyqt6-dtls-compile-on-macos-without-openssl.patch')
     run_sip_install()
     if iswindows:
         for x in walk(build_dir()):
