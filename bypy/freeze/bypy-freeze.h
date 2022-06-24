@@ -628,7 +628,7 @@ bypy_frozen_importer(void) {
     return m;
 }
 
-static void
+static inline void
 set_sys_string(const char* key, const wchar_t* val) {
     PyObject *temp = PyUnicode_FromWideChar(val, -1);
     if (temp) {
@@ -639,7 +639,7 @@ set_sys_string(const char* key, const wchar_t* val) {
     }
 }
 
-static void
+static inline void
 set_sys_bool(const char* key, const bool val) {
 	PyObject *pyval = PyBool_FromLong(val);
 	if (PySys_SetObject(key, pyval) != 0) fatal("Failed to set attribute on sys: %s", key);
