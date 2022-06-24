@@ -110,8 +110,8 @@ def main(args):
         # Enable loading of DLLs from the bin directory
         replace_in_file(
             'src/corelib/global/qlibraryinfo.cpp',
-            '{ "Libraries", "lib" }',
-            '{ "Libraries", "bin" }'
+            '"Libraries", "lib"',
+            '"Libraries", "bin"'
         )
         replace_in_file(
             'src/corelib/plugin/qsystemlibrary.cpp',
