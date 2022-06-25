@@ -42,7 +42,7 @@ def run_sip_install(for_webengine=False):
 
 
 def main(args):
-    if ismacos:
+    if ismacos or iswindows:
         apply_patch('pyqt6-dtls-compile-on-macos-without-openssl.patch')
     run_sip_install()
     if iswindows:
