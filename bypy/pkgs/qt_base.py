@@ -64,6 +64,10 @@ def cmake(args):
             'FEATURE_schannel': 'ON',
             'FEATURE_fontconfig': 'OFF',
         })
+        # allow overriding Qt's notion of the cache dir which is used by QWebEngineProfile
+        replace_in_file(
+            './src/corelib/io/qstandardpaths_win.cpp', 'case CacheLocation:',
+            'case CacheLocation: { const wchar_t *cq = _wgetenv(L"CALIBRE_QT_CACHE_LOCATION"); if (cq) return QString::fromWCharArray(cq); }')
     os.mkdir('build'), os.chdir('build')
     cmd = [CMAKE] + [f'-D{k}={v}' for k, v in cmake_defines.items()] + [
         '-G', 'Ninja', '..']
