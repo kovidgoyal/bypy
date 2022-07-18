@@ -320,7 +320,7 @@ def relocate_pkgconfig_files(prefix=PREFIX):
             if re.search(
                     f'^prefix={prefix}$', open(path).read(),
                     flags=re.M) is None:
-                replace_in_file(path, build_dir(), prefix)
+                replace_in_file(path, build_dir().replace(os.sep, '/'), prefix.replace(os.sep, '/'))
         if path.endswith('.cmake'):
             if build_dir() in open(path).read():
                 replace_in_file(path, build_dir(), prefix)
@@ -835,6 +835,13 @@ def cmake_build(
     make = NMAKE if iswindows else 'make'
     if isinstance(make_args, str):
         make_args = shlex.split(make_args)
+    try:
+        os.mkdir('build')
+    except FileExistsError:
+        # brotli has BUILD file in its root which on case insensitive
+        # filesystems causes prevents creation of build folder
+        os.remove('build')
+        os.mkdir('build')
     os.makedirs('build', exist_ok=True)
     defs = {
         'CMAKE_BUILD_TYPE': 'RELEASE',
