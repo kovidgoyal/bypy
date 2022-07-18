@@ -835,7 +835,7 @@ def cmake_build(
     make = NMAKE if iswindows else 'make'
     if isinstance(make_args, str):
         make_args = shlex.split(make_args)
-    os.mkdir('build')
+    os.makedirs('build', exist_ok=True)
     defs = {
         'CMAKE_BUILD_TYPE': 'RELEASE',
         'CMAKE_SYSTEM_PREFIX_PATH': PREFIX,
