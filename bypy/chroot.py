@@ -55,6 +55,15 @@ def install_modern_python(image_name):
         yield 'apt-get install -y python-is-python3 python3-pip'
 
 
+def install_modern_go(image_name, go_version='golang-go'):
+    # use a version like golang-1.19 for specific go version
+    yield 'start_custom_apt'
+    yield 'add-apt-repository ppa:longsleep/golang-backports -y'
+    yield 'apt-get update'
+    yield f'apt-get install -y {go_version}'
+    yield 'end_custom_apt'
+
+
 def install_modern_cmake(image_name):
     yield 'start_custom_apt'
     kitware = '/usr/share/keyrings/kitware-archive-keyring.gpg'
@@ -119,6 +128,8 @@ class Chroot:
         for cmd in install_modern_python(self.image_name):
             yield p(cmd)
         for cmd in install_modern_cmake(self.image_name):
+            yield p(cmd)
+        for cmd in install_modern_go(self.image_name):
             yield p(cmd)
         # html5lib needed for qt-webengine
         yield p('python3 -m pip install ninja meson html5lib')
