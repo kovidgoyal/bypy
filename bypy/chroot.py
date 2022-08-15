@@ -55,12 +55,19 @@ def install_modern_python(image_name):
         yield 'apt-get install -y python-is-python3 python3-pip'
 
 
-def install_modern_go(image_name, go_version='golang-go'):
-    # use a version like golang-1.19 for specific go version
+def install_modern_go(image_name, image_arch, go_version='1.19'):
+    if image_arch == 'i386':
+        image_arch = '386'
+    gof = f'go{go_version}.linux-{image_arch}.tar.gz'
     yield 'start_custom_apt'
-    yield 'add-apt-repository ppa:longsleep/golang-backports -y'
-    yield 'apt-get update'
-    yield f'apt-get install -y {go_version}'
+    yield f'echo Downloading {gof}'
+    yield ['sh', '-c', f'curl -L https://go.dev/dl/{gof} > {gof}']
+    yield 'rm -rf /usr/local/go'
+    yield f'tar -C /usr/local -xzf {gof}'
+    yield f'rm -f {gof}'
+    yield 'ln -s /usr/local/go/bin/go /usr/local/bin/go'
+    yield 'ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt'
+    yield 'go version'
     yield 'end_custom_apt'
 
 
@@ -125,11 +132,11 @@ class Chroot:
             ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https patchelf'
             ' dh-autoreconf gperf strace sudo vim screen zsh-syntax-highlighting'
         )
-        for cmd in install_modern_python(self.image_name):
-            yield p(cmd)
         for cmd in install_modern_cmake(self.image_name):
             yield p(cmd)
-        for cmd in install_modern_go(self.image_name):
+        for cmd in install_modern_python(self.image_name):
+            yield p(cmd)
+        for cmd in install_modern_go(self.image_name, self.image_arch):
             yield p(cmd)
         # html5lib needed for qt-webengine
         yield p('python3 -m pip install ninja meson html5lib')
