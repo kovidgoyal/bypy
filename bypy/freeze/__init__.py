@@ -229,6 +229,22 @@ def remove_pyc_files_in(base):
             dirnames.remove('__pycache__')
 
 
+def delete_empty_folders(root: str) -> None:
+
+    deleted = set()
+
+    for current_dir, subdirs, files in os.walk(root, topdown=False):
+
+        still_has_subdirs = any(
+            1 for subdir in subdirs
+            if os.path.join(current_dir, subdir) not in deleted
+        )
+
+        if not any(files) and not still_has_subdirs:
+            os.rmdir(current_dir)
+            deleted.add(current_dir)
+
+
 def freeze_python(
     base, dest_dir, include_dir, extensions_map, develop_mode_env_var='',
     path_to_user_env_vars='', remove_pyc_files=False
@@ -277,3 +293,4 @@ static const unsigned char filesystem_tree[] = {{ {tree} }};
         f.write(header + '\n')
     if remove_pyc_files:
         remove_pyc_files_in(base)
+        delete_empty_folders(base)
