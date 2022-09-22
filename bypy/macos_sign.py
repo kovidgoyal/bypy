@@ -119,6 +119,7 @@ def notarize_app(app_path):
     notarytool = ['/Users/Shared/notarytool']
     if not os.path.exists(notarytool[0]):
         subprocess.check_call(['curl', '--output', notarytool[0], 'https://download.calibre-ebook.com/notarytool'])
+        subprocess.check_call(['chmod', '+x', notarytool[0]])
     # notarytool = ['xcrun', 'notarytool']
     cmd = notarytool + ['submit', '--apple-id', un, '--team-id', team_id, '--password', pw, '--wait', zip_path]
 
