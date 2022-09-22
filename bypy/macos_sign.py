@@ -2,17 +2,13 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2020, Kovid Goyal <kovid at kovidgoyal.net>
 
-import json
 import os
 import plistlib
 import re
 import shlex
 import subprocess
 import tempfile
-import time
 from contextlib import contextmanager
-from pprint import pprint
-from urllib.request import urlopen
 from uuid import uuid4
 
 from .utils import run_shell, timeit
@@ -21,7 +17,7 @@ CODESIGN_CREDS = os.path.expanduser('~/code-signing/cert-cred')
 CODESIGN_CERT = os.path.expanduser('~/code-signing/maccert.p12')
 # The apple id file contains the apple id and an app specific password which
 # can be generated from appleid.apple.com
-# Note that apple accounts require two-factor authentication which is currntly
+# Note that apple accounts require two-factor authentication which is currently
 # setup on ox and via SMS on my phone
 APPLE_ID = os.path.expanduser('~/code-signing/apple-notarization-creds')
 path_to_entitlements = os.path.expanduser('~/entitlements.plist')
@@ -106,10 +102,7 @@ def notarize_app(app_path):
     # and
     # https://developer.apple.com/documentation/xcode/notarizing_your_app_before_distribution/resolving_common_notarization_issues?language=objc
     with open(APPLE_ID) as f:
-        un, pw = f.read().strip().split(':')
-
-    with open(os.path.join(app_path, 'Contents', 'Info.plist'), 'rb') as f:
-        primary_bundle_id = plistlib.load(f)['CFBundleIdentifier']
+        un, team_id, pw = f.read().strip().split(':')
 
     zip_path = os.path.join(os.path.dirname(app_path), 'program.zip')
     print('Creating zip file for notarization')
@@ -119,56 +112,29 @@ def notarize_app(app_path):
     print('ZIP file of {} MB created in {} minutes and {} seconds'.format(
         os.path.getsize(zip_path) // 1024**2, *times))
 
-    def altool(*args):
-        args = ['xcrun', 'altool'
-                ] + list(args) + ['--username', un, '--password', pw]
-        p = subprocess.Popen(args,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        stdout = stdout.decode('utf-8')
-        stderr = stderr.decode('utf-8')
-        output = stdout + '\n' + stderr
-        print(output)
-        if p.wait() != 0:
-            print('The command {} failed with error code: {}'.format(
-                args, p.returncode))
-            try:
-                run_shell()
-            finally:
-                raise SystemExit(1)
-        return output
+    # notarytool is a statically compiled exe that supposedly works on
+    # macOS 10.15.7 and up. You can copy it from the XCode command line tools
+    # installation on any MacBook. Available for convenience at:
+    # https://download.calibre-ebook.com/notarytool
+    notarytool = ['/Users/Shared/notarytool']
+    if not os.path.exists(notarytool[0]):
+        subprocess.check_call(['curl', '--output', notarytool[0], 'https://download.calibre-ebook.com/notarytool'])
+    # notarytool = ['xcrun', 'notarytool']
+    cmd = notarytool + ['submit', '--apple-id', un, '--team-id', team_id, '--password', pw, '--wait', zip_path]
 
     print('Submitting for notarization')
-    with timeit() as times:
-        try:
-            stdout = altool('--notarize-app', '-f', zip_path,
-                            '--primary-bundle-id', primary_bundle_id)
-        finally:
-            os.remove(zip_path)
-        request_id = re.search(r'RequestUUID = (\S+)', stdout).group(1)
-        status = 'in progress'
-    print('Submission done in {} minutes and {} seconds'.format(*times))
+    # print(cmd)
+    try:
+        with timeit() as times:
+            cp = subprocess.run(cmd)
+        print('Notarization done in {} minutes and {} seconds'.format(*times))
+        if cp.returncode != 0:
+            print('Notarization failed for ZIP file:', zip_path)
+            run_shell()
+            raise SystemExit('Notarization failed!')
+    finally:
+        os.remove(zip_path)
 
-    print('Waiting for notarization')
-    with timeit() as times:
-        start_time = time.monotonic()
-        while status == 'in progress':
-            time.sleep(30)
-            print(
-                'Checking if notarization is complete,',
-                'time elapsed: {:.1f} seconds'
-                .format(time.monotonic() - start_time))
-            stdout = altool('--notarization-info', request_id)
-            status = re.search(r'Status\s*:\s+(.+)', stdout).group(1).strip()
-    print('Notarization done in {} minutes and {} seconds'.format(*times))
-
-    if status.lower() != 'success':
-        log_url = re.search(r'LogFileURL\s*:\s+(.+)', stdout).group(1).strip()
-        if log_url != '(null)':
-            log = json.loads(urlopen(log_url).read())
-            pprint(log)
-        raise SystemExit('Notarization failed, see JSON log above')
     with timeit() as times:
         print('Stapling notarization ticket')
         run('xcrun', 'stapler', 'staple', '-v', app_path)
