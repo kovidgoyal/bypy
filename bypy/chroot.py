@@ -196,7 +196,6 @@ class Chroot:
             'groups': ['crusers'],
             'mounts': [
                 ["LABEL=datadisk", "/sw"],
-                '/sw/tmp /tmp none defaults,bind 0 0'.split(),
             ],
             'apt': {
                 'preserve_sources_list': True,
@@ -238,16 +237,17 @@ class Chroot:
             cmds.append(p(x))
 
         a('apt-get clean')
-        a('mkdir /sw/src /sw/sources /sw/bypy')
-        a('mkdir -p /sw/tmp')
+        a('mkdir /sw/src /sw/sources /sw/bypy /sw/tmp')
         a('ln -s /sw/src /src')
         a('ln -s /sw/sources /sources')
         a('ln -s /sw/bypy /bypy')
         a(f'chown -R {user}:crusers /sw')
-        a('chmod a+trwx /sw/tmp')
         a('sh -c "rm -f /etc/resolv.conf; echo nameserver 8.8.4.4 > /etc/resolv.conf; echo nameserver 8.8.8.8 >> /etc/resolv.conf;'
           ' chattr +i /etc/resolv.conf; cat /etc/resolv.conf"')
         a('fstrim -v --all')
+        # Have /sw/tmp used as /tmp
+        a('chmod a+trwx /sw/tmp')
+        a('sh -c "echo /sw/tmp /tmp none defaults,bind 0 0 >> /etc/fstab; cat /etc/fstab"')
         a('poweroff')
         return ans
 
