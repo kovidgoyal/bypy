@@ -16,6 +16,9 @@ from .chroot import Chroot
 from .utils import current_dir
 
 
+base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def call(*args):
     if len(args) == 1:
         args = shlex.split(args[0])
@@ -32,7 +35,6 @@ def build_vm(chroot: Chroot):
     meta_data = json.dumps({'instance-id': chroot.vm_name})
     cloud_image = chroot.cloud_image
     is_arm = chroot.image_arch == 'arm64'
-    firmware_images = chroot.efi_firmware_images
 
     machine_spec = [
         f'-name {chroot.vm_name}',
@@ -52,13 +54,17 @@ def build_vm(chroot: Chroot):
     disks = []
     scsi_count = -1
 
-    def add_firmware(entry):
-        e = firmware_images['mapping'][entry]
-        d = 'firmware/' + os.path.basename(e['filename'])
-        shutil.copy2(e['filename'], d)
-        ro = 'on' if entry == 'executable' else 'off'
+    def add_efi_firmware():
+        os.mkdir('firmware')
+        fw = os.path.join(base, f'virtual_machine/firmware/{chroot.image_name}-arm64-efi.fd')
+        code = 'firmware/efi-code.img'
+        evars = 'firmware/efi-vars.img'
+        call(f'dd if=/dev/zero of={code} bs=1M count=64')
+        call(f'dd if={fw} of={code} conv=notrunc')
+        call(f'dd if=/dev/zero of={evars} bs=1M count=64')
         firmware.append('# Firmware')
-        firmware.append(f'-drive if=pflash,format={e["format"]},readonly={ro},file="{d}"')
+        firmware.append(f'-drive if=pflash,format=raw,readonly=on,unit=0,file="{code}"')
+        firmware.append(f'-drive if=pflash,format=raw,readonly=off,unit=1,file="{evars}"')
 
     def add_disk(filename, disk_id):
         nonlocal scsi_count
@@ -81,9 +87,7 @@ def build_vm(chroot: Chroot):
         call('qemu-img convert -f raw -O qcow2 SystemDisk.img SystemDisk.qcow2')
         os.remove('SystemDisk.img')
         if is_arm:
-            os.mkdir('firmware')
-            add_firmware('executable')
-            add_firmware('nvram-template')
+            add_efi_firmware()
         shutil.copy2(cloud_image, '.')
         converted = os.path.basename(cloud_image)
         call(f'qemu-img resize "{converted}" +8G')
@@ -97,4 +101,7 @@ def build_vm(chroot: Chroot):
             f.write('\n'.join(machine_spec))
 
     cmd = cmdline_for_machine_spec(machine_spec, 'monitor.socket')
-    subprocess.check_call(cmd, cwd=chroot.vm_path)
+    try:
+        subprocess.check_call(cmd, cwd=chroot.vm_path)
+    except KeyboardInterrupt:
+        raise SystemExit('Exiting on keyboard interrupt')
