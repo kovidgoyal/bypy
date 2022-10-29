@@ -106,6 +106,9 @@ class Chroot:
         self.vm_name_suffix = self.conf.get('vm_name_suffix', '')
         self.single_instance_name = f'bypy-{arch}-singleinstance-{os.getcwd()}'
         url = self.conf['image']
+        if arch == 'arm64' and ('20.04' in url or '18.04' in url):
+            # Older Ubuntu ARM images fail to boot with up-to-date QEMU/OVMF
+            url = 'https://cloud-images.ubuntu.com/releases/jammy/release/ubuntu-22.04-server-cloudimg-{}.img'
         self.image_name = url.split('/')[4]
         self.cloud_image_url = url.format(self.image_arch)
         self.vm_name = f'ubuntu-{self.image_name}-{self.image_arch}-{os.path.basename(os.getcwd())}{self.vm_name_suffix}'
@@ -236,6 +239,16 @@ class Chroot:
         def a(x):
             cmds.append(p(x))
 
+        # Nuke snap
+        a('systemctl disable snapd.service snapd.socket snapd.seeded.service')
+        a('snap remove --purge lxd')
+        a('snap remove --purge core20')
+        a('snap remove --purge snapd')
+        a('apt autoremove -y snapd')
+        a('rm -rf /var/cache/snapd/')
+
+        # removing cloud-init crashes
+        # a('apt-get remove -y cloud-init')
         a('apt-get clean')
         a('mkdir /sw/src /sw/sources /sw/bypy /sw/tmp')
         a('ln -s /sw/src /src')
