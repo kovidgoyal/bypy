@@ -41,6 +41,10 @@ def main(args):
     port = wait_for_ssh(vm)
     rsync = Rsync(vm, port)
 
+    if args.arch == 'arm64':
+        # for some reason automounting does not always work in the Ubuntu Jammy ARM VM.
+        rsync.run_via_ssh('sudo', 'mount', '-a')
+
     if args.action == 'shell':
         return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args)
 
