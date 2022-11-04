@@ -127,7 +127,7 @@ def startup(vm_dir, timeout=30):
     # print(shlex.join(cmdline), file=sys.stderr)
     p = subprocess.Popen(cmdline, cwd=vm_dir)
     user = USER
-    print(f'VM started, attach to its console with: screen -r {session_name} (as the user "{user}")', file=sys.stderr)
+    print(f'VM started, attach to its console with: sudo -u {user} screen -r {session_name}', file=sys.stderr)
     print('Waiting for monitor socket creation', monitor_path, '...', file=sys.stderr)
     rc = p.wait()
     if rc != 0:
