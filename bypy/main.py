@@ -51,7 +51,8 @@ def build_program(args):
     except Exception:
         import traceback
         traceback.print_exc()
-        run_shell()
+        if not args.non_interactive:
+            run_shell()
     finally:
         os.chdir(SRC)
         rmtree(ext_dir), rmtree(bdir)

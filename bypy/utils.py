@@ -1089,6 +1089,10 @@ def setup_program_parser(pa):
       default=False,
       action='store_true',
       help='Send the app for notarization to the platform vendor')
+    a('--non-interactive',
+      default=False,
+      action='store_true',
+      help='Do not run a shell if building fails')
     a('--build-only',
       help='Build only a single extension module when building'
       ' program, useful for development')
