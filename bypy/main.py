@@ -49,10 +49,11 @@ def build_program(args):
             },
             run_name='__main__')
     except Exception:
+        if args.non_interactive:
+            raise
         import traceback
         traceback.print_exc()
-        if not args.non_interactive:
-            run_shell()
+        run_shell()
     finally:
         os.chdir(SRC)
         rmtree(ext_dir), rmtree(bdir)
