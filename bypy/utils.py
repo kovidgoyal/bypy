@@ -998,10 +998,15 @@ def py_compile(basedir, optimization_level='-OO'):
             '-q', basedir, library_path=True)
         clean_exts = ('py', 'pyc')
     else:
-        run(
-            PYTHON, optimization_level, '-m', 'compileall', '-d', '', '-f',
-            '-q', '-b', '-j', '0', '--invalidation-mode=unchecked-hash',
-            basedir, library_path=True)
+        cmd = (
+            PYTHON, optimization_level, '-m', 'compileall', '-d', '', '-f', '-q', '-b', '-j', '0',
+            '--invalidation-mode=unchecked-hash', basedir)
+        try:
+            run(*cmd, library_path=True)
+        except Exception:
+            print('py_compile failed, retrying', file=sys.stderr)
+            run(*cmd, library_path=True)
+
         clean_exts = ('py',)
 
     for f in walk(basedir):
