@@ -224,7 +224,8 @@ def run(*args, **kw):
     if prepend_to_path:
         if isinstance(prepend_to_path, str):
             prepend_to_path = prepend_to_path.split(os.pathsep)
-        env['PATH'] = os.pathsep.join(list(prepend_to_path) + env['PATH'].split(os.pathsep))
+        env['PATH'] = os.pathsep.join(list(prepend_to_path) + env['PATH'].split(
+            os.pathsep))
     stdout = subprocess.PIPE if kw.get('get_output') else None
     stdin = subprocess.PIPE if kw.get('stdin') else None
     p = subprocess.Popen(
@@ -338,7 +339,8 @@ def relocate_pkgconfig_files(prefix=PREFIX):
             if re.search(
                     f'^prefix={prefix}$', open(path).read(),
                     flags=re.M) is None:
-                replace_in_file(path, build_dir().replace(os.sep, '/'), prefix.replace(os.sep, '/'))
+                replace_in_file(path, build_dir().replace(os.sep, '/'), prefix.replace(
+                    os.sep, '/'))
         if path.endswith('.cmake'):
             if build_dir() in open(path).read():
                 replace_in_file(path, build_dir(), prefix)
@@ -365,7 +367,9 @@ def simple_build(
     if is_arm_half_of_lipo_build():
         flags = f'{worker_env["CFLAGS"]} -arch {current_build_arch()}'
         if use_envvars_for_lipo:
-            env.update({'CFLAGS': flags, 'CXXFLAGS': flags, 'LDFLAGS': f'{worker_env["LDFLAGS"]} -arch {current_build_arch()}'})
+            env.update({
+                'CFLAGS': flags, 'CXXFLAGS': flags,
+                'LDFLAGS': f'{worker_env["LDFLAGS"]} -arch {current_build_arch()}'})
         else:
             configure_args += [
                 '--build=x86_64-apple-darwin', '--host=aarch64-apple-darwin',
@@ -650,7 +654,8 @@ def create_package(module, outpath):
                       no_hardlinks=islinux)
                 full_path = os.path.realpath(os.path.join(outpath, name))
                 if check_universal_binaries and full_path not in dylibs and (
-                        name.endswith('.dylib') or is_macho_binary(full_path)) and is_ok_to_check_universal_arches(full_path):
+                        name.endswith('.dylib') or is_macho_binary(
+                            full_path)) and is_ok_to_check_universal_arches(full_path):
                     dylibs.add(full_path)
     expected = set(UNIVERSAL_ARCHES)
     for x in dylibs:
@@ -954,7 +959,8 @@ def apply_patches(prefix, level=1, reverse=False, convert_line_endings=False):
     applied = False
     for p in sorted(glob.glob(os.path.join(PATCHES, prefix + '*.patch'))):
         print('Applying patch:', os.path.basename(p))
-        apply_patch(p, level=level, reverse=reverse, convert_line_endings=convert_line_endings)
+        apply_patch(p, level=level, reverse=reverse,
+                    convert_line_endings=convert_line_endings)
         applied = True
     if not applied:
         raise ValueError('Failed to find any patches with prefix: ' + prefix)
@@ -1017,8 +1023,8 @@ def py_compile(basedir, optimization_level='-OO'):
         clean_exts = ('py', 'pyc')
     else:
         cmd = (
-            PYTHON, optimization_level, '-m', 'compileall', '-d', '', '-f', '-q', '-b', '-j', '0',
-            '--invalidation-mode=unchecked-hash', basedir)
+            PYTHON, optimization_level, '-m', 'compileall', '-d', '', '-f', '-q', '-b',
+            '-j', '0', '--invalidation-mode=unchecked-hash', basedir)
         try:
             run(*cmd, library_path=True)
         except Exception:
@@ -1123,7 +1129,9 @@ def setup_program_parser(pa):
 
 def cmdline_for_program(args):
     ans = ['program', '--compression-level', args.compression_level]
-    for x in ('dont_strip', 'skip_tests', 'sign_installers', 'notarize', 'non_interactive'):
+    for x in (
+        'dont_strip', 'skip_tests', 'sign_installers', 'notarize', 'non_interactive'
+    ):
         if getattr(args, x):
             ans.append('--' + x.replace('_', '-'))
     if args.build_only:
@@ -1140,7 +1148,8 @@ def setup_dependencies_parser(p):
     choices = (x['name'] for x in deps)
     p.add_argument(
         'dependencies', nargs='*',
-        help='The dependencies to build. If none are specified missing dependencies only are built. Available deps:' +
+        help='The dependencies to build. If none are specified missing dependencies' +
+        ' only are built. Available deps:' +
         ' '.join(choices)
     )
 
@@ -1152,8 +1161,12 @@ def cmdline_for_dependencies(args):
 def setup_build_parser(p):
     s = p.add_subparsers(dest='action', required=True)
     sp = s.add_parser('shell', help='Open a shell in the build VM')
-    sp.add_argument('--full', action='store_true', help='Create a full shell environment with all packages installed and synced')
-    sp.add_argument('--from-vm', action='store_true', help='After the shell exits sync data from the vm')
+    sp.add_argument(
+        '--full', action='store_true',
+        help='Create a full shell environment with all packages installed and synced')
+    sp.add_argument(
+        '--from-vm', action='store_true',
+        help='After the shell exits sync data from the vm')
 
     pa = s.add_parser('program', help='Build the actual program')
     setup_program_parser(pa)
