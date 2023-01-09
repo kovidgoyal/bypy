@@ -158,6 +158,12 @@ def current_build_arch(val=False):
     return getattr(current_build_arch, 'ans', None)
 
 
+def currently_building_dep(val=False):
+    if val is not False:
+        currently_building_dep.ans = val
+    return getattr(currently_building_dep, 'ans', None)
+
+
 def build_dir(newval=None, current_arch=None):
     if newval is not None:
         build_dir.ans = newval

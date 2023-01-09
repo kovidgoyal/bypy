@@ -5,8 +5,8 @@
 import os
 
 from bypy.constants import (
-    BIN, CMAKE, PREFIX, UNIVERSAL_ARCHES, build_dir, islinux, ismacos,
-    iswindows, PERL
+    BIN, CMAKE, PERL, PREFIX, UNIVERSAL_ARCHES, build_dir, islinux, ismacos,
+    iswindows, currently_building_dep
 )
 from bypy.utils import (
     relocate_pkgconfig_files, replace_in_file, run, run_shell
@@ -64,15 +64,19 @@ def cmake(args):
             'FEATURE_schannel': 'ON',
             'FEATURE_fontconfig': 'OFF',
         })
-        # allow overriding Qt's notion of the cache dir which is used by QWebEngineProfile
+        # allow overriding Qt's notion of the cache dir which is used by
+        # QWebEngineProfile
         replace_in_file(
             './src/corelib/io/qstandardpaths_win.cpp', 'case CacheLocation:',
-            'case CacheLocation: { const wchar_t *cq = _wgetenv(L"CALIBRE_QT_CACHE_LOCATION"); if (cq) return QString::fromWCharArray(cq); }')
+            'case CacheLocation: {'
+            ' const wchar_t *cq = _wgetenv(L"CALIBRE_QT_CACHE_LOCATION");'
+            ' if (cq) return QString::fromWCharArray(cq); }')
     os.mkdir('build'), os.chdir('build')
     cmd = [CMAKE] + [f'-D{k}={v}' for k, v in cmake_defines.items()] + [
         '-G', 'Ninja', '..']
     if iswindows:
-        run(*cmd, library_path=True, append_to_path=BIN, prepend_to_path=os.path.dirname(PERL))
+        run(*cmd, library_path=True, append_to_path=BIN,
+            prepend_to_path=os.path.dirname(PERL))
         run_shell  # ()
         run(CMAKE, '--build', '.', '--parallel',
             prepend_to_path=os.path.dirname(PERL),
@@ -129,3 +133,10 @@ def main(args):
 
 def modify_exclude_extensions(extensions):
     extensions.discard('cpp')
+
+
+def modify_excludes(excludes):
+    if currently_building_dep()['name'] == 'qt-declarative':
+        # qt-declarative puts artifacts needed for modules that depnd on it to
+        # build in the test directory. Bloody lunacy.
+        excludes.discard('test')

@@ -9,7 +9,7 @@ from operator import itemgetter
 
 from .constants import (
     PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir, current_build_arch,
-    ismacos, lipo_data, mkdtemp
+    currently_building_dep, ismacos, lipo_data, mkdtemp
 )
 from .download_sources import download, read_deps
 from .utils import (
@@ -100,6 +100,7 @@ def build_once(dep, m, args, cleanup, target=None):
 
 def build_dep(dep, args, dest_dir=PREFIX):
     current_build_arch(None)
+    currently_building_dep(dep)
     dep_name = dep['name']
     owd = os.getcwd()
     m = module_for_dep(dep)
@@ -117,6 +118,8 @@ def build_dep(dep, args, dest_dir=PREFIX):
         else:
             build_once(dep, m, args, cleanup)
 
+        if m is None and dep_name.startswith('qt-'):
+            m = importlib.import_module('bypy.pkgs.qt_base')
         create_package(m, pkg_path(dep))
         install_package(pkg_path(dep), dest_dir)
         if hasattr(m, 'post_install_check'):
@@ -138,7 +141,8 @@ def unbuilt(dep):
 
 def install_packages(which_deps, dest_dir=PREFIX):
     ensure_clear_dir(dest_dir)
-    paths = {dep['name']: pkg_path(dep) for dep in which_deps if os.path.exists(pkg_path(dep))}
+    paths = {dep['name']: pkg_path(dep) for dep in which_deps
+             if os.path.exists(pkg_path(dep))}
     if not paths:
         return
     print(f'Installing {len(paths)} previously compiled packages:',
