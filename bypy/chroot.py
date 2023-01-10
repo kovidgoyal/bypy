@@ -173,6 +173,17 @@ class Chroot:
         file('/etc/environment', f'\nBYPY_ARCH="{self.image_arch}"', append=True)
         file('/etc/systemd/journald.conf', '\nSystemMaxUse=16M', append=True)
         file('/etc/apt/apt.conf.d/99-auto-upgrades', 'APT::Periodic::Update-Package-Lists "0";\nAPT::Periodic::Unattended-Upgrade "0";')
+
+        # On ARM especially the disks are occasionally not mounted or mounted readonly
+        file('/usr/local/bin/fix-mounting', '''\
+#!/bin/sh
+mount -a
+mount -o remount,rw --target /
+mount -o remount,rw --target /sw
+date >> /root/fix-mounting-ran-at
+''', permissions='0755')
+        file('/etc/cron.d/fix-mounting', '@reboot root /usr/local/bin/fix-mounting')
+
         user = USER
         for user_file in ('.zshrc', '.vimrc'):
             path = os.path.expanduser(f'~/{user_file}')
