@@ -25,37 +25,7 @@ Run::
     cp OpenCore/OpenCore.qcow2 macos-bigsur/
     cd macos-bigsur
 
-Create the following run.sh based on OpenCore-Boot.sh::
-
-    #!/usr/bin/env bash
-    args=(
-    -smp 4,cores=2,sockets=1
-    -m "4G"
-    -enable-kvm
-    -cpu Penryn,kvm=on,vendor=GenuineIntel,+invtsc,vmware-cpuid-freq=on,+ssse3,+sse4.2,+popcnt,+avx,+aes,+xsave,+xsaveopt,check
-    -machine q35
-    -usb -device usb-kbd -device usb-tablet
-    -device usb-ehci,id=ehci
-    -device nec-usb-xhci,id=xhci
-    -global nec-usb-xhci.msi=off
-    -device isa-applesmc,osk="ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
-    -drive if=pflash,format=raw,readonly=on,file="OVMF_CODE.fd"
-    -drive if=pflash,format=raw,file="OVMF_VARS-1024x768.fd"
-    -smbios type=2
-    -device ich9-intel-hda -device hda-duplex
-    -device ich9-ahci,id=sata
-    -drive id=OpenCoreBoot,if=none,snapshot=on,format=qcow2,file="OpenCore.qcow2"
-    -device ide-hd,bus=sata.2,drive=OpenCoreBoot
-    -drive id=MacHDD,if=none,file="SystemDisk.qcow2",format=qcow2
-    -device ide-hd,bus=sata.3,drive=MacHDD
-    -nic user,model=virtio-net-pci,mac=52:54:00:0e:0d:20,hostfwd=tcp:0.0.0.0:0-:22
-    -monitor stdio
-    -device VGA,vgamem_mb=128
-    )
-
-    qemu-system-x86_64 "${args[@]}"
-
-Also, copy all the lines in args above into a file machine-spec stopping before the monitor line::
+Create the following machine-spec file based on OpenCore-Boot.sh::
 
     # Processors
     -smp 4,cores=2,sockets=1
@@ -75,11 +45,30 @@ Also, copy all the lines in args above into a file machine-spec stopping before 
     -smbios type=2
     -device ich9-intel-hda -device hda-duplex
     -device ich9-ahci,id=sata
-    -drive id=OpenCoreBoot,if=none,snapshot=on,format=qcow2,file="OpenCore.qcow2"
-    -device ide-hd,bus=sata.2,drive=OpenCoreBoot
+    -drive id=OpenCoreBoot,if=none,format=qcow2,file="OpenCore.qcow2"
+    -device ide-hd,bus=sata.1,drive=OpenCoreBoot
     -drive id=MacHDD,if=none,file="SystemDisk.qcow2",format=qcow2
-    -device ide-hd,bus=sata.3,drive=MacHDD
+    -device ide-hd,bus=sata.2,drive=MacHDD
     -nic user,model=virtio-net-pci,mac=52:54:00:0e:0d:20,hostfwd=tcp:0.0.0.0:0-:22
+
+Run the new VM with::
+
+    python ../bypy run --with-gui /abspath/to/macos-bigsur
+
+At the UEFI prompt type exit and Enter. Change the default boot order to boot
+from the lower numbered QEMU disk. Reboot.
+
+Choose to boot from the SystemDisk at the OpenCore boot menu.
+
+In Terminal.app mount the EFI partition (you can use diskutil list to get the partition device)::
+
+    sudo mkdir /Volumes/EFI
+    sudo mount /dev/disk2s1 /Volumes/EFI
+    vim /Volumes/EFI/EFI/OC/config.plist
+
+Set ShowPicker to false and Timeout to 5. Go to System Preferences->Startup
+Disk and set the startup disk to the system disk. Click the Restart button.
+
 
 After the OS is installed:
 
