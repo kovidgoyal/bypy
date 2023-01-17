@@ -50,7 +50,10 @@ def shutdown_cmd_for_os(os):
     return ['osascript', '-e', """'tell app "System Events" to shut down'"""]
 
 
-def cmdline_for_machine_spec(lines, monitor_path, gui=False):
+with_gui = False
+
+
+def cmdline_for_machine_spec(lines, monitor_path):
     ans = []
     prefix = []
     for line in lines:
@@ -71,7 +74,7 @@ def cmdline_for_machine_spec(lines, monitor_path, gui=False):
         raise ValueError('No -machine specification found')
     ans.extend(['-k', 'en-us'])
     ans.extend(['-monitor', f'unix:{monitor_path},server,nowait'])
-    if not gui:
+    if not with_gui:
         ans.append('-nographic')
     return prefix + ans
 
@@ -369,8 +372,9 @@ def real_main(action, vm_spec):
 
 
 def main(args):
-    global is_running_remotely
+    global is_running_remotely, with_gui
     is_running_remotely = args.running_remotely
+    with_gui = args.with_gui
     loc = args.location
     if not loc.startswith('ssh:') and not os.path.isabs(loc):
         loc = os.path.join('/vms', loc)
@@ -390,6 +394,7 @@ def setup_parser(parser):
         ' ssh://user@host/path/to/vm/dir or just /path/to/vm/dir for local virtual machines.'
     )
     parser.add_argument('--running-remotely', action='store_true', help='For internal use')
+    parser.add_argument('--with-gui', action='store_true', help='For internal use')
     parser.set_defaults(func=main)
 
 

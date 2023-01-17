@@ -38,7 +38,7 @@ else:
 
 p = argparse.ArgumentParser(prog='bypy')
 s = p.add_subparsers(required=True)
-vm_setup_parser(s.add_parser('vm', help='Control the build Virtual Machines'))
+vm_setup_parser(s.add_parser('vm', help='Control the building and running of Virtual Machines'))
 linux_setup_parser(s.add_parser('linux', help='Build in a Linux VM'))
 macos_setup_parser(s.add_parser('macos', help='Build in a macOS VM'))
 windows_setup_parser(s.add_parser('windows', help='Build in a Windows VM', aliases=['win']))
