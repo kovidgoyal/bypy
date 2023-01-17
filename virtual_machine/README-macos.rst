@@ -63,7 +63,7 @@ Choose to boot from the SystemDisk at the OpenCore boot menu.
 In Terminal.app mount the EFI partition (you can use diskutil list to get the partition device)::
 
     sudo mkdir /Volumes/EFI
-    sudo mount /dev/disk2s1 /Volumes/EFI
+    sudo mount -t msdos /dev/disk2s1 /Volumes/EFI
     vim /Volumes/EFI/EFI/OC/config.plist
 
 Set ShowPicker to false and Timeout to 5. Go to System Preferences->Startup
