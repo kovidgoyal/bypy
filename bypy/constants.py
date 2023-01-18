@@ -144,6 +144,10 @@ def mkdtemp(prefix=''):
     if tdir is None:
         if iswindows:
             tdir = tempfile.tempdir
+        elif ismacos:
+            # macOS tends to delete files from /tmp periodically
+            _CS_DARWIN_USER_CACHE_DIR = 65538
+            tdir = os.path.join(os.confstr(_CS_DARWIN_USER_CACHE_DIR), 't')
         else:
             tdir = os.path.join(tempfile.gettempdir(), 't')
         from .utils import ensure_clear_dir
