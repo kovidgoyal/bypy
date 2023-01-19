@@ -9,7 +9,7 @@ from bypy.constants import (
     iswindows, currently_building_dep
 )
 from bypy.utils import (
-    relocate_pkgconfig_files, replace_in_file, run, run_shell
+    relocate_pkgconfig_files, replace_in_file, run, run_shell, apply_patch
 )
 
 
@@ -35,6 +35,7 @@ def cmake(args):
         'INPUT_doubleconversion': 'qt',
         'INPUT_pcre': 'qt',
     }
+    apply_patch('qtbug-110070.patch', level=1)
     if islinux:
         cmake_defines.update({
             'INPUT_bundled_xcb_xinput': 'yes',
