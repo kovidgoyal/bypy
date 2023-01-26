@@ -49,7 +49,7 @@ def remote_cmd(args):
 class Rsync(object):
 
     excludes = frozenset({
-        '*.pyc', '*.pyo', '*.swp', '*.swo', '*.pyj-cached', '*~', '.git'})
+        '*.pyc', '*.pyo', '*.swp', '*.swo', '*.pyj-cached', '*~', '.git', '.cache'})
 
     def __init__(self, spec, port, rsync_cmd=''):
         self.server = server_from_spec(spec)
