@@ -29,8 +29,8 @@ def main(args):
             replace_in_file('makefile', 'libunrar.so', 'libunrar.dylib')
             if is_arm_half_of_lipo_build():
                 flags += f' -arch {current_build_arch()}'
+            replace_in_file('makefile', 'LDFLAGS=', f'LDFLAGS=-arch {current_build_arch()} ')
         replace_in_file('makefile', 'CXXFLAGS=', f'CXXFLAGS={flags} ')
-        replace_in_file('makefile', 'LDFLAGS=', f'LDFLAGS=-arch {current_build_arch()} ')
         run('make -j4 lib')
         install_binaries('libunrar.' + ('dylib' if ismacos else 'so'), 'lib')
     copy_headers('*.hpp', destdir='include/unrar')
