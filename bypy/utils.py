@@ -1132,12 +1132,14 @@ def setup_program_parser(pa):
 def cmdline_for_program(args):
     ans = ['program', '--compression-level', args.compression_level]
     for x in (
-        'dont_strip', 'skip_tests', 'sign_installers', 'notarize', 'non_interactive'
+        'dont_strip', 'skip_tests', 'sign_installers', 'notarize', 'non_interactive',
     ):
         if getattr(args, x):
             ans.append('--' + x.replace('_', '-'))
     if args.build_only:
         ans.extend(('--build-only', args.build_only))
+    if args.extra_program_data:
+        ans.extend(('--extra-program-data', args.extra_program_data))
     return ans
 
 
