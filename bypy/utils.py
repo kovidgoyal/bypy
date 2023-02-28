@@ -1125,6 +1125,8 @@ def setup_program_parser(pa):
     a('--build-only',
       help='Build only a single extension module when building'
       ' program, useful for development')
+    a('--extra-program-data',
+      help='Extra data to pass to the program specific build code')
 
 
 def cmdline_for_program(args):
