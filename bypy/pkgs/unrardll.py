@@ -3,8 +3,8 @@
 # License: GPLv3 Copyright: 2017, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
-from bypy.constants import PREFIX, iswindows
-from bypy.utils import ModifiedEnv, python_build, python_install, replace_in_file
+from bypy.constants import PREFIX
+from bypy.utils import ModifiedEnv, python_build, python_install
 
 
 def main(args):
@@ -14,8 +14,6 @@ def main(args):
         UNRAR_INCLUDE='{}/include'.format(p),
         UNRAR_LIBDIRS='{0}/lib'.format(p),
     )
-    if iswindows:
-        replace_in_file('src/unrardll/wrapper.cpp', ' ssize_t written', ' Py_ssize_t written')
     with ModifiedEnv(**env):
         python_build()
     python_install()
