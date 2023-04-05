@@ -67,6 +67,15 @@ def screen_exe():
 
 def run_worker(args):
     screen = screen_exe()
+    if islinux:
+        screen_dir = os.path.join(WORKER_DIR, 'screen-sockets')
+        try:
+            shutil.rmtree(screen_dir)
+        except FileNotFoundError:
+            pass
+        os.makedirs(screen_dir)
+        os.chmod(screen_dir, 0o700)
+        os.environ['SCREENDIR'] = screen_dir
     # wipe any dead sessions
     subprocess.Popen([screen, '-wipe']).wait()
     # first try to re-attach to a running session
