@@ -5,11 +5,19 @@
 
 import os
 
-from bypy.utils import python_build, python_install, walk, build_dir
+from bypy.constants import PREFIX
+from bypy.utils import python_build, python_install, walk, build_dir, replace_in_file
 
 
 def main(args):
-    python_build()
+    replace_in_file('setup.py',
+                    "'include_dirs': [],    # .h directory",
+                    f"""'include_dirs': [{repr(os.path.join(PREFIX, "include"))}],    # .h directory""")
+
+    replace_in_file('setup.py',
+                    "'library_dirs': [],    # .lib directory",
+                    f"""'library_dirs': [{repr(os.path.join(PREFIX, "lib"))}],""")
+    python_build("--dynamic-link-zstd")
     for f in walk(build_dir()):
         if os.path.basename(f) == 'c_pyzstd.py':
             q = os.path.join(os.path.dirname(f), '__init__.py')
