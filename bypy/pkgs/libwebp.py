@@ -13,9 +13,11 @@ def main(args):
     if iswindows:
         run(
             f'"{NMAKE}" /f Makefile.vc CFG=release-dynamic'
-            ' RTLIBCFG=dynamic OBJDIR=output')
+            ' RTLIBCFG=dynamic OBJDIR=output UNICODE=1 all')
         install_binaries('output/release-dynamic/*/bin/*.dll', 'bin')
+        install_binaries('output/release-dynamic/*/bin/*.exe', 'bin')
         install_binaries('output/release-dynamic/*/lib/*.lib', 'lib')
+        install_binaries('output/release-dynamic/*/lib/*.exp', 'lib')
         copy_headers('src/webp')
     else:
         # mux/demux are needed for webengine
