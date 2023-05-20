@@ -16,7 +16,7 @@ def main(args):
             FREETYPE_INCLUDE_DIR=f"{PREFIX}/include/freetype2",
             nmake_target='podofo_shared'
         )
-        copy_headers('build/podofo_config.h', 'include/podofo')
+        copy_headers('build/src/podofo/podofo_config.h', 'include/podofo')
         copy_headers('src/podofo/*', 'include/podofo')
         for f in walk():
             if f.endswith('.dll'):
