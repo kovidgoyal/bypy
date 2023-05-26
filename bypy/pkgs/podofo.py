@@ -4,11 +4,15 @@
 
 from bypy.constants import PREFIX, iswindows
 from bypy.utils import (
-    cmake_build, copy_headers, install_binaries, walk, windows_cmake_build
+    cmake_build, copy_headers, install_binaries, walk, windows_cmake_build, replace_in_file
 )
 
 
 def main(args):
+    # Linux distros have libtiff but calibre does not bundle libtiff, we dont
+    # want libpodofo to link against the system libtiff
+    replace_in_file('CMakeLists.txt', 'if(TIFF_FOUND)', 'if(TIFF_FOUND_DISABLED)')
+
     if iswindows:
         windows_cmake_build(
             WANT_LIB64='FALSE',
