@@ -340,7 +340,9 @@ def shutdown(spec):
         cmd = ssh_command_to(server=p.hostname, port=data['port'])
         cmd += data['cmd']
         print(shlex.join(cmd))
-        subprocess.run(cmd)
+        for i in range(5):
+            if subprocess.run(cmd).returncode == 0:
+                break
         ensure_halted(spec)
     else:
         print('Server not running')
