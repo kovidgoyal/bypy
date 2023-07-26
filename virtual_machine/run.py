@@ -154,14 +154,14 @@ def ssh_port_for_vm_dir(vm_dir, start_if_not_running=True):
     if just_started:
         print('Waiting for SSH server to come up...', file=sys.stderr)
         start = monotonic()
-        timeout = 600
+        timeout = 10 # minutes
         while True:
             cp = subprocess.run(ssh_command_to(port=ans, use_master=False) + ['date'], capture_output=True)
             if cp.returncode == 0:
                 break
             if cp.stderr and b'Connection reset by peer' in cp.stderr:
                 sleep(1)
-            if monotonic() - start > timeout:
+            if monotonic() - start > (timeout * 60):
                 raise TimeoutError(f'SSH server failed to come up in {timeout} seconds')
         print('SSH server came up in', int(monotonic() - start), 'seconds', file=sys.stderr)
     return ans
@@ -192,7 +192,7 @@ def ssh_command_to(*args, user=BUILD_VM_USER, server='localhost', port=22, alloc
             ssh_masters.add(address)
             atexit.register(
                 end_ssh_master, address, socket,
-                subprocess.Popen(ssh + ['-M', '-N', server]))
+                subprocess.Popen(ssh + ['-o', 'ServerAliveInterval=5', '-o', 'ServerAliveCountMax=3', '-M', '-N', server]))
     if allocate_tty:
         ssh.append('-t')
     return ssh + [server] + list(args)
