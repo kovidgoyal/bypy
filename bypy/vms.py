@@ -8,10 +8,9 @@ import subprocess
 import sys
 import threading
 import time
-
 from contextlib import contextmanager
 
-from virtual_machine.run import server_from_spec, ssh_command_to
+from virtual_machine.run import BUILD_VM_USER, server_from_spec, ssh_command_to
 
 from .conf import parse_conf_file
 from .constants import base_dir
@@ -98,11 +97,11 @@ exec "$SHELL" -il
         raise SystemExit(cp.returncode)
 
     def from_vm(self, from_, to, excludes=frozenset()):
-        f = self.server + ':' + from_
+        f = BUILD_VM_USER + '@' + self.server + ':' + from_
         return self.rsync_command(f, to, excludes)
 
     def to_vm(self, from_, to, excludes=frozenset()):
-        t = self.server + ':' + to
+        t = BUILD_VM_USER + '@' + self.server + ':' + to
         return self.rsync_command(from_, t, excludes)
 
     def rsync_command(self, from_, to, excludes=frozenset()):
@@ -144,7 +143,7 @@ def run_sync_jobs(cmds, retry=False):
             failures.append(w)
     if failures:
         for w in failures:
-            qc = shlex.join(w.cmd[-2:])
+            qc = shlex.join(w.cmd)
             print(f'The command {qc} failed')
             sys.stderr.buffer.write(w.stdout)
             sys.stderr.flush()
