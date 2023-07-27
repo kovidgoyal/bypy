@@ -156,11 +156,15 @@ def ssh_port_for_vm_dir(vm_dir, start_if_not_running=True):
         start = monotonic()
         timeout = 10 # minutes
         while True:
-            cp = subprocess.run(ssh_command_to(port=ans, use_master=False) + ['date'], capture_output=True)
-            if cp.returncode == 0:
-                break
-            if cp.stderr and b'Connection reset by peer' in cp.stderr:
-                sleep(1)
+            try:
+                cp = subprocess.run(ssh_command_to(port=ans, use_master=False) + ['date'], capture_output=True, timeout=10)
+            except TimeoutError:
+                pass
+            else:
+                if cp.returncode == 0:
+                    break
+                if cp.stderr and b'Connection reset by peer' in cp.stderr:
+                    sleep(1)
             if monotonic() - start > (timeout * 60):
                 raise TimeoutError(f'SSH server failed to come up in {timeout} seconds')
         print('SSH server came up in', int(monotonic() - start), 'seconds', file=sys.stderr)
@@ -236,12 +240,19 @@ def remote_or_local(name, stdout_converter=None):
             rcmd = ['python', '-', '--running-remotely', f'{name}', path]
             with open(__file__) as f:
                 script = f.read()
-            cp = subprocess.run(cmd + rcmd, input=script, text=True, stdout=subprocess.PIPE)
-            if cp.returncode != 0:
-                raise SystemExit(cp.returncode)
-            if stdout_converter is None:
-                return None
-            return stdout_converter(cp.stdout.strip())
+            start = monotonic()
+            limit = 120
+            while monotonic() - start < limit:
+                try:
+                    cp = subprocess.run(cmd + rcmd, input=script, text=True, timeout=limit/10, stdout=subprocess.PIPE)
+                except subprocess.TimeoutExpired:
+                    continue
+                if cp.returncode != 0:
+                    raise SystemExit(cp.returncode)
+                if stdout_converter is None:
+                    return None
+                return stdout_converter(cp.stdout.strip())
+            raise SystemExit(f'Failed to run {name} on {path} remotely after {limit} seconds')
         actions[name] = f
         return f
     return wrapper
