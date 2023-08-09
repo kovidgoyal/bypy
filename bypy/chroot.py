@@ -55,7 +55,7 @@ def install_modern_python(image_name):
         yield 'apt-get install -y python-is-python3 python3-pip'
 
 
-def install_modern_go(image_name, image_arch, go_version='1.21'):
+def install_modern_go(image_name, image_arch, go_version='1.21.0'):
     if image_arch == 'i386':
         image_arch = '386'
     gof = f'go{go_version}.linux-{image_arch}.tar.gz'
