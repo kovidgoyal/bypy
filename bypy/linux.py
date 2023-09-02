@@ -49,6 +49,6 @@ def main(args):
         return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args)
 
     if not chroot.single_instance():
-        raise SystemExit('Another instance of the Linux container is running')
+        raise SystemExit(f'Another instance of the Linux container {chroot.single_instance_name} is running')
 
     rsync.main(sources_dir, pkg_dir, output_dir, cmd, args)
