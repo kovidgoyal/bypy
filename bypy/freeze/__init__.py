@@ -55,6 +55,8 @@ def extract_extension_modules(src_dir, dest_dir, move=True):
         fullname = package + ('.' if package else '') + module
         dest_name = fullname + extension_suffixes()[-1]
         ext_map[fullname] = dest_name
+        if fullname.endswith('.__init__'):
+            ext_map[fullname.rpartition('.')[0]] = dest_name
         dest = os.path.join(dest_dir, dest_name)
         if os.path.exists(dest):
             raise ValueError(
