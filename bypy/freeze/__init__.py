@@ -44,6 +44,10 @@ def remove_extension_suffix(name):
     return name
 
 
+def is_package_dir(x):
+    return os.path.exists(os.path.join(x, '__init__.py')) or os.path.exists(os.path.join(x, '__init__.pyi'))
+
+
 def extract_extension_modules(src_dir, dest_dir, move=True):
     ext_map = {}
 
