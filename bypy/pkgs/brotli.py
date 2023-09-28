@@ -2,16 +2,13 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-import glob
 import os
 
 from bypy.constants import PREFIX
-from bypy.utils import cmake_build, replace_in_file
+from bypy.utils import cmake_build
 
 
 def main(args):
-    for x in glob.glob('scripts/*.pc.in'):
-        replace_in_file(x, '-R${libdir}', '')
     return cmake_build()
 
 
