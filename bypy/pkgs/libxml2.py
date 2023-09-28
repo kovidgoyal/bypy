@@ -8,16 +8,13 @@ import re
 
 from bypy.constants import NMAKE, PREFIX, build_dir, iswindows
 from bypy.utils import (
-    apply_patches, install_binaries, install_tree, replace_in_file, run,
-    simple_build, walk
+    install_binaries, install_tree, replace_in_file, run, simple_build, walk
 )
 
 needs_lipo = True
 
 
 def main(args):
-    # various cherry picks from HEAD that fix regression in the latest release
-    apply_patches('libxml2' + os.sep)
     if iswindows:
         run(*('cscript.exe configure.js include={0}/include'
             ' lib={0}/lib prefix={0} zlib=yes iconv=yes'.format(
@@ -31,8 +28,6 @@ def main(args):
             elif f.endswith('.lib'):
                 install_binaries(f)
     else:
-        # https://gitlab.gnome.org/GNOME/libxml2/-/issues/204
-        replace_in_file('encoding.c', re.compile(r'\bTRUE\b'), '1')
         # ICU is needed to use libxml2 in qt-webengine
         simple_build(
             '--disable-dependency-tracking --disable-static --enable-shared'
