@@ -17,4 +17,4 @@ def main(args):
             os.path.join(f'{PREFIX}/lib/dbus-1.0/include'), exist_ok=True)
         meson_build(
             force_posix_threads='true', gtk_doc='false', library_path=True,
-            man='false', selinux='disabled', c_link_args=f'-L{PREFIX}/lib -liconv')
+            man='false', selinux='disabled', c_link_args=f'-L{LIBDIR} -liconv')
