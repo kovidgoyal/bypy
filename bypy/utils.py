@@ -351,7 +351,7 @@ def simple_build(
     library_path=None, override_prefix=None, no_parallel=False,
     configure_name='./configure', relocate_pkgconfig=True,
     autogen_name='./autogen.sh', do_install=True,
-    use_envvars_for_lipo=False
+    use_envvars_for_lipo=False, prepend_to_path=None,
 ):
     if isinstance(configure_args, str):
         configure_args = split(configure_args)
@@ -377,7 +377,7 @@ def simple_build(
             ]
     if configure_name:
         run(configure_name, '--prefix=' + (
-            override_prefix or build_dir()), *configure_args, env=env)
+            override_prefix or build_dir()), *configure_args, env=env, prepend_to_path=prepend_to_path)
     make_opts = [] if no_parallel else split(MAKEOPTS)
     run('make', *(make_opts + list(make_args)))
     if do_install:
