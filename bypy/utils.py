@@ -553,6 +553,11 @@ def python_prefix():
     return os.path.join(current_output_dir, relpath)
 
 
+def relpath_to_site_packages():
+    ans = run(PYTHON, '-c', 'import site; print(site.getsitepackages()[0])', library_path=True, get_output=True).decode().strip()
+    return os.path.relpath(ans, PREFIX)
+
+
 def python_install(add_scripts=False):
     ddir = 'python' if ismacos else 'private' if iswindows else 'lib'
     to_remove = os.listdir(build_dir())[0]
