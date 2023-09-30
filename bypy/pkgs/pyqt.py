@@ -4,11 +4,14 @@
 
 import os
 import re
+import shutil
 
 from bypy.constants import (
     MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir, iswindows
 )
-from bypy.utils import python_install, replace_in_file, run, walk
+from bypy.utils import (
+    python_install, relpath_to_site_packages, replace_in_file, run, walk
+)
 
 
 def run_sip_install(for_webengine=False):
@@ -38,6 +41,19 @@ def run_sip_install(for_webengine=False):
         run('make ' + MAKEOPTS, cwd='build')
         run(f'make INSTALL_ROOT="{build_dir()}" install',
             cwd='build', library_path=True)
+    rp = os.path.join(build_dir(), relpath_to_site_packages())
+    for dirpath, dirnames, filenames in os.walk(build_dir()):
+        if 'site-packages' in dirnames:
+            sp = os.path.join(dirpath, 'site-packages')
+            os.makedirs(rp, exist_ok=True)
+            for x in os.listdir(sp):
+                os.rename(os.path.join(sp, x), os.path.join(rp, x))
+            break
+    sp_start = relpath_to_site_packages().replace(os.sep, '/').split('/', 1)[0]
+    for x in os.listdir(build_dir()):
+        if x != sp_start:
+            shutil.rmtree(os.path.join(build_dir(), x))
+
     python_install()
 
 
