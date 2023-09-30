@@ -286,9 +286,13 @@ def install_package(pkg_path, dest_dir):
 
 
 def extract(source, path='.'):
-    if source.lower().endswith('.zip'):
+    q = source.lower()
+    if q.endswith('.zip'):
         with zipfile.ZipFile(source) as zf:
             zf.extractall(path)
+    elif q.endswith('.whl'):
+        shutil.copy2(source, os.path.join(path, os.path.basename(source)))
+        os.symlink(os.path.basename(source), 'wheel')
     else:
         with tarfile.open(source, encoding='utf-8') as tf:
             def is_within_directory(directory, target):
