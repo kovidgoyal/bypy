@@ -9,7 +9,7 @@ from bypy.utils import python_build, python_install, walk, build_dir
 
 
 def main(args):
-    python_build()
+    python_build(ignore_dependencies=True)  # claims setuptools_scm not actually needed
     for f in walk(build_dir()):
         if os.path.basename(f) == 'c_ppmd.py':
             q = os.path.join(os.path.dirname(f), '__init__.py')

@@ -154,8 +154,11 @@ def reporthook():
 
 
 def get_pypi_url(pkg):
-    parts = pkg['filename'].split('-')
-    pkg_name = '-'.join(parts[:-1])
+    if pkg['filename'].endswith('.whl'):
+        pkg_name = pkg['filename'].partition('-')[0]
+    else:
+        parts = pkg['filename'].split('-')
+        pkg_name = '-'.join(parts[:-1])
     base = 'https://pypi.python.org/simple/%s/' % pkg_name
     raw = urlopen(base).read().decode('utf-8')
     for m in re.finditer((

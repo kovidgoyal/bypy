@@ -544,17 +544,22 @@ def fix_install_names(m, output_dir):
             change_lib_names(p, changes)
 
 
-def python_build(extra_args=()):
+def python_build(extra_args=(), ignore_dependencies=False):
     if isinstance(extra_args, str):
         extra_args = split(extra_args)
-    run(PYTHON, 'setup.py', 'install', '--root', build_dir(),
-        *extra_args, library_path=True)
+    if os.path.exists('wheel') and not (os.path.exists('setup.py') or os.path.exists('pyproject.toml')):
+        return wheel_build()
+    extra_args = [f'--config-setting={x}' for x in extra_args]
+    if ignore_dependencies:
+        extra_args.append('--skip-dependency-check')
+    run(PYTHON, '-m', 'build', '--wheel', '--no-isolation', *extra_args, library_path=True)
+    whl = glob.glob('dist/*.whl')[0]
+    os.symlink(whl, 'wheel')
+    wheel_build()
 
 
-def python_prefix():
-    current_output_dir = build_dir()
-    relpath = os.path.relpath(PREFIX, '/')
-    return os.path.join(current_output_dir, relpath)
+def wheel_build():
+    run(PYTHON, '-m', 'installer', '--no-compile-bytecode', '--prefix', build_dir(), os.path.realpath('wheel'), library_path=True)
 
 
 def relpath_to_site_packages():
@@ -562,32 +567,25 @@ def relpath_to_site_packages():
     return os.path.relpath(ans, PREFIX)
 
 
-def python_install(add_scripts=False):
+def python_install():
     ddir = 'python' if ismacos else 'private' if iswindows else 'lib'
-    to_remove = os.listdir(build_dir())[0]
-    if ismacos and to_remove == 'Library':
+    contents = os.listdir(build_dir())
+    if ismacos and 'Library' in contents:
         # python 3.9 changes how it builds things, yet again
         os.rename(
             os.path.join(build_dir(), 'Library', 'Frameworks'),
             os.path.join(build_dir(), ddir))
-    else:
-        pp = python_prefix()
-        os.rename(os.path.join(pp, ddir), os.path.join(build_dir(), ddir))
-    if add_scripts:
-        if ismacos:
-            major, minor = python_major_minor_version()
-            os.rename(
-                os.path.join(
-                    build_dir(), ddir,
-                    f'Python.framework/Versions/{major}.{minor}/bin'),
-                os.path.join(build_dir(), 'bin'))
-        elif iswindows:
-            os.rename(os.path.join(build_dir(), ddir, 'python', 'Scripts'),
-                      os.path.join(build_dir(), 'bin'))
-        else:
-            ddir = 'bin'
-            os.rename(os.path.join(pp, ddir), os.path.join(build_dir(), ddir))
-    rmtree(os.path.join(build_dir(), to_remove))
+    # Handle scripts
+    if ismacos:
+        major, minor = python_major_minor_version()
+        os.rename(
+            os.path.join(
+                build_dir(), ddir,
+                f'Python.framework/Versions/{major}.{minor}/bin'),
+            os.path.join(build_dir(), 'bin'))
+    elif iswindows:
+        os.rename(os.path.join(build_dir(), ddir, 'python', 'Scripts'),
+                    os.path.join(build_dir(), 'bin'))
 
 
 def get_arches_in_binary(path):
