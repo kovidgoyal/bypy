@@ -38,7 +38,7 @@ def cmake(args):
     if islinux:
         cmake_defines.update({
             'INPUT_bundled_xcb_xinput': 'yes',
-            # 'INPUT_xcb': 'yes',
+            'INPUT_xcb': 'yes',
             'INPUT_glib': 'yes',
             'INPUT_openssl': 'linked',
             'INPUT_xkbcommon': 'yes',
