@@ -45,7 +45,16 @@ def remove_extension_suffix(name):
 
 
 def is_package_dir(x):
-    return os.path.exists(os.path.join(x, '__init__.py')) or os.path.exists(os.path.join(x, '__init__.pyi'))
+    try:
+        for x in os.listdir(x):
+            x = x.lower()
+            if x.startswith('__init__.'):
+                ext = x.rpartition('.')[2]
+                if ext in ('py', 'pyi', 'so', 'pyd'):
+                    return True
+    except (NotADirectoryError, FileNotFoundError):
+        pass
+    return False
 
 
 def extract_extension_modules(src_dir, dest_dir, move=True):
