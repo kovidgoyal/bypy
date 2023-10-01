@@ -706,8 +706,15 @@ show_error_during_setup() {
 		PyTracebackObject *pactual_trace = (PyTracebackObject*)exc_tb;
         while (pactual_trace != NULL) {
 			PyFrameObject *cur_frame = pactual_trace->tb_frame;
+#if PY_VERSION_HEX >= 0x030b0000
+            const PyCodeObject *code = PyFrame_GetCode(cur_frame);
+			const char *fname = PyUnicode_AsUTF8(code->co_filename);
+            const char *func = PyUnicode_AsUTF8(code->co_name);
+            Py_DECREF(code);
+#else
 			const char *fname = PyUnicode_AsUTF8(cur_frame->f_code->co_filename);
             const char *func = PyUnicode_AsUTF8(cur_frame->f_code->co_name);
+#endif
 			int line = PyFrame_GetLineNumber(cur_frame);
             P("  File %s, line %d, in %s", fname ? fname : "<unknown file>", line, func ? func : "<unknown function>");
 			pactual_trace = pactual_trace->tb_next;
