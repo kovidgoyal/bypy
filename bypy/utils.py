@@ -871,8 +871,12 @@ def cmake_build(
     except FileExistsError:
         # brotli has BUILD file in its root which on case insensitive
         # filesystems causes prevents creation of build folder
-        os.remove('build')
-        os.mkdir('build')
+        try:
+            os.remove('build')
+        except IsADirectoryError:
+            pass
+        else:
+            os.mkdir('build')
     os.makedirs('build', exist_ok=True)
     defs = {
         'CMAKE_BUILD_TYPE': 'RELEASE',
