@@ -1063,7 +1063,7 @@ def get_dll_path(base, levels=1, loc=LIBDIR):
         q = q[q.rfind('.so.'):][4:].split('.')
         if len(q) == levels:
             return x
-    raise ValueError(f'Could not find library for base name: {base}')
+    raise ValueError(f'Could not find library for base name: {base} with candidates: {" ".join(candidates)}')
 
 
 def dos2unix(path):
