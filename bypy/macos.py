@@ -36,7 +36,8 @@ def main(args):
         shutdown(vm)
         return
     port = wait_for_ssh(vm)
-    rsync = Rsync(vm, port, rsync_cmd='/usr/local/bin/rsync')
+    conf = get_conf()
+    rsync = Rsync(vm, port, rsync_cmd=conf.get('rsync', '/usr/local/bin/rsync'))
     output_dir = os.path.join(base_dir(), 'b', 'macos', 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'macos', 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
@@ -44,7 +45,6 @@ def main(args):
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(pkg_dir, exist_ok=True)
 
-    conf = get_conf()
     prefix, python = conf['root'], conf['python']
     universal = conf.get('universal') == 'true'
     deploy_target = conf.get('deploy_target', '')

@@ -12,6 +12,7 @@ import sys
 import threading
 from functools import wraps
 from time import monotonic, sleep
+from urllib.parse import urlparse
 
 is_running_remotely = False
 monitor_template = '{}/monitor.socket'
@@ -211,13 +212,13 @@ def is_local(parsed_spec):
 
 
 def parse_ssh_spec(spec, port=22):
-    from urllib.parse import urlparse
     p = urlparse(spec)
     if p.scheme not in ('', 'ssh'):
         raise ValueError(f'Not a valid SSH URL: {spec}')
     path = p.path
     if not path:
-        raise ValueError(f'No path specified in SSH URL: {spec}')
+        # not a VM
+        return '', ssh_command_to(port=p.port or port, server=p.hostname, user=p.username or USER)
     if is_local(p):
         return path, []
     server = p.hostname or 'localhost'
@@ -237,6 +238,8 @@ def remote_or_local(name, stdout_converter=None):
             path, cmd = parse_ssh_spec(spec)
             if not cmd:
                 return func(path)
+            if not path:
+                return func({'spec': spec, 'cmd': cmd})
             rcmd = ['python', '-', '--running-remotely', f'{name}', path]
             with open(__file__) as f:
                 script = f.read()
@@ -260,7 +263,9 @@ def remote_or_local(name, stdout_converter=None):
 
 @remote_or_local('ssh_port', int)
 def ssh_port(spec):
-    return ssh_port_for_vm_dir(spec)
+    if isinstance(spec, str):
+        return ssh_port_for_vm_dir(spec)
+    return urlparse(spec['spec']).port or 22
 
 
 @remote_or_local('shutdown_data', str)
@@ -272,7 +277,6 @@ def shutdown_data(spec):
 
 
 def server_from_spec(spec):
-    from urllib.parse import urlparse
     p = urlparse(spec)
     return p.hostname or 'localhost'
 
@@ -345,6 +349,9 @@ def shutdown(spec):
     p = urlparse(spec)
     if is_local(p):
         shutdown_vm_dir(spec)
+        return
+    if not p.path:
+        print('Not a VM so not shutting down', file=sys.stderr)
         return
     data = json.loads(shutdown_data(spec))
     if data['port'] > 0:
