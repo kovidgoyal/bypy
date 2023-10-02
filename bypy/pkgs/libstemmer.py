@@ -8,7 +8,7 @@ import shlex
 
 from bypy.constants import (
     CFLAGS, CL, CPPFLAGS, LDFLAGS, current_build_arch,
-    is_arm_half_of_lipo_build, ismacos, iswindows
+    is_cross_half_of_lipo_build, ismacos, iswindows
 )
 from bypy.utils import copy_headers, install_binaries, replace_in_file, run
 
@@ -38,7 +38,7 @@ def main(args):
     cppflags = shlex.split(CPPFLAGS)
     cflags = shlex.split(CFLAGS)
     ldflags = shlex.split(LDFLAGS)
-    if is_arm_half_of_lipo_build():
+    if is_cross_half_of_lipo_build():
         cflags += ['-arch', current_build_arch()]
     for c in read_sources():
         obj = c.replace('.c', '.obj' if iswindows else '.o')
@@ -60,7 +60,7 @@ def main(args):
         args = ldflags
         if not ismacos:
             args += ['-Wl,-soname,libstemmer.so.0']
-        if is_arm_half_of_lipo_build():
+        if is_cross_half_of_lipo_build():
             args += ['-arch', current_build_arch()]
         run(
             cc, '-shared', '-o', dll, *args, *objects

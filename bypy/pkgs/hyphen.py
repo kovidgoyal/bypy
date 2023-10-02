@@ -19,5 +19,5 @@ def main(args):
         return
     simple_build(
         ('--disable-static',), make_args=('install-libLTLIBRARIES', 'install-includeHEADERS'),
-        do_install=False,
+        do_install=False, use_envvars_for_lipo=True,
     )

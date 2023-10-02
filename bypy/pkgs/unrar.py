@@ -5,7 +5,7 @@
 from bypy.constants import ismacos, iswindows
 from bypy.utils import (
     copy_headers, current_build_arch, install_binaries,
-    is_arm_half_of_lipo_build, msbuild, replace_in_file, run
+    is_cross_half_of_lipo_build, msbuild, replace_in_file, run
 )
 
 needs_lipo = True
@@ -27,7 +27,7 @@ def main(args):
         flags = '-fPIC'
         if ismacos:
             replace_in_file('makefile', 'libunrar.so', 'libunrar.dylib')
-            if is_arm_half_of_lipo_build():
+            if is_cross_half_of_lipo_build():
                 flags += f' -arch {current_build_arch()}'
             replace_in_file('makefile', 'LDFLAGS=', f'LDFLAGS=-arch {current_build_arch()} ')
             flags += ' -std=c++11'

@@ -26,7 +26,7 @@ from functools import partial
 from .constants import (
     BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, NODEJS, PATCHES, PERL, PREFIX, PYTHON,
     SH, UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch, is64bit,
-    is_arm_half_of_lipo_build, islinux, ismacos, iswindows, mkdtemp,
+    is_cross_half_of_lipo_build, islinux, ismacos, iswindows, mkdtemp,
     python_major_minor_version, worker_env
 )
 
@@ -368,7 +368,7 @@ def simple_build(
     if configure_name and not os.path.exists(configure_name) and os.path.exists(autogen_name):
         run(autogen_name)
     env = {}
-    if is_arm_half_of_lipo_build():
+    if is_cross_half_of_lipo_build():
         flags = f'{worker_env["CFLAGS"]} -arch {current_build_arch()}'
         if use_envvars_for_lipo:
             env.update({

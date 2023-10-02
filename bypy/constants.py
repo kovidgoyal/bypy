@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import tempfile
+import platform
 from functools import lru_cache
 
 
@@ -131,6 +132,8 @@ else:
         CMAKE = os.path.join(BIN, 'cmake')
         if os.environ.get('BYPY_UNIVERSAL') == 'true':
             UNIVERSAL_ARCHES = ('x86_64', 'arm64')
+            if 'RELEASE_ARM64' in platform.version():
+                UNIVERSAL_ARCHES = ('arm64', 'x86_64')
         if 'BYPY_DEPLOY_TARGET' in os.environ:
             worker_env['MACOSX_DEPLOYMENT_TARGET'] = os.environ[
                 'BYPY_DEPLOY_TARGET']
@@ -175,9 +178,11 @@ def build_dir(newval=None, current_arch=None):
     return getattr(build_dir, 'ans', None)
 
 
-def is_arm_half_of_lipo_build():
-    return ismacos and UNIVERSAL_ARCHES and 'arm' in (
-        current_build_arch() or '')
+def is_cross_half_of_lipo_build():
+    if not ismacos or not UNIVERSAL_ARCHES:
+        return False
+    cba = current_build_arch()
+    return bool(cba) and cba != UNIVERSAL_ARCHES[0]
 
 
 lipo_data = {}

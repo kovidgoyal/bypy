@@ -4,7 +4,7 @@
 
 import os
 
-from bypy.constants import ismacos, iswindows, CL, LIB, PATCHES, is_arm_half_of_lipo_build
+from bypy.constants import ismacos, iswindows, CL, LIB, PATCHES, is_cross_half_of_lipo_build
 from bypy.utils import simple_build, run, install_binaries, copy_headers, apply_patch, replace_in_file
 
 
@@ -35,7 +35,7 @@ def main(args):
         # updated config.guess is needed for aarch64
         with open('config.guess', 'wb') as dest, open(os.path.join(PATCHES, 'config.guess'), 'rb') as src:
             dest.write(src.read())
-        if ismacos and is_arm_half_of_lipo_build():
+        if ismacos and is_cross_half_of_lipo_build():
             with open('config.sub', 'w') as dest:
                 dest.write('echo arm-apple-darwin')
         conf = '--disable-dependency-tracking'
