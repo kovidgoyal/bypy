@@ -9,6 +9,9 @@ from bypy.utils import (cmake_build, install_binaries, iswindows,
                         windows_cmake_build, build_dir)
 
 
+needs_lipo = True
+
+
 def main(args):
     if iswindows:
         windows_cmake_build(ENABLE_SHARED='FALSE')
