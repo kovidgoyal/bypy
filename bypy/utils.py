@@ -1102,6 +1102,7 @@ def lipo(output_dirs):
         for arch, x in output_dirs:
             all_arches.append(arch)
             cmd.extend(('-arch', arch, os.path.join(x, binary)))
+            run('file', os.path.join(x, binary))
         cmd += ['-create', '-output', dst]
         run(*cmd)
         cmd = ['lipo', dst, '-verify_arch'] + all_arches
