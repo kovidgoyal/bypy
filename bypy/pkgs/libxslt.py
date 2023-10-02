@@ -5,12 +5,11 @@
 
 import os
 
-from bypy.constants import BIN, PREFIX, iswindows, ismacos, NMAKE
-from bypy.utils import (ModifiedEnv, install_binaries, install_tree,
-                        replace_in_file, run, simple_build, walk)
-
-
-needs_lipo = True
+from bypy.constants import NMAKE, PREFIX, ismacos, iswindows
+from bypy.utils import (
+    cmake_build, install_binaries, install_tree, replace_in_file, run,
+    simple_build, walk
+)
 
 
 def main(args):
@@ -36,11 +35,12 @@ def main(args):
                 install_binaries(f, 'bin')
             elif f.endswith('.lib'):
                 install_binaries(f)
+    elif ismacos:
+        cmake_build(
+            LIBXSLT_WITH_PYTHON='OFF', LIBXML2_INCLUDE_DIR=f'{PREFIX}/include',
+            relocate_pkgconfig=False
+        )
     else:
-        env = {}
-        if ismacos:
-            env['PATH'] = BIN + os.pathsep + os.environ['PATH']
-        with ModifiedEnv(**env):
-            simple_build(
-                '--disable-dependency-tracking --disable-static'
-                ' --enable-shared --without-python --without-debug')
+        simple_build(
+            '--disable-dependency-tracking --disable-static'
+            ' --enable-shared --without-python --without-debug')

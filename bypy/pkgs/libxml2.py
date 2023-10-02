@@ -6,13 +6,10 @@
 import os
 import re
 
-from bypy.constants import NMAKE, PREFIX, build_dir, iswindows
+from bypy.constants import LIBDIR, NMAKE, PREFIX, build_dir, ismacos, iswindows
 from bypy.utils import (
-    install_binaries, install_tree, replace_in_file, run, simple_build, walk
+    install_binaries, install_tree, replace_in_file, run, simple_build, walk, cmake_build
 )
-
-needs_lipo = True
-
 
 def main(args):
     if iswindows:
@@ -27,12 +24,23 @@ def main(args):
                 install_binaries(f, 'bin')
             elif f.endswith('.lib'):
                 install_binaries(f)
+    elif ismacos:
+        cmake_build(
+            LIBXML2_WITH_ICU='ON', LIBXML2_WITH_PYTHON='OFF', LIBXML2_WITH_TESTS='OFF',
+            LIBXML2_WITH_LZMA='OFF',
+            LIBXML2_WITH_ICONV='OFF',  # off because it conflicts with system iconv causing build to fail
+        )
     else:
         # ICU is needed to use libxml2 in qt-webengine
+        env = {}
+        if ismacos:
+            env['ICU_CFLAGS'] = f'-I{PREFIX}/include'
+            env['ICU_LIBS'] = f'-L{LIBDIR} -licuc -licudata'
+            env['ICU_DEFS'] = '-DDUMMY_DEF_FOR_STUPID_CONFIGURE_SCRIPT'
         simple_build(
             '--disable-dependency-tracking --disable-static --enable-shared'
-            ' --without-python --without-debug --with-iconv={0}'
-            ' --with-zlib={0} --with-icu'.format(PREFIX))
+            ' --without-python --without-debug --with-iconv={0} --disable-silent-rules'
+            ' --with-zlib={0} --with-icu'.format(PREFIX), env=env)
         for path in walk(build_dir()):
             if path.endswith('/xml2-config'):
                 replace_in_file(

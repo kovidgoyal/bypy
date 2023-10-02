@@ -355,7 +355,7 @@ def simple_build(
     library_path=None, override_prefix=None, no_parallel=False,
     configure_name='./configure', relocate_pkgconfig=True,
     autogen_name='./autogen.sh', do_install=True,
-    use_envvars_for_lipo=False, prepend_to_path=None,
+    use_envvars_for_lipo=False, prepend_to_path=None, env=None,
 ):
     if isinstance(configure_args, str):
         configure_args = split(configure_args)
@@ -367,7 +367,7 @@ def simple_build(
         install_args = split(install_args)
     if configure_name and not os.path.exists(configure_name) and os.path.exists(autogen_name):
         run(autogen_name)
-    env = {}
+    env = env or {}
     if is_cross_half_of_lipo_build():
         flags = f'{worker_env["CFLAGS"]} -arch {current_build_arch()}'
         if use_envvars_for_lipo:
@@ -858,10 +858,10 @@ def msbuild(proj, *args, configuration='Release', **env):
 
 
 def cmake_build(
-        make_args=(), install_args=(),
-        library_path=None, override_prefix=None, no_parallel=False,
-        relocate_pkgconfig=True, append_to_path=None, env=None,
-        **kw
+    make_args=(), install_args=(),
+    library_path=None, override_prefix=None, no_parallel=False,
+    relocate_pkgconfig=True, append_to_path=None, env=None,
+    **kw
 ):
     make = NMAKE if iswindows else 'make'
     if isinstance(make_args, str):
