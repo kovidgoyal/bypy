@@ -173,6 +173,12 @@ def current_env(library_path=False):
         else:
             library_path = library_path + os.pathsep + LIBDIR
         env['LD_LIBRARY_PATH'] = library_path
+    if ismacos:
+        # Sanitize homebrew gunk
+        for k in tuple(env):
+            if k.startswith('HOMEBREW'):
+                del env[k]
+        env['PATH'] = ':'.join(x for x in env['PATH'].split(':') if 'homebrew' not in x)
     return env
 
 
@@ -370,14 +376,15 @@ def simple_build(
     env = env or {}
     if is_cross_half_of_lipo_build():
         flags = f'{worker_env["CFLAGS"]} -arch {current_build_arch()}'
+        ldflags = f'{worker_env["LDFLAGS"]} -arch {current_build_arch()}'
         if use_envvars_for_lipo:
-            env.update({
-                'CFLAGS': flags, 'CXXFLAGS': flags,
-                'LDFLAGS': f'{worker_env["LDFLAGS"]} -arch {current_build_arch()}'})
+            env.update({'CFLAGS': flags, 'CXXFLAGS': flags, 'LDFLAGS': ldflags,})
         else:
+            host = 'aarch64' if 'arm' in current_build_arch() else 'x86_64'
+            build = 'aarch64' if 'arm' in UNIVERSAL_ARCHES[0] else 'x86_64'
             configure_args += [
-                '--build=x86_64-apple-darwin', '--host=aarch64-apple-darwin',
-                f'CXXFLAGS={flags}', f'CFLAGS={flags}',
+                f'--build={build}-apple-darwin', f'--host={host}-apple-darwin',
+                f'CXXFLAGS={flags}', f'CFLAGS={flags}', f'LDFLAGS={ldflags}',
             ]
     if configure_name:
         run(configure_name, '--prefix=' + (
@@ -888,7 +895,9 @@ def cmake_build(
             # tell cmake to use our zlib
             'CMAKE_POLICY_DEFAULT_CMP0074': 'NEW',
             'ZLIB_ROOT': PREFIX,
+            'OPENSSL_ROOT_DIR': PREFIX,
         })
+
     if len(UNIVERSAL_ARCHES) > 1 and ismacos:
         if current_build_arch():
             defs['CMAKE_OSX_ARCHITECTURES'] = current_build_arch()
@@ -907,6 +916,7 @@ def cmake_build(
         cmd.append('-D' + k + '=' + v)
     cmd.append('..')
     env = env or {}
+    env['CMAKE_PREFIX_PATH'] = PREFIX
     run(*cmd, cwd='build', append_to_path=append_to_path, env=env)
     make_opts = []
     if not iswindows:
