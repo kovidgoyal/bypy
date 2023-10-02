@@ -873,7 +873,7 @@ def cmake_build(
         # filesystems causes prevents creation of build folder
         try:
             os.remove('build')
-        except IsADirectoryError:
+        except (IsADirectoryError, PermissionError):
             pass
         else:
             os.mkdir('build')
