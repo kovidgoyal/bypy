@@ -30,6 +30,7 @@ def main(args):
             if is_arm_half_of_lipo_build():
                 flags += f' -arch {current_build_arch()}'
             replace_in_file('makefile', 'LDFLAGS=', f'LDFLAGS=-arch {current_build_arch()} ')
+            flags += ' -std=c++11'
         replace_in_file('makefile', 'CXXFLAGS=', f'CXXFLAGS={flags} ')
         run('make -j4 lib')
         install_binaries('libunrar.' + ('dylib' if ismacos else 'so'), 'lib')
