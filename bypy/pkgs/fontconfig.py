@@ -18,11 +18,12 @@ def main(args):
     replace_in_file('Makefile.am', re.compile(rb"'s,.+?'"), lambda m: m.group().replace(b',', b'`'))
     replace_in_file('Makefile.in', re.compile(rb"'s,.+?'"), lambda m: m.group().replace(b',', b'`'))
     with ModifiedEnv(
-            FREETYPE_CFLAGS='-I%s/include/freetype2' % PREFIX,
-            FREETYPE_LIBS='-L%s/lib -lfreetype -lz -lbz2' % PREFIX):
+        FREETYPE_CFLAGS='-I%s/include/freetype2' % PREFIX,
+        FREETYPE_LIBS='-L%s/lib -lfreetype -lz -lbz2' % PREFIX,
+    ):
         simple_build(
             '--disable-dependency-tracking --disable-static --disable-docs'
-            f' --with-expat={PREFIX} --with-add-fonts=/usr/share/fonts',
+            f' --with-expat={PREFIX} --with-add-fonts=/usr/share/fonts --disable-cache-build',
             library_path=True)
     for f in walk(os.path.join(build_dir(), 'etc')):
         if os.path.islink(f):
