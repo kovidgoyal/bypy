@@ -427,19 +427,20 @@ def qt_build(configure_args='', for_webengine=False, **env):
         library_path=True, append_to_path=append_to_path or None,
         env=env, prepend_to_path=prepend_to_path or None,
     )
+    cmd = [CMAKE, '--build', '.', '--parallel']
     if for_webengine:
         # ninja by default creates cpu_count + 2 jobs, max RAM per job is thus
         # RAM/num_jobs. Linking webengine requires several GB of RAM -- ka blammo
-        ram = total_physical_ram()
-        num = max(1, ram // (3 * (1024**3)))
-        print(f'Limiting parallelism to {num} workers with {ram/(1024**3)} GB of total physical RAM')
-        for f in walk('.'):
-            ext = f.rpartition('.')[2].lower()
-            if ext in ('ninja', 'py', 'bat', 'json', 'sh', 'cc'):
-                replace_in_file(
-                    f, 'ninja -C', f'ninja -j {num} -C', missing_ok=True)
-    run(CMAKE, '--build', '.', '--parallel',
-        library_path=True, append_to_path=append_to_path, env=env)
+        cmd.insert(1, '-DCMAKE_JOB_POOL_LINK=1')  # hopefully this prevents linking more than one thing at a time
+        # ram = total_physical_ram()
+        # num = max(1, ram // (3 * (1024**3)))
+        # print(f'Limiting parallelism to {num} workers with {ram/(1024**3)} GB of total physical RAM')
+        # for f in walk('.'):
+        #     ext = f.rpartition('.')[2].lower()
+        #     if ext in ('ninja', 'py', 'bat', 'json', 'sh', 'cc'):
+        #         replace_in_file(
+        #             f, 'ninja -C', f'ninja -j {num} -C', missing_ok=True)
+    run(*cmd, library_path=True, append_to_path=append_to_path, env=env)
     run(CMAKE, '--install', '.', '--prefix', f'{build_dir()}/qt', env=env)
     relocate_pkgconfig_files(prefix=PREFIX + '/qt')
     # if iswindows:
