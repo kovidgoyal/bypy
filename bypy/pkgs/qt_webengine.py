@@ -10,7 +10,7 @@ from bypy.utils import qt_build, total_physical_ram
 
 
 def main(args):
-    ram_limit = 24
+    ram_limit = 8
     if total_physical_ram() < ((ram_limit - 0.5) * 1024**3):
         raise SystemExit(f'Need at least {ram_limit}GB of RAM to build qt-webengine')
     conf = '-feature-qtwebengine-build -feature-qtwebengine-widgets-build'

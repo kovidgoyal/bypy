@@ -430,9 +430,12 @@ def qt_build(configure_args='', for_webengine=False, **env):
     if for_webengine:
         # ninja by default creates cpu_count + 2 jobs, max RAM per job is thus
         # RAM/num_jobs. Linking webengine requires several GB of RAM -- ka blammo
-        num = 4 if islinux else 2
+        ram = total_physical_ram()
+        num = max(1, ram // (3 * (1024**3)))
+        print(f'Limiting parallelism to {num} workers with {ram/(1024**3)} GB of total physical RAM')
         for f in walk('.'):
-            if f.endswith('.ninja'):
+            ext = f.rpartition('.')[2].lower()
+            if ext in ('ninja', 'py', 'bat', 'json', 'sh', 'cc'):
                 replace_in_file(
                     f, 'ninja -C', f'ninja -j {num} -C', missing_ok=True)
     run(CMAKE, '--build', '.', '--parallel',
