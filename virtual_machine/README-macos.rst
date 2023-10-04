@@ -1,31 +1,33 @@
 First we need to create the installer image, this must be done on an existing macOS machine::
 
-    git clone https://github.com/kholia/OSX-KVM.git && cd OSX-KVM/scripts/bigsur
-    make BigSur-full.img
+    git clone https://github.com/kholia/OSX-KVM.git && cd OSX-KVM
+    ./fetch-macOS-v2.py (choose Ventura)
 
 Now on the Linux machine::
 
     git clone https://github.com/kholia/OSX-KVM.git && cd OSX-KVM
-    scp macos-machine:OSX-KVM/scripts/bigsur/BigSur-full.img ./BaseSystem.img
+    scp macos-machine:OSX-KVM/BaseSystem.dmg .
+    dmg2img -i BaseSystem.dmg BaseSystem.img
     qemu-img create -f qcow2 mac_hdd_ng.img 240G
     echo 1 | sudo tee /sys/module/kvm/parameters/ignore_msrs
     ./OpenCore-Boot.sh
 
 Install the OS:
 
-* Create a single HFS+ (macOS Extended Journalled) partition to install to
+
+* Run Disk Utility and create a single HFS+ (macOS Extended Journalled) partition to install to
 
 * Create a user account named: ``kovid`` during OS installation
 
 Run::
 
-    mkdir macos-bigsur
-    mv mac_hdd_ng.img macos-bigsur/SystemDisk.qcow2
-    cp OVMF*.fd macos-bigsur/
-    cp OpenCore/OpenCore.qcow2 macos-bigsur/
-    cd macos-bigsur
+    mkdir macos-ventura
+    mv mac_hdd_ng.img macos-ventura/SystemDisk.qcow2
+    cp OVMF*.fd macos-ventura/
+    cp OpenCore/OpenCore.qcow2 macos-ventura/
+    cd macos-ventura
 
-Create the following machine-spec file based on OpenCore-Boot.sh::
+Create the following :file:`machine-spec` file based on OpenCore-Boot.sh::
 
     # Processors
     -smp 4,cores=2,sockets=1
@@ -53,17 +55,14 @@ Create the following machine-spec file based on OpenCore-Boot.sh::
 
 Run the new VM with::
 
-    python ../bypy run --with-gui /abspath/to/macos-bigsur
-
-At the UEFI prompt type exit and Enter. Change the default boot order to boot
-from the lower numbered QEMU disk. Reboot.
+    bypy vm run --with-gui `pwd`
 
 Choose to boot from the SystemDisk at the OpenCore boot menu.
 
 In Terminal.app mount the EFI partition (you can use diskutil list to get the partition device)::
 
     sudo mkdir /Volumes/EFI
-    sudo mount -t msdos /dev/disk2s1 /Volumes/EFI
+    sudo mount -t msdos /dev/disk0s1 /Volumes/EFI
     vim /Volumes/EFI/EFI/OC/config.plist
 
 Set ShowPicker to false and Timeout to 5. Go to System Preferences->Startup
@@ -85,7 +84,7 @@ After the OS is installed:
 
     PermitUserEnvironment yes
     PasswordAuthentication no
-    ChallengeResponseAuthentication no
+    KbdInteractiveAuthentication no
     UsePAM yes
 
 * Create the file ~/.ssh/environment::
@@ -97,8 +96,10 @@ After the OS is installed:
 
 * Turn off sleep, screensaver, auto-updates.
 
+* Change the hostname to ventura
+
 * Install Xcode from https://developer.apple.com/download/more/
-Download the version of Xcode (12.4 for kitty and 13.2.1 for calibre) you need as a .xip archive. Run::
+Download the version of Xcode (12.4 for kitty and 15 for calibre) you need as a .xip archive. Run::
 
     open Xcode*.xip
     mv Xco*.app /Applications
