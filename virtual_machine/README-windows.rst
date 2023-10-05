@@ -52,6 +52,7 @@ To setup Windows for use in a VM
 5) Start->gpedit.msc->Computer Configuration\Administrative Templates\Windows Components\Windows Update double click "Configure automatic updates" and set it to disabled and click apply and then OK
 5) Start->Settings->User accounts->Sign in options->Require sign in->Never
 6) Start->Settings->System->About->Rename this PC
+7) Run services.msc find the Windows search service and double click it, then disable it from starting this turns off content indexing improving performance
 
 Setup automatic logon as described here:
 https://support.microsoft.com/en-in/help/324737/how-to-turn-on-automatic-logon-in-windows
