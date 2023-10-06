@@ -38,9 +38,8 @@ def main(args):
             env['PATH'] = BIN + os.pathsep + os.environ['PATH']
             env['LIBTOOLIZE'] = 'glibtoolize'
             env['LIBTOOL'] = 'glibtool'
-            env['AUTOPOINT'] = '/opt/homebrew/bin/autopoint'
         with ModifiedEnv(**env):
-            run('autoreconf -fiv')
+            run('autoreconf -fv')
         if ismacos:
             replace_in_file('configure', '-keep_private_externs', f'-keep_private_externs -arch {current_build_arch()} ')
         conf = '--disable-dependency-tracking'

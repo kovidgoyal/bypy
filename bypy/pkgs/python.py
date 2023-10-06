@@ -40,12 +40,13 @@ def unix_python(args):
         # installation dir as --prefix. We use symlinks to make it work
         conf += f' --enable-framework={PREFIX}/python'
         conf += f' --with-openssl={PREFIX}'
+        # is_pad requires macOS 14.0 (sonoma)
+        replace_in_file('configure',
+                        'ac_cv_lib_curses_is_pad=yes', 'ac_cv_lib_curses_is_pad=no')
         if len(UNIVERSAL_ARCHES) > 1:
             conf += ' --enable-universalsdk --with-universal-archs=universal2'
             # Without ARCHFLAGS the extensions are built for only one arch
             env['ARCHFLAGS'] = ' '.join(f'-arch {x}' for x in UNIVERSAL_ARCHES)
-        # Needed for readline detection
-        env['MACOSX_DEPLOYMENT_TARGET'] = '10.14'
         # We need rpath for libexpat to load from LIBDIR when loading the
         # _elementtree module which links against it as @rpath/libexpat.1.dylib
         env['LDFLAGS'] = LDFLAGS.replace('-headerpad_max_install_names', '') + f' -rpath {LIBDIR}'
