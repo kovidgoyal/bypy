@@ -99,7 +99,7 @@ After the OS is installed:
 * Change the hostname to ventura
 
 * Install Xcode from https://developer.apple.com/download/more/
-Download the version of Xcode (12.4 for kitty and 15 for calibre) you need as a .xip archive. Run::
+Download the version of Xcode (12.4 for kitty and 14.3.1 for calibre) you need as a .xip archive. Run::
 
     open Xcode*.xip
     mv Xco*.app /Applications
