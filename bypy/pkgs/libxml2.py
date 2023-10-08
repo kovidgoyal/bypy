@@ -28,7 +28,6 @@ def main(args):
         cmake_build(
             LIBXML2_WITH_ICU='ON', LIBXML2_WITH_PYTHON='OFF', LIBXML2_WITH_TESTS='OFF',
             LIBXML2_WITH_LZMA='OFF',
-            LIBXML2_WITH_ICONV='OFF',  # off because it conflicts with system iconv causing build to fail
         )
     else:
         # ICU is needed to use libxml2 in qt-webengine
