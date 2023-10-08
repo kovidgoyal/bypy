@@ -580,6 +580,15 @@ def relpath_to_site_packages():
 def python_install():
     ddir = 'python' if ismacos else 'private' if iswindows else 'lib'
     contents = os.listdir(build_dir())
+    if ismacos:
+        major, minor = python_major_minor_version()
+        framework = os.path.join(
+            build_dir(), ddir, f'Python.framework/Versions/{major}.{minor}')
+
+    if ismacos and 'lib' in contents:
+        os.makedirs(framework, exist_ok=True)
+        os.rename(os.path.join(build_dir(), 'lib'), f'{framework}/lib')
+
     if ismacos and 'Library' in contents:
         # python 3.9 changes how it builds things, yet again
         os.rename(
@@ -587,12 +596,9 @@ def python_install():
             os.path.join(build_dir(), ddir))
     # Handle scripts
     if ismacos:
-        major, minor = python_major_minor_version()
-        os.rename(
-            os.path.join(
-                build_dir(), ddir,
-                f'Python.framework/Versions/{major}.{minor}/bin'),
-            os.path.join(build_dir(), 'bin'))
+        bdir = os.path.join(framework, 'bin')
+        if os.path.exists(bdir):
+            os.rename(bdir, os.path.join(build_dir(), 'bin'))
     elif iswindows:
         os.rename(os.path.join(build_dir(), ddir, 'python', 'Scripts'),
                     os.path.join(build_dir(), 'bin'))
