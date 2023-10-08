@@ -61,9 +61,9 @@ def main(args):
     ba = f'windows-{args.arch}'
     cmd = [
         python, os.path.join(win_prefix, 'bypy'),
-        f'BYPY_ROOT={win_prefix}', f'BUILD_ARCH={args.arch}',
-        f'PYTHON_TWO={python2}', f'PERL={perl}', f'RUBY={ruby}',
-        f'MESA={mesa}', f'BYPY_ARCH={ba}', f'NODEJS={nodejs}'
+        f'"BYPY_ROOT={win_prefix}"', f'BUILD_ARCH={args.arch}',
+        f'"PYTHON_TWO={python2}"', f'"PERL={perl}"', f'"RUBY={ruby}"',
+        f'"MESA={mesa}"', f'BYPY_ARCH={ba}', f'"NODEJS={nodejs}"'
     ]
     if args.action == 'shell':
         return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args, prefix=prefix, name=f'sw{args.arch}')

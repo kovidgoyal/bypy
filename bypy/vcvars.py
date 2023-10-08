@@ -8,8 +8,9 @@ import subprocess
 from functools import lru_cache
 from glob import glob
 
-VS_VERSION = '16.0'
-COMN_TOOLS_VERSION = '160'
+# Visual Studio 2022
+VS_VERSION = '17.0'
+COMN_TOOLS_VERSION = '170'
 
 CSIDL_PROGRAM_FILES = 38
 CSIDL_PROGRAM_FILESX86 = 42
