@@ -189,6 +189,9 @@ def set_title(x):
 def run_shell(library_path=False, cwd=None, env=None):
     sys.stderr.flush(), sys.stdout.flush()
     env = env or current_env(library_path=library_path)
+    cmd = [SH]
+    if cwd and not os.path.isdir(cwd):
+        cwd = None
     if iswindows:
         from .constants import cygwin_paths
         paths = env['PATH'].split(os.pathsep)
@@ -196,10 +199,11 @@ def run_shell(library_path=False, cwd=None, env=None):
         env['PATH'] = os.pathsep.join(paths)
         sys.stdout.write('\x1b[?1l')
         sys.stdout.flush()
-    if cwd and not os.path.isdir(cwd):
-        cwd = None
+        cmd += ['-i']  # -l causes shell to change cwd to $HOME
+    else:
+        cmd += ['-il']
     try:
-        return subprocess.Popen([SH, '-il'], env=env, cwd=cwd).wait()
+        return subprocess.Popen(cmd, env=env, cwd=cwd).wait()
     except KeyboardInterrupt:
         return 0
 
@@ -804,7 +808,7 @@ def timeit():
 def windows_cmake_build(
         headers=None, binaries=None, libraries=None, header_dest='include',
         nmake_target='', make=NMAKE, **kw):
-    os.mkdir('build')
+    os.makedirs('build', exist_ok=True)
     defs = {'CMAKE_BUILD_TYPE': 'Release'}
     cmd = [CMAKE, '-G', "NMake Makefiles"]
     for d, val in kw.items():
