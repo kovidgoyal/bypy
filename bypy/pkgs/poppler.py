@@ -46,6 +46,9 @@ def main(args):
             'set(poppler_LIBS ${poppler_LIBS} openjp2)',
             'set(poppler_LIBS ${poppler_LIBS} %s)' % opjlib
         )
+        replace_in_file(  # even though optional searching for it requires pkg-config causing failure
+            'CMakeLists.txt',
+            'macro_optional_find_package(NSS3)', '')
         windows_cmake_build(**cmake_args)
         install_binaries('build/utils/*.exe', 'bin')
     else:
