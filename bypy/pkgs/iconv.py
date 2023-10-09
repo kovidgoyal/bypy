@@ -2,9 +2,6 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-import os
-import shutil
-
 from bypy.constants import iswindows
 from bypy.utils import copy_headers, install_binaries, msbuild, simple_build
 
@@ -14,12 +11,10 @@ needs_lipo = True
 
 def main(args):
     if iswindows:
-        shutil.rmtree('lib'), shutil.rmtree('lib64')
-        os.mkdir('lib'), os.mkdir('lib64')
         msbuild('libiconv.vcxproj')
         copy_headers('include/iconv.h')
-        install_binaries('./lib*/libiconv.dll', 'bin')
-        install_binaries('./lib*/libiconv.lib', 'lib')
+        install_binaries('./output/*/Release/libiconv.dll', 'bin')
+        install_binaries('./output/*/Release/libiconv.lib', 'lib')
         # from bypy.utils import run_shell
         # run_shell()
     else:
