@@ -21,7 +21,7 @@ import tempfile
 import time
 import zipfile
 from contextlib import closing, contextmanager, suppress
-from functools import partial
+from functools import partial, lru_cache
 
 from .constants import (
     BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, NODEJS, PATCHES, PERL, PREFIX, PYTHON,
@@ -579,8 +579,11 @@ def wheel_build():
     run(PYTHON, '-m', 'installer', '--no-compile-bytecode', '--prefix', build_dir(), os.path.realpath('wheel'), library_path=True)
 
 
+@lru_cache
 def relpath_to_site_packages():
-    ans = run(PYTHON, '-c', 'import site; print(site.getsitepackages()[0])', library_path=True, get_output=True).decode().strip()
+    import json
+    ans = json.loads(run(PYTHON, '-c', 'import site, json; print(json.dumps(site.getsitepackages()))', library_path=True, get_output=True))
+    ans = tuple(x for x in ans if x.endswith('site-packages'))[0]
     return os.path.relpath(ans, PREFIX)
 
 
@@ -591,10 +594,15 @@ def python_install():
         major, minor = python_major_minor_version()
         framework = os.path.join(
             build_dir(), ddir, f'Python.framework/Versions/{major}.{minor}')
+    elif iswindows:
+        framework = os.path.join(build_dir(), f'{ddir}/python')
 
     if ismacos and 'lib' in contents:
         os.makedirs(framework, exist_ok=True)
         os.rename(os.path.join(build_dir(), 'lib'), f'{framework}/lib')
+    elif iswindows and ('Lib' in contents or 'lib' in contents):
+        os.makedirs(framework, exist_ok=True)
+        os.rename(os.path.join(build_dir(), 'lib'), f'{framework}/Lib')
 
     if ismacos and 'Library' in contents:
         # python 3.9 changes how it builds things, yet again
@@ -602,13 +610,13 @@ def python_install():
             os.path.join(build_dir(), 'Library', 'Frameworks'),
             os.path.join(build_dir(), ddir))
     # Handle scripts
+    bdir = ''
     if ismacos:
         bdir = os.path.join(framework, 'bin')
-        if os.path.exists(bdir):
-            os.rename(bdir, os.path.join(build_dir(), 'bin'))
     elif iswindows:
-        os.rename(os.path.join(build_dir(), ddir, 'python', 'Scripts'),
-                    os.path.join(build_dir(), 'bin'))
+        bdir = os.path.join(build_dir(), ddir, 'python', 'Scripts')
+    if bdir and os.path.exists(bdir):
+        os.rename(bdir, os.path.join(build_dir(), 'bin'))
 
 
 def get_arches_in_binary(path):
