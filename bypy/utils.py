@@ -600,9 +600,17 @@ def python_install():
     if ismacos and 'lib' in contents:
         os.makedirs(framework, exist_ok=True)
         os.rename(os.path.join(build_dir(), 'lib'), f'{framework}/lib')
-    elif iswindows and ('Lib' in contents or 'lib' in contents):
-        os.makedirs(framework, exist_ok=True)
-        os.rename(os.path.join(build_dir(), 'lib'), f'{framework}/Lib')
+    elif iswindows:
+        if ('Lib' in contents or 'lib' in contents):
+            os.makedirs(framework, exist_ok=True)
+            os.rename(os.path.join(build_dir(), 'lib'), f'{framework}/Lib')
+        else:
+            base = os.path.join(build_dir(), PREFIX.partition(os.sep)[2])
+            q = os.path.join(base, os.path.relpath(framework, build_dir()))
+            if os.path.exists(q):
+                for x in os.listdir(base):
+                    os.rename(os.path.join(base, x), os.path.join(build_dir(), x))
+                shutil.rmtree(os.path.join(build_dir(), PREFIX.partition(os.sep)[2].partition(os.sep)[0]))
 
     if ismacos and 'Library' in contents:
         # python 3.9 changes how it builds things, yet again

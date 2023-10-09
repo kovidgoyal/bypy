@@ -33,7 +33,7 @@ def install_name_change(old_name, is_dep):
 
 
 def post_install_check():
-    code = '''import apsw; \
+    code = '''import apsw; print(apsw); \
     c = apsw.Connection(":memory:"); \
     c.cursor().execute( \
     'CREATE VIRTUAL TABLE email USING fts5(title, body);')'''
