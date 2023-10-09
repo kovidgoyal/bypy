@@ -25,9 +25,9 @@ from functools import partial
 
 from .constants import (
     BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, NODEJS, PATCHES, PERL, PREFIX, PYTHON,
-    SH, UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch, is64bit,
-    is_cross_half_of_lipo_build, islinux, ismacos, iswindows, mkdtemp,
-    python_major_minor_version, worker_env
+    SH, UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch,
+    currently_building_dep, is64bit, is_cross_half_of_lipo_build, islinux,
+    ismacos, iswindows, mkdtemp, python_major_minor_version, worker_env
 )
 
 if iswindows:
@@ -422,6 +422,9 @@ def qt_build(configure_args='', for_webengine=False, **env):
         if for_webengine:
             append_to_path.insert(0, f'{PREFIX}/private/gnuwin32/bin')
             append_to_path.append(os.path.dirname(NODEJS))
+        if currently_building_dep()['name'] == 'qt-imageformats':
+            # the qt tiff cmake file as broken so give up on system tiff
+            configure_args += ' -qt-tiff'
     if ismacos:
         env['PYTHON3_PATH'] = os.path.dirname(os.path.abspath(sys.executable))
     if for_webengine:
@@ -1224,7 +1227,7 @@ def total_physical_ram():
     if ismacos:
         raw = subprocess.check_output(['sysctl', 'hw.memsize']).decode()
         return int(raw.strip().split()[-1])
-    from ctypes import windll, Structure, sizeof, byref
+    from ctypes import Structure, byref, sizeof, windll
     from ctypes.wintypes import DWORD, ULARGE_INTEGER
 
     class MEMORYSTATUSEX(Structure):
