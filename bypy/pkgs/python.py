@@ -141,6 +141,7 @@ def windows_python(args):
         copy_headers('PC\\pyconfig.h', 'private\\python\\include')
         copy_headers('Include\\*.h', 'private\\python\\include')
         copy_headers('Include\\cpython', 'private\\python\\include')
+        copy_headers('Include\\internal', 'private\\python\\include')
         with open('Lib/sitecustomize.py', 'w') as f:
             f.write('''
 import os
