@@ -11,8 +11,8 @@ from bypy.utils import python_build, python_install, replace_in_file, run
 
 def main(args):
     if iswindows:
-        # libxml2 does not depend on iconv in our windows build
-        replace_in_file('setupinfo.py', ", 'iconv'", '')
+        # libiconv is named libiconv.lib not iconv.lib for us
+        replace_in_file('setupinfo.py', ", 'iconv'", ', "libiconv"')
         run(PYTHON, *('setup.py build_ext -I {0}/include;{0}/include/libxml2 -L {0}/lib'.format(PREFIX.replace(os.sep, '/')).split()))
     else:
         run(PYTHON, *('setup.py build_ext -I {0}/include/libxml2 -L {0}/lib'.format(PREFIX).split()), library_path=True)
