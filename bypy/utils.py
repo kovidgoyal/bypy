@@ -622,7 +622,7 @@ def python_install():
     if ismacos:
         bdir = os.path.join(framework, 'bin')
     elif iswindows:
-        bdir = os.path.join(build_dir(), ddir, 'python', 'Scripts')
+        bdir = os.path.join(build_dir(), 'Scripts')
     if bdir and os.path.exists(bdir):
         os.rename(bdir, os.path.join(build_dir(), 'bin'))
 
