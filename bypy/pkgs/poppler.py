@@ -51,6 +51,8 @@ def main(args):
             'macro_optional_find_package(NSS3)', '')
         windows_cmake_build(**cmake_args)
         install_binaries('build/utils/*.exe', 'bin')
+        install_binaries('build/*.dll', 'bin')
+        install_binaries('build/*.lib', 'lib')
     else:
         cmake_build(**cmake_args)
 
