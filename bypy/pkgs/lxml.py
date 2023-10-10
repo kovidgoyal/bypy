@@ -18,3 +18,8 @@ def main(args):
         run(PYTHON, *('setup.py build_ext -I {0}/include/libxml2 -L {0}/lib'.format(PREFIX).split()), library_path=True)
     python_build()
     python_install()
+
+
+def post_install_check():
+    code = '''import lxml.etree as e; print(e); e.fromstring(b'<r/>');'''
+    run(PYTHON, '-c', code, library_path=True)
