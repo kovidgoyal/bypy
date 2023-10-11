@@ -1160,7 +1160,8 @@ def setup_program_parser(pa):
     a('--compression-level',
       default='9',
       choices=list('123456789'),
-      help='Level of compression for the Linux tarball')
+      help='Level of compression for the Linux tarball and windows msi.'
+      'For windows 1 is no compression, 2 is low compression, 3 is medium, 4 is mszip and anything higher is high')
     a('--skip-tests',
       default=False,
       action='store_true',
