@@ -1266,3 +1266,8 @@ def total_physical_ram():
         windll.kernel32.GlobalMemoryStatusEx(byref(x))
         return x
     return GlobalMemoryStatusEx().ullTotalPhys
+
+
+def require_ram(gb=4):
+    if total_physical_ram() < (gb * 1024**3):
+        raise SystemExit(f'Need at least {gb}GB of RAM to build')

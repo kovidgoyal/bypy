@@ -6,13 +6,11 @@
 import os
 
 from bypy.constants import islinux
-from bypy.utils import qt_build, total_physical_ram
+from bypy.utils import qt_build, require_ram
 
 
 def main(args):
-    ram_limit = 8
-    if total_physical_ram() < ((ram_limit - 0.5) * 1024**3):
-        raise SystemExit(f'Need at least {ram_limit}GB of RAM to build qt-webengine')
+    require_ram(24 if islinux else 8)
     conf = '-feature-qtwebengine-build -feature-qtwebengine-widgets-build'
     conf += ' -no-feature-qtwebengine-quick-build'
     if islinux:

@@ -8,11 +8,12 @@ import re
 import shutil
 
 from bypy.constants import (
-    LIBDIR, PREFIX, build_dir, cygwin_paths, is64bit, iswindows, lipo_data
+    LIBDIR, PREFIX, build_dir, cygwin_paths, is64bit, islinux, iswindows,
+    lipo_data
 )
 from bypy.utils import (
-    dos2unix, install_binaries, msbuild, replace_in_file, run, simple_build,
-    walk
+    dos2unix, install_binaries, msbuild, require_ram, replace_in_file, run,
+    simple_build, walk
 )
 
 needs_lipo = True
@@ -65,6 +66,8 @@ def main(args):
     if iswindows:
         solution_build()
     else:
+        if islinux:
+            require_ram(10)
         build_loc = os.getcwd()
         conf = (
             '--prefix=/usr --sysconfdir=/etc --mandir=/usr/share/man'
