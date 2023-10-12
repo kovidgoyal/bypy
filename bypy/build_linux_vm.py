@@ -39,7 +39,7 @@ def build_vm(chroot: Chroot):
     machine_spec = [
         f'-name {chroot.vm_name}',
         '-machine ' + ('virt' if is_arm else 'type=q35,accel=kvm'),
-        '-cpu ' + ('max' if is_arm else 'host'),
+        '-cpu ' + ('max,pauth-impdef=on' if is_arm else 'host'),
         '# num of cores',
         '-smp 4,cores=2',
         '# Amount of RAM',
@@ -52,7 +52,7 @@ def build_vm(chroot: Chroot):
     ]
     firmware = []
     disks = []
-    scsi_count = -1
+    drive_count = -1
 
     def add_efi_firmware():
         os.mkdir('firmware')
@@ -67,12 +67,17 @@ def build_vm(chroot: Chroot):
         firmware.append(f'-drive if=pflash,format=raw,readonly=off,unit=1,file="{evars}"')
 
     def add_disk(filename, disk_id):
-        nonlocal scsi_count
-        scsi_count += 1
-        disks.append('# A hard disk connected via SCSI for performance')
-        disks.append(f'-device virtio-scsi-pci,id=scsi{scsi_count}')
-        disks.append(f'-drive file="{filename}",if=none,format=qcow2,discard=unmap,aio=native,cache=none,id={disk_id}')
-        disks.append(f'-device scsi-hd,drive={disk_id},bus=scsi{scsi_count}.0,serial={disk_id}')
+        nonlocal drive_count
+        drive_count += 1
+        if False:
+            disks.append('# A hard disk connected via SCSI for performance')
+            disks.append(f'-device virtio-scsi-pci,id=scsi{drive_count}')
+            disks.append(f'-drive file="{filename}",if=none,format=qcow2,discard=unmap,aio=native,cache=none,id={disk_id}')
+            disks.append(f'-device scsi-hd,drive={disk_id},bus=scsi{drive_count}.0,serial={disk_id}')
+        else:
+            disks.append('# A hard disk connected via virtio-blk for performance')
+            disks.append(f'-device virtio-blk-pci,drive=drive{drive_count},id={disk_id},num-queues=4')
+            disks.append(f'-drive file="{filename}",if=none,format=qcow2,id=drive{drive_count}')
 
     with current_dir(chroot.vm_path):
         with open('user-data', 'w') as f:
@@ -83,7 +88,10 @@ def build_vm(chroot: Chroot):
         call('qemu-img convert -f raw -O qcow2 cloud.img cloud-init.qcow2')
         os.remove('cloud.img')
         call('fallocate -l 64G SystemDisk.img')
-        call('mkfs.ext4 -L datadisk -F SystemDisk.img')
+        # we cannot create this here because newer ext4 filesystems have
+        # orphan_file feature which the gues may not have, in which case
+        # fsck fails for this disk. Instead create via cloud-init
+        # call('mkfs.ext4 -L datadisk -F SystemDisk.img')
         call('qemu-img convert -f raw -O qcow2 SystemDisk.img SystemDisk.qcow2')
         os.remove('SystemDisk.img')
         if is_arm:

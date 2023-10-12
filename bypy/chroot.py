@@ -199,6 +199,13 @@ date >> /root/fix-mounting-ran-at
                 file('/usr/share/terminfo/x/xterm-kitty', open(ti, 'rb').read())
 
         ans = {
+            'fs_setup': [
+                {
+                    'label': 'datadisk',
+                    'filesystem': 'ext4',
+                    'device': '/dev/vdb',
+                },
+            ],
             'growpart': {
                 'mode': 'growpart',
                 'devices': ['/'],
@@ -221,8 +228,8 @@ date >> /root/fix-mounting-ran-at
                     'name': user,
                     'shell': '/bin/zsh',
                     'primary_group': 'crusers',
-                    'groups': ['sudo'],
-                    'sudo': ['ALL=(ALL) NOPASSWD:ALL'],
+                    'groups': 'sudo',
+                    'sudo': 'ALL=(ALL) NOPASSWD:ALL',
                     'no_user_group': True,
                     'ssh_authorized_keys': ssh_authorized_keys,
                 }
