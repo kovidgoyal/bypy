@@ -37,9 +37,16 @@ def main(args):
     else:
         optflags = ['enable-ec_nistp_64_gcc_128'] if is64bit else []
         # need --libdir=lib because on focal it becomes lib64 otherwise
+        #
         # tests are very slow and flaky on ARM in QEMU
+        #
+        # need openssldir=/dev/null because Fedora uses an /etc/ssl that is
+        # incompatible with upstream which completely breaks using openssl to
+        # make connections. Fucking Linux distro wankers. When will these
+        # idiots learn they ARE NOT COMPETENT TO PATCH UPSTREAM SOFTWARE. Keep
+        # your grubby paws off other people's software.
         run('./config', '--prefix=/usr', '--libdir=lib',
-            '--openssldir=/etc/ssl', 'shared', 'no-tests', 'zlib', '-Wa,--noexecstack',
+            '--openssldir=/dev/null', 'shared', 'no-tests', 'zlib', '-Wa,--noexecstack',
             CFLAGS, LDFLAGS, *optflags)
         run('make ' + MAKEOPTS)
         run('make test', library_path=os.getcwd())
