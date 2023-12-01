@@ -170,6 +170,17 @@ class Chroot:
                 'path': path, 'encoding': 'b64', 'owner': owner, 'append': append,
                 'content': content, 'permissions': permissions, 'defer': defer})
 
+        # turn off cleaning of /tmp at intervals
+        file('/etc/systemd/system/systemd-tmpfiles-clean.timer', '''
+[Unit]
+Description=Daily Cleanup of Temporary Directories
+Documentation=man:tmpfiles.d(5) man:systemd-tmpfiles(8)
+ConditionPathExists=!/etc/initrd-release
+
+[Timer]
+OnBootSec=
+OnUnitActiveSec=
+''')
         file('/etc/environment', f'\nBYPY_ARCH="{self.image_arch}"', append=True)
         file('/etc/systemd/journald.conf', '\nSystemMaxUse=16M', append=True)
         file('/etc/apt/apt.conf.d/99-auto-upgrades', 'APT::Periodic::Update-Package-Lists "0";\nAPT::Periodic::Unattended-Upgrade "0";')
