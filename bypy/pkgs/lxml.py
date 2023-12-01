@@ -22,4 +22,6 @@ def main(args):
 
 def post_install_check():
     code = '''import lxml.etree as e; print(e); e.fromstring(b'<r/>');'''
+    if iswindows:
+        code = 'import ctypes; x = ctypes.WinDLL("libxml2.dll"); x.xmlInitParser(); ' + code
     run(PYTHON, '-c', code, library_path=True)

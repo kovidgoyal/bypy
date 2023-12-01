@@ -12,11 +12,6 @@ from bypy.utils import cmake_build, replace_in_file, simple_build, walk
 def main(args):
     if iswindows or ismacos:
         extra = {}
-        if iswindows:
-            # importing lxml crashes without this. Probably because it is not
-            # initializing xml threading and dll import doesnt do it
-            # automatically on windows
-            extra['LIBXML2_WITH_THREADS'] = 'OFF'
         cmake_build(
             LIBXML2_WITH_ICU='ON', LIBXML2_WITH_PYTHON='OFF', LIBXML2_WITH_TESTS='OFF',
             LIBXML2_WITH_LZMA='OFF', relocate_pkgconfig=not iswindows, **extra
