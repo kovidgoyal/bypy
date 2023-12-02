@@ -170,17 +170,6 @@ class Chroot:
                 'path': path, 'encoding': 'b64', 'owner': owner, 'append': append,
                 'content': content, 'permissions': permissions, 'defer': defer})
 
-        # turn off cleaning of /tmp at intervals
-        file('/etc/systemd/system/systemd-tmpfiles-clean.timer', '''
-[Unit]
-Description=Daily Cleanup of Temporary Directories
-Documentation=man:tmpfiles.d(5) man:systemd-tmpfiles(8)
-ConditionPathExists=!/etc/initrd-release
-
-[Timer]
-OnBootSec=
-OnUnitActiveSec=
-''')
         file('/etc/environment', f'\nBYPY_ARCH="{self.image_arch}"', append=True)
         file('/etc/systemd/journald.conf', '\nSystemMaxUse=16M', append=True)
         file('/etc/apt/apt.conf.d/99-auto-upgrades', 'APT::Periodic::Update-Package-Lists "0";\nAPT::Periodic::Unattended-Upgrade "0";')
@@ -287,9 +276,6 @@ date >> /root/fix-mounting-ran-at
         a('sh -c "rm -f /etc/resolv.conf; echo nameserver 8.8.4.4 > /etc/resolv.conf; echo nameserver 8.8.8.8 >> /etc/resolv.conf;'
           ' chattr +i /etc/resolv.conf; cat /etc/resolv.conf"')
         a('fstrim -v --all')
-        # Have /sw/tmp used as /tmp
-        a('chmod a+trwx /sw/tmp')
-        a('sh -c "echo /sw/tmp /tmp none defaults,bind 0 0 >> /etc/fstab; cat /etc/fstab"')
         a('poweroff')
         return ans
 

@@ -50,6 +50,8 @@ PATCHES = os.path.join(BYPY, 'patches')
 SH = 'C:/cygwin64/bin/zsh' if iswindows else '/bin/zsh'
 if iswindows:
     os.environ['TMPDIR'] = os.environ['TEMP'] = os.environ['TMP'] = tempfile.tempdir = r'C:\t\t'  # noqa
+elif islinux:
+    os.environ['TMPDIR'] = os.environ['TEMP'] = os.environ['TMP'] = tempfile.tempdir = os.path.join(SW, 't')  # noqa
 PREFIX = os.path.join(SW, 'sw')
 BIN = os.path.join(PREFIX, 'bin')
 PYTHON = os.path.join(
@@ -145,14 +147,12 @@ else:
 def mkdtemp(prefix=''):
     tdir = getattr(mkdtemp, 'tdir', None)
     if tdir is None:
-        if iswindows:
-            tdir = tempfile.tempdir
-        elif ismacos:
+        if ismacos:
             # macOS tends to delete files from /tmp periodically
             _CS_DARWIN_USER_CACHE_DIR = 65538
             tdir = os.path.join(os.confstr(_CS_DARWIN_USER_CACHE_DIR), 't')
         else:
-            tdir = os.path.join(tempfile.gettempdir(), 't')
+            tdir = tempfile.tempdir
         from .utils import ensure_clear_dir
         ensure_clear_dir(tdir)
         mkdtemp.tdir = tdir
