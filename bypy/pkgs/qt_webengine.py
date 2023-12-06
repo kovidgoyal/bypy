@@ -18,15 +18,15 @@ def main(args):
         # make resources/icudtl.dat available in the application
         conf += ' -webengine-icu'
 
-    # fix building with libxml2 2.12
-    replace_in_file(
-        'src/3rdparty/chromium/third_party/blink/renderer/core/xml/xslt_processor.h',
-        'static void ParseErrorFunc(void* user_data, xmlError*)',
-        'static void ParseErrorFunc(void* user_data, const xmlError*)')
-    replace_in_file(
-        'src/3rdparty/chromium/third_party/blink/renderer/core/xml/xslt_processor_libxslt.cc',
-        'void XSLTProcessor::ParseErrorFunc(void* user_data, xmlError* error) {',
-        'void XSLTProcessor::ParseErrorFunc(void* user_data, const xmlError* error) {')
+        # fix building with libxml2 2.12
+        replace_in_file(
+            'src/3rdparty/chromium/third_party/blink/renderer/core/xml/xslt_processor.h',
+            'static void ParseErrorFunc(void* user_data, xmlError*)',
+            'static void ParseErrorFunc(void* user_data, const xmlError*)')
+        replace_in_file(
+            'src/3rdparty/chromium/third_party/blink/renderer/core/xml/xslt_processor_libxslt.cc',
+            'void XSLTProcessor::ParseErrorFunc(void* user_data, xmlError* error) {',
+            'void XSLTProcessor::ParseErrorFunc(void* user_data, const xmlError* error) {')
 
     qt_build(conf, for_webengine=True)
 
