@@ -14,8 +14,7 @@ def main(args):
     conf = '-feature-qtwebengine-build -feature-qtwebengine-widgets-build'
     conf += ' -no-feature-qtwebengine-quick-build'
     if islinux:
-        # use system ICU otherwise there is 10MB duplication and we have to
-        # make resources/icudtl.dat available in the application
+        # use system ICU otherwise there is 10MB duplication
         conf += ' -webengine-icu'
 
         # fix building with libxml2 2.12
