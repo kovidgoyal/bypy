@@ -5,11 +5,11 @@
 import os
 
 from bypy.constants import (
-    BIN, CMAKE, PERL, PREFIX, UNIVERSAL_ARCHES, build_dir, islinux, ismacos,
-    iswindows, currently_building_dep
+    BIN, CMAKE, PERL, PREFIX, UNIVERSAL_ARCHES, build_dir,
+    currently_building_dep, islinux, ismacos, iswindows
 )
 from bypy.utils import (
-    relocate_pkgconfig_files, replace_in_file, run, run_shell
+    apply_patch, relocate_pkgconfig_files, replace_in_file, run, run_shell
 )
 
 
@@ -115,6 +115,8 @@ def main(args):
             f'= {getenv}({ev}) ?'
             f' QString::{ff}({getenv}({ev})) : getPrefix')
     if iswindows:
+        # Fix moving parent windows causing child window to move/resize
+        apply_patch('qtbug-117779.patch', level=1)
         # Enable loading of DLLs from the bin directory
         replace_in_file(
             'src/corelib/global/qlibraryinfo.cpp',
