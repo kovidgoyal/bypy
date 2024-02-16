@@ -117,6 +117,8 @@ def main(args):
     if iswindows:
         # Fix moving parent windows causing child window to move/resize
         apply_patch('qtbug-117779.patch', level=1)
+        # Fix file:// URLs mangled in text widgets
+        apply_patch('qtbug-120577.patch', level=1)
         # Enable loading of DLLs from the bin directory
         replace_in_file(
             'src/corelib/global/qlibraryinfo.cpp',
