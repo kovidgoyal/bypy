@@ -10,6 +10,8 @@ from bypy.utils import python_build, python_install, replace_in_file, run
 
 
 def main(args):
+    # Dont actually need Cython but pyproject.toml declares it anayway, sigh
+    replace_in_file('pyproject.toml', '"Cython>=3.0.10", ', '')
     if iswindows:
         # libiconv is named libiconv.lib not iconv.lib for us
         replace_in_file('setupinfo.py', ", 'iconv'", ', "libiconv"')
@@ -22,6 +24,4 @@ def main(args):
 
 def post_install_check():
     code = '''import lxml.etree as e; print(e); e.fromstring(b'<r/>');'''
-    if iswindows:
-        code = 'import ctypes; x = ctypes.WinDLL("libxml2.dll"); x.xmlInitParser(); ' + code
     run(PYTHON, '-c', code, library_path=True)
