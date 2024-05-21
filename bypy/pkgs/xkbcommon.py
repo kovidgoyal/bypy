@@ -11,5 +11,6 @@ def main(args):
         'xkb-config-root': '/usr/share/X11/xkb',
         'xkb-config-extra-path': '/etc/xkb',
         'x-locale-root': '/usr/share/X11/locale',
+        'bash-completion-path': '/tmp',
         'enable-docs': 'false',
     })
