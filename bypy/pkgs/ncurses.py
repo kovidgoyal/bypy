@@ -2,9 +2,6 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
-
 from bypy.constants import PKG_CONFIG_PATH, build_dir
 from bypy.utils import simple_build, ModifiedEnv
 
@@ -14,7 +11,7 @@ def main(args):
     with ModifiedEnv(HOME=build_dir()):
         simple_build(
             '--with-shared --without-debug --without-ada --enable-widec'
-            ' --with-normal --enable-pc-files'
+            ' --with-normal --enable-pc-files --disable-db-install --without-manpages'
             f' --with-pkg-config-libdir={PKG_CONFIG_PATH}'
             # without the following ncurses will look in the BUILD_DIR
             # for terminfo files even on target systems. Instead use
