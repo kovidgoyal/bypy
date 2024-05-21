@@ -20,8 +20,9 @@ def unix_python(args):
         'CFLAGS': CFLAGS +
         f' -DHAVE_LOAD_EXTENSION -I{PREFIX}/include/ncursesw'
     }
-    replace_in_file('setup.py', re.compile(b'def detect_tkinter.+:'),
-                    lambda m: m.group() + b'\n' + b' ' * 8 + b'return 0')
+    if os.path.exists('setup.py'):
+        replace_in_file('setup.py', re.compile(b'def detect_tkinter.+:'),
+                        lambda m: m.group() + b'\n' + b' ' * 8 + b'return 0')
     conf = (
         '--enable-ipv6 --with-pymalloc --with-system-expat'
         ' --with-lto --enable-optimizations'
@@ -30,7 +31,7 @@ def unix_python(args):
     )
     install_args = []
     if islinux:
-        conf += f' --with-system-ffi --enable-shared --prefix={build_dir()}'
+        conf += f' --enable-shared --prefix={build_dir()}'
         # Needed as the system openssl is too old, causing the _ssl module
         # to fail
         env['LD_LIBRARY_PATH'] = LIBDIR
