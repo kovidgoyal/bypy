@@ -16,5 +16,5 @@ def main(args):
         os.makedirs(
             os.path.join(f'{PREFIX}/lib/dbus-1.0/include'), exist_ok=True)
         meson_build(
-            force_posix_threads='true', gtk_doc='false', library_path=True,
-            man='false', selinux='disabled', c_link_args=f'-L{LIBDIR} -liconv')
+            force_posix_threads='true', documentation='false', library_path=True,
+            selinux='disabled', c_link_args=f'-L{LIBDIR} -liconv', **{'man-pages': 'disabled'})
