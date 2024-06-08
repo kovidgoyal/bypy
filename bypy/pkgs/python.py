@@ -7,12 +7,8 @@ import os
 import re
 import shutil
 
-from bypy.constants import (CFLAGS, LDFLAGS, LIBDIR, PREFIX, PYTHON,
-                            UNIVERSAL_ARCHES, build_dir, is64bit, islinux,
-                            ismacos, iswindows)
-from bypy.utils import (ModifiedEnv, copy_headers, get_platform_toolset,
-                        get_windows_sdk, install_binaries, replace_in_file,
-                        run, simple_build, walk)
+from bypy.constants import CFLAGS, LDFLAGS, LIBDIR, PREFIX, PYTHON, UNIVERSAL_ARCHES, build_dir, is64bit, islinux, ismacos, iswindows
+from bypy.utils import ModifiedEnv, apply_patch, copy_headers, get_platform_toolset, get_windows_sdk, install_binaries, replace_in_file, run, simple_build, walk
 
 
 def unix_python(args):
@@ -100,6 +96,9 @@ def unix_python(args):
 
 
 def windows_python(args):
+    # https://github.com/python/cpython/issues/108721
+    apply_patch('python-3.11-ssl-gh-100372.patch', level=1)
+
     with open('PCbuild/msbuild.rsp', 'w') as f:
         print(f'/p:PlatformToolset={get_platform_toolset()}', file=f)
         print(f'/p:WindowsTargetPlatformVersion={get_windows_sdk()}', file=f)
