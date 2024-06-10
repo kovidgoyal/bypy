@@ -32,6 +32,17 @@ def main(args):
                         'macro_optional_find_package(NSS3)',
                         'set(NSS3_FOUND false)')
     if iswindows:
+        cmake_win_args= dict (
+            FREETYPE_INCLUDE_DIRS=os.path.join(PREFIX, 'include', 'freetype2'),
+            FREETYPE_LIBRARY=os.path.join(PREFIX, 'lib', 'freetype.lib'),
+            JPEG_INCLUDE_DIR=os.path.join(PREFIX, 'include'),
+            JPEG_LIBRARY=os.path.join(PREFIX, 'lib', 'jpeg.lib'),
+            PNG_LIBRARY=os.path.join(PREFIX, 'lib', 'libpng16.lib'),
+            PNG_PNG_INCLUDE_DIR=os.path.join(PREFIX, 'include'),
+            ZLIB_INCLUDE_DIR=os.path.join(PREFIX, 'include'),
+            ZLIB_LIBRARY=os.path.join(PREFIX, 'lib', 'zdll.lib'),
+        )
+        cmake_args.update(cmake_win_args)
         opjinc = f'{PREFIX}/include/openjpeg'.replace('\\', '/')
         opjlib = f'{PREFIX}/lib/openjp2.lib'.replace('\\', '/')
         replace_in_file(

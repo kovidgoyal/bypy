@@ -118,7 +118,7 @@ def query_vcvarsall(is64bit=True):
     plat = 'amd64' if is64bit else 'amd64_x86'
     vcvarsall = find_vcvarsall()
     env = query_process('"%s" %s & set' % (vcvarsall, plat), is64bit)
-    pat = re.compile('vs(\d+)comntools', re.I)
+    pat = re.compile(r'vs(\d+)comntools', re.I)
 
     comn_tools = {}
 

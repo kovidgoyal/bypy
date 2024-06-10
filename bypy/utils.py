@@ -410,8 +410,10 @@ def qt_build(configure_args='', for_webengine=False, **env):
     append_to_path = [os.path.join(PREFIX, 'qt', 'bin'), BIN]
     prepend_to_path = []
     qcm = os.path.join(PREFIX, 'qt', 'bin', 'qt-configure-module')
+    qcp = os.path.join(PREFIX, 'qt', 'bin', 'qt-cmake-private')
     if iswindows:
         qcm += '.bat'
+        qcp += '.bat'
     run(qcm, '..', '-help',
         append_to_path=append_to_path, library_path=True)
     run(qcm, '..', '-list-features',
@@ -429,11 +431,18 @@ def qt_build(configure_args='', for_webengine=False, **env):
         env['PYTHON3_PATH'] = os.path.dirname(os.path.abspath(sys.executable))
     if for_webengine:
         pass  # configure_args += ' -no-feature-webengine-jumbo-build'
-    run(
-        qcm, '..', *shlex.split(configure_args.strip()),
-        library_path=True, append_to_path=append_to_path or None,
-        env=env, prepend_to_path=prepend_to_path or None,
-    )
+    if iswindows and currently_building_dep()['name'] == 'qt-svg':
+        run(
+            qcp, '..', f'-DZLIB_ROOT={PREFIX}',
+            library_path=True, append_to_path=append_to_path or None,
+            env=env, prepend_to_path=prepend_to_path or None,
+        )
+    else:
+        run(
+            qcm, '..', *shlex.split(configure_args.strip()),
+            library_path=True, append_to_path=append_to_path or None,
+            env=env, prepend_to_path=prepend_to_path or None,
+        )
     cmd = [CMAKE, '--build', '.', '--parallel']
     if for_webengine:
         # ninja by default creates cpu_count + 2 jobs, max RAM per job is thus
@@ -886,12 +895,20 @@ def msbuild(proj, *args, configuration='Release', **env):
     for k in vcvars_env:
         worker_env.pop(k, None)
     try:
-        run(
-            find_msbuild(), proj, '/t:Build', f'/p:Platform={PL}',
-            f'/p:Configuration={configuration}',
-            f'/p:PlatformToolset={get_platform_toolset()}',
-            f'/p:WindowsTargetPlatformVersion={sdk}', *args, **env
-        )
+        try:
+            run(
+                find_msbuild(), proj, '/t:Build', f'/p:Platform={PL}',
+                f'/p:Configuration={configuration}',
+                f'/p:PlatformToolset={get_platform_toolset()}',
+                f'/p:WindowsTargetPlatformVersion={sdk}', *args, **env
+            )
+        except:
+            run(
+                find_msbuild(), proj, '/t:Build', f'/p:Platform={PL}',
+                f'/p:Configuration={configuration}',
+                f'/p:PlatformToolset={get_platform_toolset().replace("144", "143")}',
+                f'/p:WindowsTargetPlatformVersion={sdk}', *args, **env
+            )
     finally:
         worker_env = orig_worker_env
 
