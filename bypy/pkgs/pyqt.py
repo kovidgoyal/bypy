@@ -7,7 +7,7 @@ import re
 import shutil
 
 from bypy.constants import (
-    MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir, iswindows
+    MAKEOPTS, NMAKE, PREFIX, PYTHON, build_dir, iswindows, ismacos
 )
 from bypy.utils import (
     python_install, relpath_to_site_packages, replace_in_file, run, walk
@@ -38,7 +38,10 @@ def run_sip_install(for_webengine=False):
         run(NMAKE, 'install', cwd='build',
             env={'INSTALL_ROOT': build_dir()[2:]})
     else:
-        run('make ' + MAKEOPTS, cwd='build')
+        env = {}
+        if ismacos:
+            env['ARCHS'] = 'x86_64 arm64'
+        run('make ' + MAKEOPTS, cwd='build', env=env)
         run(f'make INSTALL_ROOT="{build_dir()}" install',
             cwd='build', library_path=True)
     rp = os.path.join(build_dir(), relpath_to_site_packages())

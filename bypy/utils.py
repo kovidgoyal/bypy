@@ -963,7 +963,7 @@ def cmake_build(
 
 def meson_build(extra_cmdline='', library_path=None, **options):
     cmd = [
-        'meson', '--buildtype=release', f'--prefix={build_dir()}',
+        'meson', 'setup', '--buildtype=release', f'--prefix={build_dir()}',
         f'--libdir={build_dir()}/lib'
     ]
     if extra_cmdline:

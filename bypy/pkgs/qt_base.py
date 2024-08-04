@@ -115,10 +115,6 @@ def main(args):
             f'= {getenv}({ev}) ?'
             f' QString::{ff}({getenv}({ev})) : getPrefix')
     if iswindows:
-        # Fix moving parent windows causing child window to move/resize
-        apply_patch('qtbug-117779.patch', level=1)
-        # Fix file:// URLs mangled in text widgets
-        apply_patch('qtbug-120577.patch', level=1)
         # Enable loading of DLLs from the bin directory
         replace_in_file(
             'src/corelib/global/qlibraryinfo.cpp',
@@ -131,6 +127,7 @@ def main(args):
             'searchOrder << (QFileInfo(qAppFileName()).path()'
             r".replace(QLatin1Char('/'), QLatin1Char('\\'))"
             r'+ QString::fromLatin1("\\app\\bin\\"));')
+    apply_patch('CVE-2024-39936-qtbase-6.7.patch', level=1)
     cmake(args)
     relocate_pkgconfig_files()
 
