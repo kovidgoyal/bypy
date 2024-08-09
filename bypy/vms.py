@@ -62,7 +62,7 @@ class Rsync(object):
         finally:
             # turn off cursor key mode, zsh tends to leave the terminal in that
             # mode when exited with a EOF (ctrl-d)
-            sys.stdout.write('\x1b[?1l')
+            sys.stdout.write('\x1b[?1l')  # ]
             sys.stdout.flush()
 
     def run_via_ssh(self, *args, allocate_tty=False, raise_exception=True):
@@ -72,6 +72,11 @@ class Rsync(object):
                 subprocess.check_call(cmd)
             else:
                 return subprocess.run(cmd)
+
+    def reconnect(self, sources_dir, pkg_dir, output_dir, cmd_prefix, arch, args, prefix='/', name='sw'):
+        cp = self.run_via_ssh(*cmd_prefix, 'reconnect', allocate_tty=True, raise_exception=False)
+        from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
+        raise SystemExit(cp.returncode)
 
     def run_shell(self, sources_dir, pkg_dir, output_dir, cmd_prefix, arch, args, prefix='/', name='sw'):
         if args.full:

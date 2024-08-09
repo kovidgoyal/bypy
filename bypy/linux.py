@@ -47,6 +47,8 @@ def main(args):
 
     if args.action == 'shell':
         return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args)
+    if args.action == 'reconnect':
+        return rsync.reconnect(sources_dir, pkg_dir, output_dir, cmd, ba, args)
 
     if not chroot.single_instance():
         raise SystemExit(f'Another instance of the Linux container {chroot.single_instance_name} is running')

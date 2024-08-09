@@ -65,7 +65,7 @@ def screen_exe():
     return shutil.which('screen')
 
 
-def run_worker(args):
+def setup_screen(wipe_dead=True):
     screen = screen_exe()
     if islinux:
         screen_dir = os.path.join(WORKER_DIR, 'screen-sockets')
@@ -76,8 +76,14 @@ def run_worker(args):
         os.makedirs(screen_dir)
         os.chmod(screen_dir, 0o700)
         os.environ['SCREENDIR'] = screen_dir
-    # wipe any dead sessions
-    subprocess.Popen([screen, '-wipe']).wait()
+    if wipe_dead:
+        # wipe any dead sessions
+        subprocess.Popen([screen, '-wipe']).wait()
+    return screen
+
+
+def run_worker(args):
+    screen = setup_screen()
     # first try to re-attach to a running session
     cmd = [screen, '-q', '-S', SCREEN_NAME, '-r']
     p = subprocess.Popen(cmd)
@@ -150,6 +156,19 @@ def shell(args):
 
 def setup_shell_parser(p):
     p.set_defaults(func=shell)
+
+
+def reconnect(args):
+    init_env()
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    screen = setup_screen(wipe_dead=False)
+    cmd = [screen, '-S', SCREEN_NAME, '-r']
+    cp = subprocess.run(cmd)
+    raise SystemExit(cp.returncode)
+
+
+def setup_reconnect_parser(p):
+    p.set_defaults(func=reconnect)
 
 
 def build_deps(args):

@@ -1233,6 +1233,9 @@ def setup_build_parser(p):
     s.add_parser('shutdown', help='Shutdown the VM', aliases=['halt', 'poweroff'])
 
     setup_dependencies_parser(s.add_parser('dependencies', aliases=['deps']))
+
+    s.add_parser('reconnect', help='Reconnect to build session after a disconnect, will automatically download built packages from VM after.')
+
     return s
 
 

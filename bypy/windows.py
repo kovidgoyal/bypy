@@ -67,6 +67,8 @@ def main(args):
     ]
     if args.action == 'shell':
         return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args, prefix=prefix, name=f'sw{args.arch}')
+    if args.action == 'reconnect':
+        return rsync.reconnect(sources_dir, pkg_dir, output_dir, cmd, ba, args, prefix=prefix, name=f'sw{args.arch}')
 
     if not singleinstance():
         raise SystemExit(
