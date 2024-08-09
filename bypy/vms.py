@@ -155,7 +155,7 @@ def run_sync_jobs(cmds, retry=False):
         if retry:
             print('\x1b[31mSyncing from VM failed. You can retry the sync by running::\x1b[m')
             print('\n\tpython ../bypy <whatever> shell --from-vm')
-            print('\nYou can also reconnect to the running job by starting the shell and then running: screen -r')
+            print('\nYou can also reconnect to the running job by python ../bypy <whatever> reconnect')
         raise SystemExit(1)
     workers.sort(key=lambda w: w.time_taken)
     print('The slowest sync was:', shlex.join(workers[-1].cmd[-2:]))
