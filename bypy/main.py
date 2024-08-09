@@ -62,18 +62,17 @@ def build_program(args):
 
 
 def screen_exe():
-    return shutil.which('screen')
+    return shutil.which('screen') or 'screen'
 
 
-def setup_screen(wipe_dead=True):
+def setup_screen(clear_screen_dir=True, wipe_dead=True):
     screen = screen_exe()
     if islinux:
         screen_dir = os.path.join(WORKER_DIR, 'screen-sockets')
-        try:
-            shutil.rmtree(screen_dir)
-        except FileNotFoundError:
-            pass
-        os.makedirs(screen_dir)
+        if clear_screen_dir:
+            with suppress(FileNotFoundError):
+                shutil.rmtree(screen_dir)
+        os.makedirs(screen_dir, exist_ok=True)
         os.chmod(screen_dir, 0o700)
         os.environ['SCREENDIR'] = screen_dir
     if wipe_dead:
@@ -84,32 +83,24 @@ def setup_screen(wipe_dead=True):
 
 def run_worker(args):
     screen = setup_screen()
-    # first try to re-attach to a running session
-    cmd = [screen, '-q', '-S', SCREEN_NAME, '-r']
-    p = subprocess.Popen(cmd)
     logpath = os.path.join(WORKER_DIR, 'screenlog.0')
-    try:
-        rc = p.wait(5)
-    except Exception:
-        rc = None
-    if rc is not None:
-        # start a new session
-        with open(os.path.expanduser('~/.screenrc'), 'w') as f:
-            # allow scrolling with mousewheel/touchpad
-            print('termcapinfo xterm* ti@:te@', file=f)
-            # dont display startup message
-            print('startup_message off', file=f)
-            # use the alternate screen
-            print('altscreen on', file=f)
-        cmd = [screen, '-L', '-a', '-A', '-h', '6000', '-U', '-S', SCREEN_NAME]
-        cmd += [sys.executable, BYPY] + sys.argv[1:]
-        env = dict(os.environ)
-        env['BYPY_WORKER'] = os.getcwd()
-        with suppress(OSError):
-            # remove any existing screen log from a previous run
-            os.remove(logpath)
-        # cwd so that screen log file is in worker dir
-        p = subprocess.Popen(cmd, cwd=WORKER_DIR, env=env)
+    # start a new session
+    with open(os.path.expanduser('~/.screenrc'), 'w') as f:
+        # allow scrolling with mousewheel/touchpad
+        print('termcapinfo xterm* ti@:te@', file=f)
+        # dont display startup message
+        print('startup_message off', file=f)
+        # use the alternate screen
+        print('altscreen on', file=f)
+    cmd = [screen, '-L', '-a', '-A', '-h', '6000', '-U', '-S', SCREEN_NAME]
+    cmd += [sys.executable, BYPY] + sys.argv[1:]
+    env = dict(os.environ)
+    env['BYPY_WORKER'] = os.getcwd()
+    with suppress(OSError):
+        # remove any existing screen log from a previous run
+        os.remove(logpath)
+    # cwd so that screen log file is in worker dir
+    p = subprocess.Popen(cmd, cwd=WORKER_DIR, env=env)
     rc = p.wait()
     # We do this via SH because running SH leaves the python stdout pipe in a funny
     # state where it substitutes U+2190 for ESC bytes. Running via cat avoids that
@@ -159,9 +150,8 @@ def setup_shell_parser(p):
 
 
 def reconnect(args):
-    init_env()
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    screen = setup_screen(wipe_dead=False)
+    screen = setup_screen(clear_screen_dir=False, wipe_dead=False)
     cmd = [screen, '-S', SCREEN_NAME, '-r']
     cp = subprocess.run(cmd)
     raise SystemExit(cp.returncode)

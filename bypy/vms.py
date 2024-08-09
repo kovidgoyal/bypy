@@ -74,7 +74,7 @@ class Rsync(object):
                 return subprocess.run(cmd)
 
     def reconnect(self, sources_dir, pkg_dir, output_dir, cmd_prefix, arch, args, prefix='/', name='sw'):
-        cp = self.run_via_ssh(*cmd_prefix, 'reconnect', allocate_tty=True, raise_exception=False)
+        cp = self.run_via_ssh(*cmd_prefix, '__reconnect__', allocate_tty=True, raise_exception=False)
         from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
         raise SystemExit(cp.returncode)
 
