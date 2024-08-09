@@ -167,6 +167,11 @@ def build_deps(args):
     delete_code_signing_certs()
     if 'BYPY_WORKER' in os.environ:
         os.chdir(os.environ['BYPY_WORKER'])
+        if islinux:
+            # Try to get the kernel to prioritise the ssh daemon so we can log into the box after a disconnect
+            # Needed on emulated VMs such as for ARM builds, in particular
+            os.sched_setscheduler(0, os.SCHED_BATCH, os.sched_param(os.sched_get_priority_max(os.SCHED_BATCH)))
+            os.nice(10)
         deps_main(args)
     else:
         run_worker(args)
