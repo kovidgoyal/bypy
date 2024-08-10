@@ -24,7 +24,7 @@ def main(args):
     if args.action == 'shutdown':
         shutdown(vm)
         return
-    chroot = Chroot(args.arch)
+    chroot = Chroot(args.arch, vm)
     output_dir = os.path.join(base_dir(), 'b', 'linux', args.arch, 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'linux', args.arch, 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')

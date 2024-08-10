@@ -7,14 +7,14 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 
-import yaml
+import yaml  # type: ignore
 
 from virtual_machine.run import cmdline_for_machine_spec
 
 from .chroot import Chroot
 from .utils import current_dir
-
 
 base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -26,10 +26,18 @@ def call(*args):
     subprocess.check_call(args)
 
 
+def build_chroot(chroot: Chroot):
+    data = chroot.data_to_build_chroot()
+    cp = subprocess.run([sys.executable, base, '__chroot__', 'bypy.chroot', 'build_chroot'], input=json.dumps(data).encode())
+    raise SystemExit(cp.returncode)
+
+
 def build_vm(chroot: Chroot):
     if os.path.exists(chroot.vm_path):
         shutil.rmtree(chroot.vm_path)
     os.makedirs(chroot.vm_path)
+    if chroot.is_chroot_based:
+        return build_chroot(chroot)
     user_data = chroot.cloud_init_config()
     user_data = '#cloud-config\n\n' + yaml.dump(user_data)
     meta_data = json.dumps({'instance-id': chroot.vm_name})

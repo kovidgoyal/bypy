@@ -350,6 +350,9 @@ def shutdown(spec):
     if is_local(p):
         shutdown_vm_dir(spec)
         return
+    if p.scheme == 'chroot':
+        print(f'{spec} is not a VM so not shutting down', file=sys.stderr)
+        return
     if not p.path:
         print('Not a VM so not shutting down', file=sys.stderr)
         return
