@@ -293,7 +293,7 @@ def chroot(path: str, bind_mounts: dict[str, str] | None = None):
             r.fs_mount('/run', 'tmpfs', MountOption.MS_NOSUID | MountOption.MS_NODEV, 'mode=0755')
             r.fs_mount('/tmp', 'tmpfs', MountOption.MS_NOSUID | MountOption.MS_NODEV, 'mode=1777')
             r.fs_mount('/dev/shm', 'tmpfs', MountOption.MS_NOSUID | MountOption.MS_NODEV, '')
-            r.symlink('/dev/shm', '/run/shm', cleanup=False)
+            r.symlink('/dev/shm', '/run/shm', cleanup=False)  # auto-removed when /run is unmounted
             r.fs_mount('/dev/pts', 'devpts', MountOption.MS_NOSUID | MountOption.MS_NOEXEC, '')
             r.bind_mount('/proc', '/proc')
             for src, dest in (bind_mounts or {}).items():
