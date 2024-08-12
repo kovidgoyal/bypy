@@ -3,13 +3,14 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
+import sys
 
 from virtual_machine.run import shutdown, wait_for_ssh
 
-from .chroot import Chroot, RECOGNIZED_ARCHES
-from .constants import base_dir
-from .vms import Rsync, get_vm_spec
+from .chroot import RECOGNIZED_ARCHES, Chroot
+from .constants import base_dir, is64bit
 from .utils import setup_build_parser
+from .vms import Rsync, get_vm_spec
 
 
 def setup_parser(p):
@@ -19,12 +20,21 @@ def setup_parser(p):
     p.set_defaults(func=main)
 
 
+def reexec():
+    os.execlp(sys.executable, sys.argv[0], os.path.dirname(os.path.dirname(__file__)), *sys.argv[1:])
+
+
 def main(args):
     vm = get_vm_spec('linux', args.arch)
     if args.action == 'shutdown':
         shutdown(vm)
         return
     chroot = Chroot(args.arch, vm)
+    if chroot.is_chroot_based and args.arch == '32' and is64bit:
+        os.environ['BUILD_ARCH'] = args.arch
+        # Re-exec so is64bit is correct
+        reexec()
+
     output_dir = os.path.join(base_dir(), 'b', 'linux', args.arch, 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'linux', args.arch, 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
@@ -34,6 +44,15 @@ def main(args):
 
     if args.action == 'vm':
         chroot.build_vm()
+        return
+
+    if chroot.is_chroot_based:
+        if args.action == 'shell':
+            chroot.run_shell(sources_dir, pkg_dir, output_dir)
+        if args.action == 'reconnect':
+            raise SystemExit('This is a chroot based VM cannot reconnect to it')
+        if not chroot.single_instance():
+            raise SystemExit(f'Another instance of the Linux container {chroot.single_instance_name} is running')
         return
 
     ba = f'linux-{args.arch}'

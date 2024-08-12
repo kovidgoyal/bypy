@@ -34,7 +34,10 @@ def base_dir():
 
 UNIVERSAL_ARCHES = ()
 ROOT = os.environ.get('BYPY_ROOT', '/').replace('/', os.sep)
-is64bit = sys.maxsize > (1 << 32)
+if 'BUILD_ARCH' in os.environ:
+    is64bit = os.environ['BUILD_ARCH'] != '32'
+else:
+    is64bit = sys.maxsize > (1 << 32)
 SW = os.path.join(ROOT, 'sw')
 if iswindows:
     is64bit = os.environ['BUILD_ARCH'] == '64'
@@ -113,15 +116,15 @@ if iswindows:
     # needed to bypass distutils broken compiler finding code
     worker_env['DISTUTILS_USE_SDK'] = worker_env['MSSDK'] = '1'
 
-    NMAKE = shutil.which('nmake', path=worker_env['PATH'])
-    CMAKE = shutil.which('cmake', path=worker_env['PATH'])
-    NASM = shutil.which('nasm', path=worker_env['PATH'])
-    CL = shutil.which('cl', path=worker_env['PATH'])
-    LINK = shutil.which('link', path=worker_env['PATH'])
-    LIB = shutil.which('lib', path=worker_env['PATH'])
-    RC = shutil.which('rc', path=worker_env['PATH'])
-    MT = shutil.which('mt', path=worker_env['PATH'])
-    SIGNTOOL = shutil.which('signtool', path=worker_env['PATH'])
+    NMAKE = shutil.which('nmake', path=worker_env['PATH']) or 'nmake'
+    CMAKE = shutil.which('cmake', path=worker_env['PATH']) or 'cmake'
+    NASM = shutil.which('nasm', path=worker_env['PATH']) or 'nasm'
+    CL = shutil.which('cl', path=worker_env['PATH']) or 'cl'
+    LINK = shutil.which('link', path=worker_env['PATH']) or 'link'
+    LIB = shutil.which('lib', path=worker_env['PATH']) or 'lib'
+    RC = shutil.which('rc', path=worker_env['PATH']) or 'rc'
+    MT = shutil.which('mt', path=worker_env['PATH']) or 'mt'
+    SIGNTOOL = shutil.which('signtool', path=worker_env['PATH']) or 'signtool'
 else:
     CFLAGS = worker_env['CFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
     CPPFLAGS = worker_env['CPPFLAGS'] = '-I' + os.path.join(PREFIX, 'include')
@@ -133,9 +136,9 @@ else:
                 f'-headerpad_max_install_names -L{LIBDIR}'
         CMAKE = os.path.join(BIN, 'cmake')
         if os.environ.get('BYPY_UNIVERSAL') == 'true':
-            UNIVERSAL_ARCHES = ('x86_64', 'arm64')
+            UNIVERSAL_ARCHES = 'x86_64', 'arm64'
             if 'RELEASE_ARM64' in platform.version():
-                UNIVERSAL_ARCHES = ('arm64', 'x86_64')
+                UNIVERSAL_ARCHES = 'arm64', 'x86_64'
         if 'BYPY_DEPLOY_TARGET' in os.environ:
             worker_env['MACOSX_DEPLOYMENT_TARGET'] = os.environ[
                 'BYPY_DEPLOY_TARGET']

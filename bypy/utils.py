@@ -201,7 +201,11 @@ def run_shell(library_path=False, cwd=None, env=None):
         sys.stdout.flush()
         cmd += ['-i']  # -l causes shell to change cwd to $HOME
     else:
-        cmd += ['-il']
+        kitten = shutil.which('kitten')
+        if kitten:
+            cmd = [kitten, 'run-shell']
+        else:
+            cmd += ['-il']
     try:
         return subprocess.Popen(cmd, env=env, cwd=cwd).wait()
     except KeyboardInterrupt:

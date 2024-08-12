@@ -10,12 +10,12 @@ import re
 import shlex
 import shutil
 import subprocess
-import sys
+from contextlib import suppress
 from urllib.request import urlopen
 
 from .conf import parse_conf_file
 from .constants import base_dir
-from .utils import single_instance
+from .utils import single_instance, run_shell
 
 try:
     import pwd
@@ -44,7 +44,20 @@ def cached_download(url):
     return local
 
 
-def install_modern_python(image_name):
+def install_kitten(image_arch):
+    arch = {'i386': '386'}.get(image_arch, image_arch)
+    name = f'kitten-linux-{arch}'
+    url = f'kitten-linux-{arch}'
+    yield 'start_custom_apt'
+    yield f'echo Downloading {url}'
+    yield ['sh', '-c', f'curl -L https://github.com/kovidgoyal/kitty/releases/latest/download/{name} > /usr/local/bin/kitten']
+    yield 'chmod a+x /usr/local/bin/kitten'
+    yield 'kitten --version'
+    yield 'end_custom_apt'
+
+
+
+def install_modern_python(image_name, is_chroot_based):
     needs_python = image_name in ('xenial', 'bionic')
     if needs_python:
         build_deps = 'libssl-dev libbz2-dev libffi-dev liblzma-dev libncurses5-dev libreadline6-dev libsqlite3-dev uuid-dev zlib1g-dev lzma-dev'
@@ -105,6 +118,9 @@ def p(x):
 
 def files_to_copy(user=USER):
 
+    home_path = '/root' if user == 'root' else f'/home/{user}'
+    owner = 'root:root' if user == 'root' else f'{user}:crusers'
+
     def enc(x):
         if isinstance(x, str):
             x = x.encode()
@@ -118,16 +134,8 @@ def files_to_copy(user=USER):
     ans = {}
     for user_file in ('.zshrc', '.vimrc'):
         path = os.path.expanduser(f'~/{user_file}')
-        if os.path.exists(path):
-            ans[f'/home/{user}/{user_file}'] = {'owner': f'{user}:crusers', 'defer': True, 'data': get_data(path)}
-
-    if 'KITTY_INSTALLATION_DIR' in os.environ:
-        shi = os.path.join(os.environ['KITTY_INSTALLATION_DIR'], 'shell-integration', 'zsh', 'kitty.zsh')
-        if os.path.exists(shi):
-            ans[f'/home/{user}/kitty.zsh'] = {'defer': True, 'owner': f'{user}:crusers', 'data': get_data(shi)}
-        ti = os.path.join(os.environ['KITTY_INSTALLATION_DIR'], 'terminfo', 'x', 'xterm-kitty')
-        if os.path.exists(ti):
-            ans['/usr/share/terminfo/x/xterm-kitty'] = {'data': get_data(ti)}
+        with suppress(FileNotFoundError):
+            ans[f'{home_path}/{user_file}'] = {'owner': owner, 'defer': True, 'data': get_data(path)}
     return ans
 
 
@@ -182,8 +190,11 @@ class Chroot:
         return single_instance(self.single_instance_name)
 
     def build_vm(self):
-        from .build_linux_vm import build_vm
-        build_vm(self)
+        if self.is_chroot_based:
+            self.build_chroot()
+        else:
+            from .build_linux_vm import build_vm
+            build_vm(self)
 
     def container_deps_cmds(self):
         # Basic build environment
@@ -192,12 +203,14 @@ class Chroot:
             ' nasm chrpath zsh git uuid-dev libmount-dev apt-transport-https patchelf'
             ' dh-autoreconf gperf strace sudo vim screen zsh-syntax-highlighting'
         )
+        for cmd in install_kitten(self.image_arch):
+            yield p(cmd)
         if self.go_version:
             for cmd in install_modern_go(self.image_name, self.image_arch, self.go_version):
                 yield p(cmd)
         for cmd in install_modern_cmake(self.image_name):
             yield p(cmd)
-        for cmd in install_modern_python(self.image_name):
+        for cmd in install_modern_python(self.image_name, self.is_chroot_based):
             yield p(cmd)
         # html5lib needed for qt-webengine
         yield p('python3 -m pip install ninja meson html5lib')
@@ -327,36 +340,69 @@ date >> /root/fix-mounting-ran-at
         a('poweroff')
         return ans
 
-    def data_to_build_chroot(self):
+    def build_chroot(self):
+        import stat
+        import tarfile
+
+        def tar_filter(member: tarfile.TarInfo, path):
+            if member.isreg() or member.isdir() or member.islnk() or member.issym():
+                if member.name == 'etc/resolv.conf':
+                    return
+                member.mode |= stat.S_IWRITE | stat.S_IREAD
+                return member
+
+        print('Extracting base image...')
+        with suppress(FileNotFoundError):
+            shutil.rmtree(self.vm_path)
+        os.makedirs(self.vm_path)
+        with tarfile.open(self.cloud_image) as tf:
+            tf.extractall(self.vm_path, filter=tar_filter)
+        shell = '/bin/zsh'
+
+        extra_env = {
+            'BYPY_ARCH': self.image_arch,
+            'SHELL': shell,
+            'EDITOR': '/usr/bin/vim',
+            'HOME': '/root',
+            'LANG': 'en_US.UTF-8',
+        }
+        files = files_to_copy('root')
         deps_cmds = tuple(cmd for cmd in self.container_deps_cmds() if cmd not in (['start_custom_apt'], ['end_custom_apt']))
         def c(*a: str) -> tuple[list[str], ...]:
             return tuple(map(p, a))
+        commands = c(
+            'apt-get update -y',
+            'apt-get upgrade -y'
+            ) + deps_cmds + c(
+            'apt-get remove -y cloud-init',
+            'apt-get upgrade -y',
+            'apt-get clean -y',
+            'mkdir /sw',
+            f'chsh -s {shell} root',
+        ) + c(*misc_commands())
+        from .chroot_linux import chroot
 
-        u = pwd.getpwuid(os.geteuid())
-        data = {
-            'commands': c(
-                'apt-get update -y',
-                'apt-get upgrade -y') + deps_cmds + c(
-                'apt-get remove -y cloud-init',
-                'apt-get upgrade -y',
-                'apt-get clean -y',
-                'mkdir /sw',
-            ) + c(*misc_commands()),
-            'extra_env': {
-                'BYPY_ARCH': self.image_arch,
-                'SHELL': '/bin/zsh',
-                'EDITOR': '/usr/bin/vim',
-                'HOME': f'/home/{USER}',
-                'LANG': 'en_US.UTF-8',
-            },
-            'files': files_to_copy(),
-            'vm_path': self.vm_path,
-            'image_arch': self.image_arch,
-            'user': USER,
-            'pwd_entry': f'{u.pw_name}:x:{u.pw_uid}:{u.pw_gid}::{u.pw_dir}:/bin/zsh',
-            'cloud_image': self.cloud_image,
-        }
-        return data
+        with chroot(self.vm_path):
+            with open('/etc/environment', 'a') as f:
+                for key, val in extra_env.items():
+                    print(f'\n{key}={shlex.quote(val)}', file=f)
+                    os.environ[key] = val
+
+            for path, m in files.items():
+                with open(path, 'wb') as f:
+                    f.write(base64.standard_b64decode(m['data']))
+
+            for cmd in commands:
+                print('\x1b[32m' + shlex.join(cmd) + '\x1b[0m')  # ]]
+                cp = subprocess.run(cmd)
+                if cp.returncode:
+                    raise SystemExit(cp.returncode)
+
+    def run_shell(self, sources_dir: str, pkg_dir: str, output_dir: str):
+        from .chroot_linux import chroot
+        with chroot(self.vm_path):
+            os.chdir(os.path.expanduser('~'))
+            raise SystemExit(run_shell(env=dict(os.environ)))
 
     @property
     def cloud_image(self):
@@ -372,130 +418,3 @@ date >> /root/fix-mounting-ran-at
                 for target in data['targets']:
                     if target['architecture'] == self.qemu_arch:
                         return data
-
-
-def do_build_chroot(data):
-    with open('/etc/passwd', 'a') as f:
-        print(data['pwd_entry'], file=f)
-    with open('/etc/environment', 'a') as f:
-        for key, val in data['extra_env'].items():
-            print(f'\n{key}={shlex.quote(val)}', file=f)
-            os.environ[key] = val
-    os.makedirs(os.path.join('/home', data['user']))
-
-    for path, m in data['files'].items():
-        with open(path, 'wb') as f:
-            f.write(base64.standard_b64decode(m['data']))
-
-    for cmd in data['commands']:
-        print('\x1b[32m' + shlex.join(cmd) + '\x1b[0m')
-        cp = subprocess.run(cmd)
-        if cp.returncode:
-            raise SystemExit(cp.returncode)
-
-
-def read_etc_environment():
-    with open('/etc/environment') as f:
-        for line in f:
-            line = line.rstrip('\n')
-            if not line or line.startswith('#'):
-                continue
-            k, sep, v = line.partition('=')
-            if not sep:
-                continue
-            if k.startswith('export '):
-                k = k[len('export '):]
-            if k:
-                if len(v) > 1 and v[:1] in ('"', "'") and v[-1:] == v[:1]:
-                    v = v[1:-1]
-                if v:
-                    os.environ[k] = v
-
-
-def chroot(path: str, is_child: list[bool], func, *args, do_data_mounts=True, drop_privileges=True, **kw):
-    mounts = []
-    mount = shutil.which('mount') or 'mount'
-    umount = shutil.which('umount') or 'umount'
-
-    def bind_mount(src: str, mountpoint: str) -> None:
-        mp = os.path.join(path, mountpoint.lstrip(os.sep))
-        cmd = [mount, '--bind', src, mp]
-        cp = subprocess.run(cmd)
-        if cp.returncode:
-            print(shlex.join(cmd))
-            raise SystemExit(cp.returncode)
-        mounts.append(mp)
-
-    def fs_mount(name: str, mountpoint: str, fstype: str, options: str) -> None:
-        mp = os.path.join(path, mountpoint.lstrip(os.sep))
-        cmd = [mount, name, mp, '-t', fstype, '-o', options]
-        cp = subprocess.run(cmd)
-        if cp.returncode:
-            print(shlex.join(cmd))
-            raise SystemExit(cp.returncode)
-        mounts.append(mp)
-
-    def do_drop_privileges():
-        if drop_privileges:
-            uid = int(os.environ['CHROOT_UID'])
-            gid = int(os.environ['CHROOT_GID'])
-            os.setgid(gid)
-            os.setuid(uid)
-
-    try:
-        bind_mount(path, '')
-        fs_mount('proc', '/proc', 'proc', 'nosuid,noexec,nodev')
-        fs_mount('sys', '/sys', 'sysfs', 'nosuid,noexec,nodev,ro')
-        fs_mount('udev', '/dev', 'devtmpfs', 'mode=0755,nosuid')
-        fs_mount('devpts', '/dev/pts', 'devpts', 'mode=0620,gid=5,nosuid,noexec')
-        fs_mount('shm', '/dev/shm', 'tmpfs', 'nosuid,nodev,mode=0755')
-        fs_mount('run', '/run', 'tmpfs', 'nosuid,nodev,mode=0755')
-        resolv_dest = os.path.join(path, 'etc', 'resolv.conf')
-        open(resolv_dest, 'w').close()
-        bind_mount('/etc/resolv.conf', '/etc/resolv.conf')
-
-        pid = os.fork()
-        if pid:
-            _, st = os.waitpid(pid, 0)
-            if rc := os.waitstatus_to_exitcode(st):
-                raise SystemExit(rc)
-        else:
-            is_child.append(True)
-            os.chroot(path)
-            os.chdir('/')
-            do_drop_privileges()
-            os.environ.pop('SSL_CERT_FILE', None)
-            os.environ.pop('SSL_CERT_DIR', None)
-            read_etc_environment()
-            func(*args, **kw)
-    finally:
-        if not is_child:
-            for x in reversed(mounts):
-                subprocess.run([umount, x])
-
-
-def build_chroot():
-    import stat
-    import tarfile
-
-    def tar_filter(member: tarfile.TarInfo, path):
-        if member.isreg() or member.isdir() or member.islnk() or member.issym():
-            if member.name == 'etc/resolv.conf':
-                return
-            member.mode |= stat.S_IWRITE | stat.S_IREAD
-            return member
-
-    data = json.loads(sys.stdin.read())
-    print('Extracting base image...')
-    with tarfile.open(data['cloud_image']) as tf:
-        tf.extractall(data['vm_path'], filter=tar_filter)
-
-    is_child = []
-    try:
-        print('Building chroot...')
-        uid = int(os.environ['CHROOT_UID'])
-        gid = int(os.environ['CHROOT_GID'])
-        chroot(data['vm_path'], is_child, do_build_chroot, data, do_data_mounts=False, drop_privileges=False)
-    finally:
-        if not is_child:
-            subprocess.check_call(['chown', '-R', f'{uid}:{gid}', data['vm_path']])

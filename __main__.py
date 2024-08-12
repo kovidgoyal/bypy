@@ -45,25 +45,6 @@ if sys.stdout.isatty():
     else:
         attr = termios.tcgetattr(sys.stdout.fileno())
 
-def chroot(args):
-    if os.geteuid():
-        evars = [f'CHROOT_UID={os.geteuid()}', f'CHROOT_GID={os.getgid()}', f'PATH={os.environ["PATH"]}']
-        if os.environ.get('TERMINFO'):
-            evars.append(f'TERMINFO={os.environ["TERMINFO"]}')
-        os.execlp('sudo', 'sudo', *evars, sys.executable, os.path.dirname(__file__), *sys.argv[1:])
-    import importlib
-    m = importlib.import_module(args.module)
-    func = getattr(m, args.function)
-    func(*args.func_args)
-
-
-def setup_chroot_parser(p):
-    p.set_defaults(func=chroot)
-    p.add_argument('module', help='Module from which to import function to execute')
-    p.add_argument('function', help='The name of the function to execute')
-    p.add_argument('func_args', nargs='*', help='Extra arguments to pass to the function')
-
-
 try:
     p = argparse.ArgumentParser(prog='bypy')
     s = p.add_subparsers(required=True)
@@ -77,7 +58,6 @@ try:
     setup_build_deps_parser(s.add_parser('dependencies', aliases=['deps'], help='Build the dependencies'))
     setup_shell_parser(s.add_parser('shell', help='Run a shell with a completely initialized environment'))
     setup_reconnect_parser(s.add_parser('__reconnect__', help='For internal use'))
-    setup_chroot_parser(s.add_parser('__chroot__', help='For internal use'))
     parsed_args = p.parse_args(args[1:])
     parsed_args.func(parsed_args)
 finally:
