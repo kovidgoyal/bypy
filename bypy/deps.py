@@ -186,6 +186,9 @@ def main(parsed_args):
                 frozenset(parsed_args.dependencies) - all_dep_names))
     deps_to_build = tuple(filter(accept_func, all_deps))
     if not deps_to_build:
+        if accept_func is unbuilt:
+            print('No unbuilt dependencies left')
+            raise SystemExit(0)
         raise SystemExit('No buildable deps were specified')
     names_of_deps_to_build = frozenset(map(itemgetter('name'), deps_to_build))
     other_deps = [

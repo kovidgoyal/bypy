@@ -8,6 +8,7 @@ import fcntl
 import functools
 import glob
 import grp
+import gzip
 import json
 import lzma
 import multiprocessing
@@ -22,15 +23,16 @@ import subprocess
 import tarfile
 import tempfile
 import time
+import traceback
 import zipfile
 import zlib
 from contextlib import contextmanager, suppress
 from enum import IntFlag, auto
 from operator import attrgetter
-from typing import NamedTuple, Literal
+from typing import Literal, NamedTuple
 
 # these cannot be imported after chroot so import them early
-re, subprocess, bz2, lzma, zlib, tarfile, zipfile, glob, socket, struct, shlex, tempfile, time, functools, stat, fcntl, json, multiprocessing, pwd, grp
+re, subprocess, bz2, lzma, zlib, tarfile, zipfile, glob, socket, struct, shlex, tempfile, time, functools, stat, fcntl, json, multiprocessing, pwd, grp, gzip, traceback
 
 class MountOption(IntFlag):
     MS_RDONLY = auto()
@@ -282,6 +284,7 @@ def chroot(path: str, bind_mounts: dict[str, str] | None = None):
             sanitize_env_vars()
             read_etc_environment()
             tempfile.tempdir = None
+            tempfile.gettempdir()
 
             yield
         else:

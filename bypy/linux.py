@@ -10,7 +10,7 @@ from virtual_machine.run import shutdown, wait_for_ssh
 from .chroot import RECOGNIZED_ARCHES, Chroot
 from .constants import base_dir, is64bit
 from .utils import setup_build_parser
-from .vms import Rsync, get_vm_spec
+from .vms import Rsync, get_vm_spec, remote_cmd
 
 
 def setup_parser(p):
@@ -53,9 +53,13 @@ def main(args):
         if args.action == 'shell':
             if args.full:
                 rsync.to_chroot()
-            chroot.run_shell(sources_dir, pkg_dir, output_dir, args.full)
+            chroot.run_func(sources_dir, pkg_dir, output_dir, args.full)
         if not chroot.single_instance():
             raise SystemExit(f'Another instance of the Linux container {chroot.single_instance_name} is running')
+        rsync.to_chroot()
+        cmd = remote_cmd(args)
+        from .main import global_main
+        chroot.run_func(sources_dir, pkg_dir, output_dir, True, global_main, ['bypy'] + cmd)
         return
 
     ba = f'linux-{args.arch}'

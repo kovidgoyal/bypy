@@ -2,6 +2,7 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
+import argparse
 import atexit
 import os
 import runpy
@@ -164,7 +165,9 @@ def build_deps(args):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(WORKER_DIR, exist_ok=True)
     delete_code_signing_certs()
-    if 'BYPY_WORKER' in os.environ:
+    if in_chroot():
+        deps_main(args)
+    elif 'BYPY_WORKER' in os.environ:
         os.chdir(os.environ['BYPY_WORKER'])
         if islinux:
             # Try to get the kernel to prioritise the ssh daemon so we can log into the box after a disconnect
@@ -174,3 +177,25 @@ def build_deps(args):
         deps_main(args)
     else:
         run_worker(args)
+
+
+def global_main(args):
+    from bypy.export import setup_parser as export_setup_parser
+    from bypy.linux import setup_parser as linux_setup_parser
+    from bypy.macos import setup_parser as macos_setup_parser
+    from bypy.windows import setup_parser as windows_setup_parser
+    from virtual_machine.run import setup_parser as vm_setup_parser
+    p = argparse.ArgumentParser(prog='bypy')
+    s = p.add_subparsers(required=True)
+    vm_setup_parser(s.add_parser('vm', help='Control the building and running of Virtual Machines'))
+    linux_setup_parser(s.add_parser('linux', help='Build in a Linux VM'))
+    macos_setup_parser(s.add_parser('macos', help='Build in a macOS VM'))
+    windows_setup_parser(s.add_parser('windows', help='Build in a Windows VM', aliases=['win']))
+    export_setup_parser(s.add_parser('export', help='Export built deps to a CI server'))
+    setup_worker_status_parser(s.add_parser('worker-status', help='Check the status of the bypy dependency build worker'))
+    setup_program_parser(s.add_parser('program', help='Build the program'))
+    setup_build_deps_parser(s.add_parser('dependencies', aliases=['deps'], help='Build the dependencies'))
+    setup_shell_parser(s.add_parser('shell', help='Run a shell with a completely initialized environment'))
+    setup_reconnect_parser(s.add_parser('__reconnect__', help='For internal use'))
+    parsed_args = p.parse_args(args[1:])
+    parsed_args.func(parsed_args)

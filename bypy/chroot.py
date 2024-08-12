@@ -140,7 +140,7 @@ def files_to_copy(user=USER):
 
 
 def misc_commands():
-    yield 'mkdir /sw/src /sw/sources /sw/bypy /sw/tmp /sw/pkg'
+    yield 'mkdir /sw/src /sw/sources /sw/bypy /sw/tmp /sw/pkg /sw/dist'
     yield 'ln -s /sw/src /src'
     yield 'ln -s /sw/sources /sources'
     yield 'ln -s /sw/bypy /bypy'
@@ -213,7 +213,7 @@ class Chroot:
         for cmd in install_modern_python(self.image_name, self.is_chroot_based):
             yield p(cmd)
         # html5lib needed for qt-webengine
-        yield p('python3 -m pip install ninja meson html5lib')
+        yield p('python3 -m pip install ninja meson certifi html5lib')
 
         deps = self.conf['deps']
         if isinstance(deps, (list, tuple)):
@@ -387,8 +387,9 @@ date >> /root/fix-mounting-ran-at
 
         with chroot(self.vm_path):
             with open('/etc/environment', 'a') as f:
+                print(file=f)
                 for key, val in extra_env.items():
-                    print(f'\n{key}={shlex.quote(val)}', file=f)
+                    print(f'{key}={shlex.quote(val)}', file=f)
                     if key not in ('TMPDIR', 'TMP', 'TEMP'):
                         os.environ[key] = val
 
@@ -401,16 +402,21 @@ date >> /root/fix-mounting-ran-at
                 cp = subprocess.run(cmd)
                 if cp.returncode:
                     raise SystemExit(cp.returncode)
+            SSL_CERT_FILE = subprocess.check_output(['python3', '-m', 'certifi']).decode().strip()
+            with open('/etc/environment', 'a') as f:
+                print(f'SSL_CERT_FILE={shlex.quote(SSL_CERT_FILE)}', file=f)
             print('Chroot created successfully at:', self.vm_path)
 
-    def run_shell(self, sources_dir: str, pkg_dir: str, output_dir: str, init_env: bool = False):
+    def run_func(self, sources_dir: str, pkg_dir: str, output_dir: str, init_env: bool, func = None, *args, **kwargs):
         from .chroot_linux import chroot
-        with chroot(self.vm_path, {sources_dir: '/sw/sources', pkg_dir: '/sw/pkg', output_dir: '/sw/sources/dist'}):
+        with chroot(self.vm_path, {sources_dir: '/sw/sources', pkg_dir: '/sw/pkg', output_dir: '/sw/dist'}):
             os.chdir(os.path.expanduser('~'))
             if init_env:
                 from bypy.deps import init_env as init
                 init()
-            raise SystemExit(run_shell(env=dict(os.environ)))
+            if func is None:
+                raise SystemExit(run_shell(env=dict(os.environ)))
+            func(*args, **kwargs)
 
     @property
     def cloud_image(self):
