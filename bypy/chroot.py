@@ -410,7 +410,8 @@ date >> /root/fix-mounting-ran-at
 
     def run_func(self, sources_dir: str, pkg_dir: str, output_dir: str, func, *args, **kwargs):
         from .chroot_linux import chroot
-        with chroot(self.vm_path, {sources_dir: '/sw/sources', pkg_dir: '/sw/pkg', output_dir: '/sw/dist'}):
+        bypy_src = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with chroot(self.vm_path, {bypy_src: '/sw/bypy', sources_dir: '/sw/sources', pkg_dir: '/sw/pkg', output_dir: '/sw/dist'}):
             os.chdir(os.path.expanduser('~'))
             func(*args, **kwargs)
 

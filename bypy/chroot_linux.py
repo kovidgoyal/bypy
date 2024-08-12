@@ -197,12 +197,13 @@ class Resources:
         mount(fstype, mp, fstype, flags, options)
         self.fs_mounts[mountpoint] = mp
 
-    def symlink(self, target: str, location: str) -> None:
+    def symlink(self, target: str, location: str, cleanup: bool = True) -> None:
         lc = os.path.join(self.chroot_path, location.lstrip(os.sep))
         with suppress(FileNotFoundError):
             os.unlink(lc)
         os.symlink(target, lc)
-        self.files[location] = lc
+        if cleanup:
+            self.files[location] = lc
 
     def touch(self, path: str) -> None:
         with suppress(FileNotFoundError):
@@ -254,11 +255,12 @@ def import_all_bypy_modules():
             b, ext = os.path.splitext(res.name)
             if ext == '.py' and b not in ('oem', 'mbcs'):
                 importlib.import_module('.' + b, pkg)
+    import_in('encodings')
     for res in resources.files('bypy').iterdir():
         if res.is_dir() and res.name != 'freeze':
             import_in('bypy.' + res.name)
-    importlib.import_module('bypy.freeze')
-    import_in('encodings')
+    from bypy.freeze import prepare_for_chroot
+    prepare_for_chroot()
 
 
 @contextmanager
@@ -284,11 +286,15 @@ def chroot(path: str, bind_mounts: dict[str, str] | None = None):
             r.bind_mount('/sys', '/sys')
             for dev, proc in {'fd': 'fd', 'stdin': '0', 'stdout': '1', 'stderr': '2'}.items():
                 r.symlink(f'/proc/self/fd/{proc}', f'/dev/{dev}')
+            r.symlink('/dev/pts/ptmx', '/dev/ptmx')
             tuple(map(r.bind_dev, (
                 'full', 'zero', 'tty', 'random', 'urandom', 'null',
             )))
             r.fs_mount('/run', 'tmpfs', MountOption.MS_NOSUID | MountOption.MS_NODEV, 'mode=0755')
             r.fs_mount('/tmp', 'tmpfs', MountOption.MS_NOSUID | MountOption.MS_NODEV, 'mode=1777')
+            r.fs_mount('/dev/shm', 'tmpfs', MountOption.MS_NOSUID | MountOption.MS_NODEV, '')
+            r.symlink('/dev/shm', '/run/shm', cleanup=False)
+            r.fs_mount('/dev/pts', 'devpts', MountOption.MS_NOSUID | MountOption.MS_NOEXEC, '')
             r.bind_mount('/proc', '/proc')
             for src, dest in (bind_mounts or {}).items():
                 os.makedirs(os.path.join(path, dest.lstrip('/')), exist_ok=True)

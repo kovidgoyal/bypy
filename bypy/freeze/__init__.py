@@ -10,7 +10,7 @@ import shutil
 from contextlib import suppress
 from functools import lru_cache
 
-from ..constants import PYTHON
+from ..constants import BYPY, PYTHON
 from ..utils import run, walk
 from .perfect_hash import get_c_code
 
@@ -130,10 +130,6 @@ def extract_extension_modules(src_dir, dest_dir, move=True):
     return ext_map
 
 
-def path_to_freeze_dir():
-    return os.path.dirname(os.path.abspath(__file__))
-
-
 def bin_to_c(src):
     if isinstance(src, str):
         src = src.encode('utf-8') + b'\0'
@@ -152,8 +148,25 @@ def bin_to_c(src):
         yield ''.join(line)
 
 
+@lru_cache
+def get_importer_source_code() -> str:
+    from importlib import resources
+    for x in resources.files('bypy.freeze').iterdir():
+        if x.name == 'importer.py':
+            return x.read_text()
+    raise FileNotFoundError('Could not find importer.py')
+
+
+def prepare_for_chroot():
+    get_importer_source_code()
+
+
+def path_to_freeze_dir():
+    return os.path.join(BYPY, 'bypy', 'freeze')
+
+
 def importer_src_to_header(develop_mode_env_var, path_to_user_env_vars):
-    src = open(os.path.join(path_to_freeze_dir(), 'importer.py')).read()
+    src = get_importer_source_code()
     src = src.replace(
         '__DEVELOP_MODE_ENV_VAR__', repr(develop_mode_env_var), 1)
     src = src.replace(
