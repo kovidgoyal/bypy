@@ -53,13 +53,19 @@ def main(args):
         if args.action == 'shell':
             if args.full:
                 rsync.to_chroot()
-            chroot.run_func(sources_dir, pkg_dir, output_dir, args.full)
+            def run_shell():
+                if args.full:
+                    from bypy.deps import init_env
+                    init_env()
+                from bypy.utils import run_shell
+                raise SystemExit(run_shell(env=dict(os.environ)))
+            chroot.run_func(sources_dir, pkg_dir, output_dir, run_shell)
         if not chroot.single_instance():
             raise SystemExit(f'Another instance of the Linux container {chroot.single_instance_name} is running')
         rsync.to_chroot()
         cmd = remote_cmd(args)
         from .main import global_main
-        chroot.run_func(sources_dir, pkg_dir, output_dir, True, global_main, ['bypy'] + cmd)
+        chroot.run_func(sources_dir, pkg_dir, output_dir, global_main, ['bypy'] + cmd)
         return
 
     ba = f'linux-{args.arch}'

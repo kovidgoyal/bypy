@@ -15,7 +15,7 @@ from urllib.request import urlopen
 
 from .conf import parse_conf_file
 from .constants import base_dir
-from .utils import single_instance, run_shell
+from .utils import single_instance
 
 try:
     import pwd
@@ -408,15 +408,10 @@ date >> /root/fix-mounting-ran-at
                 print(f'SSL_CERT_FILE={shlex.quote(SSL_CERT_FILE)}', file=f)
             print('Chroot created successfully at:', self.vm_path)
 
-    def run_func(self, sources_dir: str, pkg_dir: str, output_dir: str, init_env: bool, func = None, *args, **kwargs):
+    def run_func(self, sources_dir: str, pkg_dir: str, output_dir: str, func, *args, **kwargs):
         from .chroot_linux import chroot
         with chroot(self.vm_path, {sources_dir: '/sw/sources', pkg_dir: '/sw/pkg', output_dir: '/sw/dist'}):
             os.chdir(os.path.expanduser('~'))
-            if init_env:
-                from bypy.deps import init_env as init
-                init()
-            if func is None:
-                raise SystemExit(run_shell(env=dict(os.environ)))
             func(*args, **kwargs)
 
     @property
