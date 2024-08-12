@@ -252,13 +252,13 @@ def import_all_bypy_modules():
     def import_in(pkg):
         for res in resources.files(pkg).iterdir():
             b, ext = os.path.splitext(res.name)
-            if ext == '.py':
+            if ext == '.py' and b not in ('oem', 'mbcs'):
                 importlib.import_module('.' + b, pkg)
     for res in resources.files('bypy').iterdir():
         if res.is_dir() and res.name != 'freeze':
             import_in('bypy.' + res.name)
     importlib.import_module('bypy.freeze')
-    codecs.lookup('cp437')
+    import_in('encodings')
 
 
 @contextmanager
