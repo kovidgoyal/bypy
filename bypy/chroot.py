@@ -60,7 +60,7 @@ def install_kitten(image_arch):
 def install_modern_python(image_name, is_chroot_based):
     needs_python = image_name in ('xenial', 'bionic')
     if needs_python:
-        build_deps = 'libssl-dev libbz2-dev libffi-dev liblzma-dev libncurses5-dev libreadline6-dev libsqlite3-dev uuid-dev zlib1g-dev lzma-dev'
+        build_deps = 'libssl-dev libbz2-dev libffi-dev liblzma-dev libncurses5-dev libreadline6-dev libsqlite3-dev zlib1g-dev lzma-dev'
         yield 'start_custom_apt'
         yield 'apt-get install -y ' + build_deps
         yield ['sh', '-c', 'curl -fsSL https://www.python.org/ftp/python/3.9.19/Python-3.9.19.tar.xz | tar xJ']
@@ -212,8 +212,9 @@ class Chroot:
             yield p(cmd)
         for cmd in install_modern_python(self.image_name, self.is_chroot_based):
             yield p(cmd)
+        yield p('python3 -m pip install --upgrade pip')
         # html5lib needed for qt-webengine
-        yield p('python3 -m pip install ninja meson certifi html5lib')
+        yield p('python3 -m pip install ninja packaging meson certifi html5lib')
 
         deps = self.conf['deps']
         if isinstance(deps, (list, tuple)):

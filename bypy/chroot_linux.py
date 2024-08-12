@@ -2,6 +2,7 @@
 # License: GPLv3 Copyright: 2024, Kovid Goyal <kovid at kovidgoyal.net>
 
 import bz2
+import codecs
 import ctypes
 import errno
 import fcntl
@@ -9,6 +10,7 @@ import functools
 import glob
 import grp
 import gzip
+import importlib
 import json
 import lzma
 import multiprocessing
@@ -28,11 +30,12 @@ import zipfile
 import zlib
 from contextlib import contextmanager, suppress
 from enum import IntFlag, auto
+from importlib import resources
 from operator import attrgetter
 from typing import Literal, NamedTuple
 
 # these cannot be imported after chroot so import them early
-re, subprocess, bz2, lzma, zlib, tarfile, zipfile, glob, socket, struct, shlex, tempfile, time, functools, stat, fcntl, json, multiprocessing, pwd, grp, gzip, traceback
+re, subprocess, bz2, lzma, zlib, tarfile, zipfile, glob, socket, struct, shlex, tempfile, time, functools, stat, fcntl, json, multiprocessing, pwd, grp, gzip, traceback, resources, codecs
 
 class MountOption(IntFlag):
     MS_RDONLY = auto()
@@ -235,14 +238,27 @@ class Resources:
         tuple(map(umount, items(self.fs_mounts)))
         tuple(map(lazy_umount, items(self.bind_mounts)))
         tuple(map(os.unlink, items(self.files)))
-        os.chdir('/')
-        subprocess.run(['chown', '-R', 'root:root', '/'])
+        if self.chroot_done:
+            subprocess.run(['chown', '-R', 'root:root', '/'])
 
 
 def sanitize_env_vars(allowed=('TERM', 'COLORTERM', 'KITTY_WINDOW_ID', 'KITTY_PID',)) -> None:
     for key in tuple(os.environ):
         if key not in allowed:
             del os.environ[key]
+
+
+def import_all_bypy_modules():
+    def import_in(pkg):
+        for res in resources.files(pkg).iterdir():
+            b, ext = os.path.splitext(res.name)
+            if ext == '.py':
+                importlib.import_module('.' + b, pkg)
+    for res in resources.files('bypy').iterdir():
+        if res.is_dir() and res.name != 'freeze':
+            import_in('bypy.' + res.name)
+    importlib.import_module('bypy.freeze')
+    codecs.lookup('cp437')
 
 
 @contextmanager
@@ -279,6 +295,7 @@ def chroot(path: str, bind_mounts: dict[str, str] | None = None):
                 r.bind_mount(src, dest)
             from bypy.constants import in_chroot
             setattr(in_chroot, 'ans', True)
+            import_all_bypy_modules()
             r.chroot()
 
             sanitize_env_vars()
