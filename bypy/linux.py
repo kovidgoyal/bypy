@@ -47,10 +47,13 @@ def main(args):
         return
 
     if chroot.is_chroot_based:
-        if args.action == 'shell':
-            chroot.run_shell(sources_dir, pkg_dir, output_dir)
         if args.action == 'reconnect':
             raise SystemExit('This is a chroot based VM cannot reconnect to it')
+        rsync = Rsync(chroot.vm_path)
+        if args.action == 'shell':
+            if args.full:
+                rsync.to_chroot()
+            chroot.run_shell(sources_dir, pkg_dir, output_dir, args.full)
         if not chroot.single_instance():
             raise SystemExit(f'Another instance of the Linux container {chroot.single_instance_name} is running')
         return

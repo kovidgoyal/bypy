@@ -10,10 +10,9 @@ import subprocess
 import sys
 from contextlib import suppress
 
-from .constants import (
-    BYPY, OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, WORKER_DIR, build_dir, islinux
-)
-from .deps import init_env, main as deps_main
+from .constants import BYPY, OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, WORKER_DIR, build_dir, in_chroot, islinux
+from .deps import init_env
+from .deps import main as deps_main
 from .utils import mkdtemp, rmtree, run_shell, setup_dependencies_parser
 
 SCREEN_NAME = 'bypy-deps-worker'
@@ -57,7 +56,7 @@ def build_program(args):
     finally:
         os.chdir(SRC)
         rmtree(ext_dir), rmtree(bdir)
-    if islinux:
+    if islinux and not in_chroot():
         subprocess.run('sudo fstrim --all -v'.split())
 
 

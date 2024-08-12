@@ -244,7 +244,7 @@ def sanitize_env_vars(allowed=('TERM', 'COLORTERM', 'KITTY_WINDOW_ID', 'KITTY_PI
 
 
 @contextmanager
-def chroot(path: str):
+def chroot(path: str, bind_mounts: dict[str, str] | None = None):
     uid_map, gid_map = find_largest_subid_map('uid'), find_largest_subid_map('gid')
     if min(uid_map.num, gid_map.num) < 1024:
         raise SystemExit('Your user account does not have a sufficiently large sub UID and/or sub GID range defined,'
@@ -272,10 +272,16 @@ def chroot(path: str):
             r.fs_mount('/run', 'tmpfs', MountOption.MS_NOSUID | MountOption.MS_NODEV, 'mode=0755')
             r.fs_mount('/tmp', 'tmpfs', MountOption.MS_NOSUID | MountOption.MS_NODEV, 'mode=1777')
             r.bind_mount('/proc', '/proc')
+            for src, dest in (bind_mounts or {}).items():
+                os.makedirs(os.path.join(path, dest.lstrip('/')), exist_ok=True)
+                r.bind_mount(src, dest)
+            from bypy.constants import in_chroot
+            setattr(in_chroot, 'ans', True)
             r.chroot()
 
             sanitize_env_vars()
             read_etc_environment()
+            tempfile.tempdir = None
 
             yield
         else:

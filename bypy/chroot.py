@@ -140,7 +140,7 @@ def files_to_copy(user=USER):
 
 
 def misc_commands():
-    yield 'mkdir /sw/src /sw/sources /sw/bypy /sw/tmp'
+    yield 'mkdir /sw/src /sw/sources /sw/bypy /sw/tmp /sw/pkg'
     yield 'ln -s /sw/src /src'
     yield 'ln -s /sw/sources /sources'
     yield 'ln -s /sw/bypy /bypy'
@@ -365,6 +365,9 @@ date >> /root/fix-mounting-ran-at
             'EDITOR': '/usr/bin/vim',
             'HOME': '/root',
             'LANG': 'en_US.UTF-8',
+            'TMPDIR': '/sw/tmp',
+            'TEMP': '/sw/tmp',
+            'TMP': '/sw/tmp',
         }
         files = files_to_copy('root')
         deps_cmds = tuple(cmd for cmd in self.container_deps_cmds() if cmd not in (['start_custom_apt'], ['end_custom_apt']))
@@ -386,7 +389,8 @@ date >> /root/fix-mounting-ran-at
             with open('/etc/environment', 'a') as f:
                 for key, val in extra_env.items():
                     print(f'\n{key}={shlex.quote(val)}', file=f)
-                    os.environ[key] = val
+                    if key not in ('TMPDIR', 'TMP', 'TEMP'):
+                        os.environ[key] = val
 
             for path, m in files.items():
                 with open(path, 'wb') as f:
@@ -397,11 +401,15 @@ date >> /root/fix-mounting-ran-at
                 cp = subprocess.run(cmd)
                 if cp.returncode:
                     raise SystemExit(cp.returncode)
+            print('Chroot created successfully at:', self.vm_path)
 
-    def run_shell(self, sources_dir: str, pkg_dir: str, output_dir: str):
+    def run_shell(self, sources_dir: str, pkg_dir: str, output_dir: str, init_env: bool = False):
         from .chroot_linux import chroot
-        with chroot(self.vm_path):
+        with chroot(self.vm_path, {sources_dir: '/sw/sources', pkg_dir: '/sw/pkg', output_dir: '/sw/sources/dist'}):
             os.chdir(os.path.expanduser('~'))
+            if init_env:
+                from bypy.deps import init_env as init
+                init()
             raise SystemExit(run_shell(env=dict(os.environ)))
 
     @property

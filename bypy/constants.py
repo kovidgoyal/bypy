@@ -32,6 +32,10 @@ def base_dir():
     return ans
 
 
+def in_chroot():
+    return getattr(in_chroot, 'ans', False)
+
+
 UNIVERSAL_ARCHES = ()
 ROOT = os.environ.get('BYPY_ROOT', '/').replace('/', os.sep)
 if 'BUILD_ARCH' in os.environ:

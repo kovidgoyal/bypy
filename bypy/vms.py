@@ -50,10 +50,14 @@ class Rsync(object):
     excludes = frozenset({
         '*.pyc', '*.pyo', '*.swp', '*.swo', '*.pyj-cached', '*~', '.git', '.cache'})
 
-    def __init__(self, spec, port, rsync_cmd=''):
-        self.server = server_from_spec(spec)
-        self.remote_rsync_cmd = rsync_cmd
-        self.port = port
+    def __init__(self, spec, port=0, rsync_cmd=''):
+        self.is_chroot_based = not port
+        if self.is_chroot_based:
+            self.chroot_path = spec
+        else:
+            self.server = server_from_spec(spec)
+            self.remote_rsync_cmd = rsync_cmd
+            self.port = port
 
     @contextmanager
     def restore_tty_state(self):
@@ -102,25 +106,46 @@ exec "$SHELL" -il
         raise SystemExit(cp.returncode)
 
     def from_vm(self, from_, to, excludes=frozenset()):
-        f = BUILD_VM_USER + '@' + self.server + ':' + from_
+        if self.is_chroot_based:
+            f = os.path.join(self.chroot_path, from_.lstrip('/'))
+            if os.path.islink(f):
+                f = os.path.join(self.chroot_path, os.readlink(f).lstrip('/'))
+        else:
+            f = BUILD_VM_USER + '@' + self.server + ':' + from_
         return self.rsync_command(f, to, excludes)
 
     def to_vm(self, from_, to, excludes=frozenset()):
-        t = BUILD_VM_USER + '@' + self.server + ':' + to
+        if self.is_chroot_based:
+            t = os.path.join(self.chroot_path, to.lstrip('/'))
+            if os.path.islink(t):
+                t = os.path.join(self.chroot_path, os.readlink(t).lstrip('/'))
+        else:
+            t = BUILD_VM_USER + '@' + self.server + ':' + to
         return self.rsync_command(from_, t, excludes)
 
     def rsync_command(self, from_, to, excludes=frozenset()):
-        ssh = shlex.join(ssh_command_to(server=self.server, port=self.port)[:-1])
         if isinstance(excludes, type('')):
             excludes = excludes.split()
         excludes = frozenset(excludes) | self.excludes
         excludes = ['--exclude=' + x for x in excludes]
         cmd = [
-            'rsync', '--info=stats', '-a', '-zz', '-e', ssh, '--delete', '--delete-excluded', '--chmod', 'og-w',
+            'rsync', '--info=stats', '-a', '-zz', '--delete', '--delete-excluded', '--chmod', 'og-w',
         ]
-        if self.remote_rsync_cmd:
-            cmd += ['--rsync-path', self.remote_rsync_cmd]
+        if not self.is_chroot_based:
+            ssh = shlex.join(ssh_command_to(server=self.server, port=self.port)[:-1])
+            cmd += ['-e', ssh]
+            if self.remote_rsync_cmd:
+                cmd += ['--rsync-path', self.remote_rsync_cmd]
         return cmd + excludes + [from_ + '/', to]
+
+    def to_chroot(self):
+        dirs_to_ensure = []
+        to_vm_calls = []
+        src_to_vm_cmd(self, dirs_to_ensure, to_vm_calls)
+        for call in to_vm_calls:
+            cp = subprocess.run(call, stdout=subprocess.DEVNULL)
+            if cp.returncode:
+                raise SystemExit(cp.returncode)
 
 
 class SyncWorker(threading.Thread):
@@ -162,22 +187,27 @@ def run_sync_jobs(cmds, retry=False):
     sys.stdout.buffer.write(workers[-1].stdout.strip())
     print(flush=True)
 
+def src_to_vm_cmd(rsync, dirs_to_ensure, to_vm_calls, prefix='/'):
+    src_dir = os.path.dirname(base_dir())
+    if os.path.exists(os.path.join(src_dir, 'setup.py')):
+        excludes = '/bypy/b ' + get_rsync_conf()['to_vm_excludes']
+        prefix = prefix.rstrip('/') + '/'
+        to = prefix + 'src'
+        dirs_to_ensure.append(to)
+        to_vm_calls.append(rsync.to_vm(src_dir, to, excludes))
+
 
 def to_vm(rsync, initial_cmd, sources_dir, pkg_dir, prefix='/', name='sw'):
     start = time.monotonic()
     print('Mirroring data to the VM...', flush=True)
     prefix = prefix.rstrip('/') + '/'
-    src_dir = os.path.dirname(base_dir())
     dirs_to_ensure = []
     to_vm_calls = []
+    src_to_vm_cmd(rsync, dirs_to_ensure, to_vm_calls, prefix)
 
     def a(src, to, excludes=frozenset()):
         dirs_to_ensure.append(to)
         to_vm_calls.append(rsync.to_vm(src, to, excludes))
-
-    if os.path.exists(os.path.join(src_dir, 'setup.py')):
-        excludes = get_rsync_conf()['to_vm_excludes']
-        a(src_dir, prefix + 'src', '/bypy/b ' + excludes)
 
     base = os.path.dirname(os.path.abspath(__file__))
     a(os.path.dirname(base), prefix + 'bypy')

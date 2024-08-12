@@ -260,6 +260,16 @@ def run(*args, **kw):
         return stdout
 
 
+def safe_link(src, dst):
+    try:
+        os.link(src, dst)
+    except OSError as err:
+        if err.errno != errno.EXDEV:
+            raise
+        # fallback to a copy when the files reside on different filesystems
+        shutil.copy(src, dst)
+
+
 def lcopy(src, dst, no_hardlinks=False):
     try:
         if os.path.islink(src):
@@ -270,7 +280,7 @@ def lcopy(src, dst, no_hardlinks=False):
             if no_hardlinks:
                 shutil.copy(src, dst)
             else:
-                os.link(src, dst)
+                safe_link(src, dst)
             return False
     except FileExistsError:
         os.unlink(dst)
