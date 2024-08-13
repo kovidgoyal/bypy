@@ -24,8 +24,9 @@ def main(args):
             'static void ParseErrorFunc(void* user_data, const xmlError*)')
         replace_in_file(
             'src/3rdparty/chromium/third_party/blink/renderer/core/xml/xslt_processor_libxslt.cc',
-            'void XSLTProcessor::ParseErrorFunc(void* user_data, xmlError* error) {',
-            'void XSLTProcessor::ParseErrorFunc(void* user_data, const xmlError* error) {')
+            'void XSLTProcessor::ParseErrorFunc(void* user_data, xmlError* error) {',  # }
+            'void XSLTProcessor::ParseErrorFunc(void* user_data, const xmlError* error) {')  # }
+
     if iswindows:
         replace_in_file('cmake/Functions.cmake', 'set(x64List x86_64 AMD64', 'set(x64List x86_64 AMD64 amd64')
 
