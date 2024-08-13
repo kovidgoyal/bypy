@@ -102,6 +102,14 @@ def main(args):
         # https://bugreports.qt.io/browse/QTBUG-41151
         replace_in_file('src/plugins/platforms/xcb/qxcbcursor.cpp',
                         'pointing_hand"', 'hand2"')
+        # Get QProcess to work with QEMU user mode
+        # https://bugreports.qt.io/browse/QTBUG-98951
+        replace_in_file(
+            'src/corelib/io/qprocess_unix.cpp',
+            '#if defined(Q_OS_LINUX) && !QT_CONFIG(forkfd_pidfd)',
+            'if (getenv("QT_QPROCESS_NO_VFORK")) return false;\n'
+            '#if defined(Q_OS_LINUX) && !QT_CONFIG(forkfd_pidfd)'
+        )
     if iswindows or islinux:
         # Let Qt setup its paths based on runtime location
         # this is needed because we want Qt to be able to

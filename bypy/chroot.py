@@ -369,6 +369,7 @@ date >> /root/fix-mounting-ran-at
             'TMPDIR': '/sw/tmp',
             'TEMP': '/sw/tmp',
             'TMP': '/sw/tmp',
+            'QT_QPROCESS_NO_VFORK': '1',
         }
         files = files_to_copy('root')
         deps_cmds = tuple(cmd for cmd in self.container_deps_cmds() if cmd not in (['start_custom_apt'], ['end_custom_apt']))
