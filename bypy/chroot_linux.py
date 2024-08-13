@@ -33,11 +33,12 @@ import zlib
 from contextlib import contextmanager, suppress
 from enum import IntFlag, auto
 from importlib import resources
+from multiprocessing import dummy, pool, queues, synchronize
 from operator import attrgetter
 from typing import Literal, NamedTuple
 
 # these cannot be imported after chroot so import them early
-re, subprocess, bz2, lzma, zlib, tarfile, zipfile, glob, socket, struct, shlex, tempfile, time, functools, stat, fcntl, json, multiprocessing, pwd, grp, gzip, traceback, resources, codecs, pkgutil, runpy
+re, subprocess, bz2, lzma, zlib, tarfile, zipfile, glob, socket, struct, shlex, tempfile, time, functools, stat, fcntl, json, multiprocessing, pwd, grp, gzip, traceback, resources, codecs, pkgutil, runpy, dummy, pool, queues, synchronize
 
 class MountOption(IntFlag):
     MS_RDONLY = auto()
