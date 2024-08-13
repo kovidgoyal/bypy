@@ -15,8 +15,10 @@ import json
 import lzma
 import multiprocessing
 import os
+import pkgutil
 import pwd
 import re
+import runpy
 import shlex
 import socket
 import stat
@@ -35,7 +37,7 @@ from operator import attrgetter
 from typing import Literal, NamedTuple
 
 # these cannot be imported after chroot so import them early
-re, subprocess, bz2, lzma, zlib, tarfile, zipfile, glob, socket, struct, shlex, tempfile, time, functools, stat, fcntl, json, multiprocessing, pwd, grp, gzip, traceback, resources, codecs
+re, subprocess, bz2, lzma, zlib, tarfile, zipfile, glob, socket, struct, shlex, tempfile, time, functools, stat, fcntl, json, multiprocessing, pwd, grp, gzip, traceback, resources, codecs, pkgutil, runpy
 
 class MountOption(IntFlag):
     MS_RDONLY = auto()
