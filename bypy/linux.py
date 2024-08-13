@@ -26,10 +26,13 @@ def reexec_as_32bit():
 
 def main(args):
     vm = get_vm_spec('linux', args.arch)
+    chroot = Chroot(args.arch, vm)
     if args.action == 'shutdown':
+        if chroot.is_chroot_based:
+            print('Shutdown has no effect on chroot based VMs', file=sys.stderr)
+            return
         shutdown(vm)
         return
-    chroot = Chroot(args.arch, vm)
     if chroot.is_chroot_based and args.arch == '32' and is64bit:
         os.environ['BUILD_ARCH'] = args.arch
         reexec_as_32bit()
