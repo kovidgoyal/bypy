@@ -20,8 +20,8 @@ def setup_parser(p):
     p.set_defaults(func=main)
 
 
-def reexec():
-    os.execlp(sys.executable, sys.argv[0], os.path.dirname(os.path.dirname(__file__)), *sys.argv[1:])
+def reexec_as_32bit():
+    os.execlp('linux32', 'linux32', sys.executable, os.path.dirname(os.path.dirname(__file__)), *sys.argv[1:])
 
 
 def main(args):
@@ -32,8 +32,7 @@ def main(args):
     chroot = Chroot(args.arch, vm)
     if chroot.is_chroot_based and args.arch == '32' and is64bit:
         os.environ['BUILD_ARCH'] = args.arch
-        # Re-exec so is64bit is correct
-        reexec()
+        reexec_as_32bit()
 
     output_dir = os.path.join(base_dir(), 'b', 'linux', args.arch, 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'linux', args.arch, 'pkg')
