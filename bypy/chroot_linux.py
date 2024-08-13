@@ -309,6 +309,7 @@ def chroot(path: str, bind_mounts: dict[str, str] | None = None):
 
             sanitize_env_vars()
             read_etc_environment()
+            os.environ['BYPY_IN_CONTAINER'] = '1'
             tempfile.tempdir = None
             tempfile.gettempdir()
 
