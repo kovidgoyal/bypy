@@ -57,6 +57,9 @@ To setup Windows for use in a VM
 Setup automatic logon as described here:
 https://support.microsoft.com/en-in/help/324737/how-to-turn-on-automatic-logon-in-windows
 
+Enable Long Paths in Windows as described here:
+https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry#enable-long-paths-in-windows-10-version-1607-and-later
+
 Install Cygwin
 ----------------
 
