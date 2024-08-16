@@ -25,8 +25,8 @@ def get_rsync_conf():
     return ans
 
 
-def get_vm_spec(system, arch=''):
-    ans = os.path.join(base_dir(), 'b', system, arch, 'vm')
+def get_vm_spec(system, arch='', default=''):
+    ans = default or os.path.join(base_dir(), 'b', system, arch, 'vm')
     conf = os.path.join(base_dir(), 'virtual-machines.conf')
     if os.path.exists(conf):
         key = system

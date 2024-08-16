@@ -25,7 +25,7 @@ def reexec_as_32bit():
 
 
 def main(args):
-    vm = get_vm_spec('linux', args.arch)
+    vm = get_vm_spec('linux', args.arch, default='chroot:')
     chroot = Chroot(args.arch, vm)
     if args.action == 'shutdown':
         if chroot.is_chroot_based:
