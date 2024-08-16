@@ -7,8 +7,8 @@ To build the VMs based on the base image specified in the projects
 :file:`bypy/linux.conf` file.
 
 .. note::
-   Access to these machines is via SSH via publickey authentication.
-   For that to work, the creation script automatically injects your
-   :file:`~/.ssh/authorized_keys` into the created VM. Make sure you have
-   automatic password-less publickey authentication working for at least
-   one key in :file:`~/.ssh/authorized_keys`.
+
+    Note that on Linux rather than use VMs, bypy will use a rootless container
+    instead. In particular for building ARM it means you have to have to setup the
+    ability to execute ARM binaries via QEMU and *binfmt*, as described `here
+    <https://wiki.archlinux.org/title/QEMU#Chrooting_into_arm/arm64_environment_from_x86_64>`__.
