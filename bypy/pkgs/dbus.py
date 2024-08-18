@@ -19,3 +19,4 @@ def main(args):
         os.path.join(build_dir(), 'lib/pkgconfig/dbus-1.pc'),
         'prefix=${pcfiledir}/../..', f'prefix={PREFIX}'
     )
+    os.remove(os.path.join(build_dir(), 'libexec/dbus-daemon-launch-helper'))
