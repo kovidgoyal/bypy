@@ -416,7 +416,7 @@ def simple_build(
             relocate_pkgconfig_files()
 
 
-def qt_build(configure_args='', for_webengine=False, **env):
+def qt_build(configure_args='', for_webengine=False, dep_name='', **env):
     # To get configure args run qt-configure-module . -help in the module
     # source dir
     os.mkdir('build')
@@ -443,6 +443,9 @@ def qt_build(configure_args='', for_webengine=False, **env):
         env['PYTHON3_PATH'] = os.path.dirname(os.path.abspath(sys.executable))
     if for_webengine:
         pass  # configure_args += ' -no-feature-webengine-jumbo-build'
+    if dep_name == 'qt-multimedia':
+        if iswindows or ismacos:
+            configure_args += f' -- -DFFMPEG_DIR={PREFIX.replace(os.sep, "/")}/ffmpeg'
     run(
         qcm, '..', *shlex.split(configure_args.strip()),
         library_path=True, append_to_path=append_to_path or None,

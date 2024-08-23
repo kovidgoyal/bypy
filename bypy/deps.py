@@ -76,7 +76,7 @@ def build_once(dep, m, args, cleanup, target=None):
                 python_build()
                 python_install()
             elif dep['name'].startswith('qt-'):
-                qt_build()
+                qt_build(dep_name=dep['name'])
             else:
                 simple_build()
         if ismacos:
