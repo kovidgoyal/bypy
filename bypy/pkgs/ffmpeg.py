@@ -8,21 +8,30 @@ from bypy.constants import BIN, MAKEOPTS, build_dir, current_build_arch, ismacos
 from bypy.utils import run, simple_build
 
 needs_lipo = True
+# See https://code.qt.io/cgit/qt/qt5.git/tree/coin/provisioning/common/shared/ffmpeg_config_options.txt
+common_options = '--disable-programs --disable-doc --disable-debug --enable-network --disable-lzma --enable-pic --disable-vulkan --disable-v4l2-m2m --disable-decoder=truemotion1'
+common_options += ' --enable-gpl'
+
 
 if iswindows:
     def main(args):
-        run('sh', '-c', 'PATH=/usr/bin:$PATH; ./configure --prefix=installed --toolchain=msvc --enable-shared --disable-static --arch=x86_64 --enable-asm --enable-gpl --disable-programs')
+        run('sh', '-c', f'PATH=/usr/bin:$PATH; ./configure --prefix=installed --toolchain=msvc --enable-shared --disable-static --arch=x86_64 --enable-asm {common_options}')
         run('sh', '-c', f'PATH=/usr/bin:$PATH; make {MAKEOPTS}')
         run('sh', '-c', 'PATH=/usr/bin:$PATH; make install')
         os.rename('installed', os.path.join(build_dir(), 'ffmpeg'))
-elif ismacos:
+else:
     def main(args):
         configure_args = [
             f'--prefix={build_dir()}/ffmpeg',
-            '--enable-gpl', '--disable-programs',
-            '--enable-shared', '--disable-static',
-
-            '--enable-cross-compile', f'--cc=clang -arch {current_build_arch()}', f'--arch={current_build_arch()}',
-            f'--x86asmexe={BIN}/nasm',
-        ]
+        ] + common_options.split()
+        if ismacos:
+            configure_args += [
+                '--enable-shared', '--disable-static',
+                f'--x86asmexe={BIN}/nasm',
+                '--enable-cross-compile', f'--cc=clang -arch {current_build_arch()}', f'--arch={current_build_arch()}',
+            ]
+        else:
+            configure_args += [
+                '--disable-shared', '--enable-static',
+            ]
         simple_build(configure_args, use_envvars_for_lipo=True)

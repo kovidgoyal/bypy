@@ -444,8 +444,7 @@ def qt_build(configure_args='', for_webengine=False, dep_name='', **env):
     if for_webengine:
         pass  # configure_args += ' -no-feature-webengine-jumbo-build'
     if dep_name == 'qt-multimedia':
-        if iswindows or ismacos:
-            configure_args += f' -- -DFFMPEG_DIR={PREFIX.replace(os.sep, "/")}/ffmpeg'
+        configure_args += f' -- -DFFMPEG_DIR={PREFIX.replace(os.sep, "/")}/ffmpeg'
     run(
         qcm, '..', *shlex.split(configure_args.strip()),
         library_path=True, append_to_path=append_to_path or None,
