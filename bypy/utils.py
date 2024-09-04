@@ -775,10 +775,7 @@ def library_symlinks(full_name, destdir='lib'):
             os.symlink(full_name, ln)
 
 
-def install_binaries(
-    pattern, destdir='lib', do_symlinks=False, fname_map=os.path.basename
-):
-    dest = os.path.join(build_dir(), destdir)
+def copy_binaries(pattern, dest, do_symlinks=False, fname_map=os.path.basename):
     os.makedirs(dest, exist_ok=True)
     files = glob.glob(pattern)
     files.sort(key=len, reverse=True)
@@ -792,6 +789,14 @@ def install_binaries(
             os.chmod(dst, 0o755)
         if iswindows and os.path.exists(f + '.manifest'):
             shutil.copy(f + '.manifest', dst + '.manifest')
+    return files
+
+
+def install_binaries(
+    pattern, destdir='lib', do_symlinks=False, fname_map=os.path.basename
+):
+    dest = os.path.join(build_dir(), destdir)
+    files = copy_binaries(pattern, dest)
     if do_symlinks:
         library_symlinks(files[0], destdir=destdir)
     return files
