@@ -7,7 +7,7 @@ import os
 import shutil
 
 from bypy.constants import PREFIX, build_dir, ismacos
-from bypy.utils import cmake_build, read_lib_names, change_lib_names
+from bypy.utils import change_lib_names, cmake_build, copy_binaries, read_lib_names
 
 
 def main(args):
@@ -43,3 +43,12 @@ def main(args):
         for x in os.scandir(dest):
             if '.so.' in x.name and not x.is_symlink():
                 os.chmod(x.path, 0o755)
+
+
+def copy_piper_dir(src, dest):
+    print('Copying piper...')
+    src = os.path.join(src, 'piper')
+    dest = os.path.join(dest, 'piper')
+    copy_binaries(os.path.join(src, 'lib*'), dest)
+    copy_binaries(os.path.join(src, 'piper*'), dest)
+    shutil.copytree(os.path.join(src, 'espeak-ng-data'), os.path.join(dest, 'espeak-ng-data'))
