@@ -4,14 +4,19 @@
 
 import glob
 import os
+import re
 import shutil
 
-from bypy.constants import PREFIX, build_dir, ismacos
-from bypy.utils import change_lib_names, cmake_build, copy_binaries, read_lib_names
+from bypy.constants import PREFIX, build_dir, ismacos, iswindows
+from bypy.utils import change_lib_names, cmake_build, copy_binaries, read_lib_names, replace_in_file
 
 
 def main(args):
     dest = os.path.join(build_dir(), 'piper')
+    if iswindows:
+        # For some reason the linker fails to read spdlog.lib even though it
+        # exists and is on LIBPATH and linking succeeds without it, so remove it
+        replace_in_file('CMakeLists.txt', re.compile(r'^  spdlog\b', re.M), '')
     cmake_build(
         override_prefix=dest, relocate_pkgconfig=False,
         CMAKE_VERBOSE_MAKEFILE='ON',
@@ -39,6 +44,8 @@ def main(args):
         cp('libonnxruntime.?.*.?.dylib')
         for x in ('piper', 'piper_phonemize'):
             chrpath(os.path.join(dest, x))
+    elif iswindows:
+        pass
     else:
         for x in os.scandir(dest):
             if '.so.' in x.name and not x.is_symlink():
