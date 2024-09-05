@@ -56,6 +56,11 @@ def copy_piper_dir(src, dest):
     print('Copying piper...')
     src = os.path.join(src, 'piper')
     dest = os.path.join(dest, 'piper')
-    copy_binaries(os.path.join(src, 'lib*'), dest)
-    copy_binaries(os.path.join(src, 'piper*'), dest)
+    if iswindows:
+        copy_binaries(os.path.join(src, '*.dll'), dest)
+        copy_binaries(os.path.join(src, '*.exe'), dest)
+        copy_binaries(os.path.join(src, '*.ort'), dest)
+    else:
+        copy_binaries(os.path.join(src, 'lib*'), dest)
+        copy_binaries(os.path.join(src, 'piper*'), dest)
     shutil.copytree(os.path.join(src, 'espeak-ng-data'), os.path.join(dest, 'espeak-ng-data'))
