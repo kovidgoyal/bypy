@@ -13,6 +13,8 @@ def main(args):
     require_ram(24 if islinux else 8)
     conf = '-feature-qtwebengine-build -feature-qtwebengine-widgets-build'
     conf += ' -no-feature-qtwebengine-quick-build'
+    # we include ffmpeg for Qt Multimedia anyway we already have the proprietary codecs
+    conf += ' -webengine-proprietary-codecs'
     if islinux:
         # use system ICU otherwise there is 10MB duplication
         conf += ' -webengine-icu'
