@@ -96,7 +96,7 @@ def create_entitlements_file(entitlements=None):
         f.write(plistlib.dumps(entitlements or {}))
 
 
-def notarize_app(app_path):
+def notarize_app(app_path, name='program'):
     # See
     # https://developer.apple.com/documentation/xcode/notarizing_your_app_before_distribution/customizing_the_notarization_workflow?language=objc
     # and
@@ -104,7 +104,7 @@ def notarize_app(app_path):
     with open(APPLE_ID) as f:
         un, team_id, pw = f.read().strip().split(':')
 
-    zip_path = os.path.join(os.path.dirname(app_path), 'program.zip')
+    zip_path = os.path.join(os.path.dirname(app_path), f'{name}.zip')
     print('Creating zip file for notarization')
     with timeit() as times:
         run('ditto', '-c', '-k', '--zlibCompressionLevel', '9', '--keepParent',
