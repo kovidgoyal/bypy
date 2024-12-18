@@ -130,7 +130,7 @@ def notarize_app(app_path, name='program'):
             timeout = 1 * 60 * 60
             try:
                 cp = subprocess.run(cmd, timeout=timeout)
-            except TimeoutError as e:
+            except subprocess.TimeoutExpired as e:
                 raise TimeoutError(f'Notarization did not complete in {timeout} seconds, probably, Apple\'s servers are having a meltdown. You can check the status of pending notarization requests by running xcrun notarytool history ' + ' '.join(('--apple-id', un, '--team-id', team_id, '--password', pw))) from e
         print('Notarization done in {} minutes and {} seconds'.format(*times))
         if cp.returncode != 0:
