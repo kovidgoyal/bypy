@@ -4,13 +4,8 @@
 
 import os
 
-from bypy.constants import (
-    BIN, CMAKE, PERL, PREFIX, UNIVERSAL_ARCHES, build_dir,
-    currently_building_dep, islinux, ismacos, iswindows
-)
-from bypy.utils import (
-    apply_patch, relocate_pkgconfig_files, replace_in_file, run, run_shell
-)
+from bypy.constants import BIN, CMAKE, PERL, PREFIX, UNIVERSAL_ARCHES, build_dir, currently_building_dep, islinux, ismacos, iswindows
+from bypy.utils import relocate_pkgconfig_files, replace_in_file, run, run_shell
 
 
 def cmake(args):
@@ -135,7 +130,6 @@ def main(args):
             'searchOrder << (QFileInfo(qAppFileName()).path()'
             r".replace(QLatin1Char('/'), QLatin1Char('\\'))"
             r'+ QString::fromLatin1("\\app\\bin\\"));')
-    apply_patch('CVE-2024-39936-qtbase-6.7.patch', level=1)
     cmake(args)
     relocate_pkgconfig_files()
 
