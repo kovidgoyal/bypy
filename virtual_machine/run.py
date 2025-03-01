@@ -159,7 +159,7 @@ def ssh_port_for_vm_dir(vm_dir, start_if_not_running=True):
         while True:
             try:
                 cp = subprocess.run(ssh_command_to(port=ans, use_master=False) + ['date'], capture_output=True, timeout=10)
-            except TimeoutError:
+            except subprocess.TimeoutExpired:
                 pass
             else:
                 if cp.returncode == 0:
