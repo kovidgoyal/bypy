@@ -96,12 +96,15 @@ After the OS is installed:
 
 * Turn off sleep, screensaver, auto-updates.
 
-* Change the hostname to ventura
+* Change the hostname to ventura::
 
-* Install Xcode from https://developer.apple.com/download/more/
-Download the version of Xcode (12.4 for kitty and 14.3.1 for calibre) you need as a .xip archive. Run::
+  sudo scutil --set HostName ventura
 
-    open Xcode*.xip
+* Install Xcode from https://developer.apple.com/download/all/
+Download the version of Xcode (12.4 for kitty and 15.2 for calibre) you need as a .xip archive. Run::
+
+    curl -fSsL -O https://github.com/saagarjha/unxip/releases/download/v3.1/unxip && chmod +x unxip
+    ./unxip Xco*.xip
     mv Xco*.app /Applications
     sudo xcodebuild -license
 
