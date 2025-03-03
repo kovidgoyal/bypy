@@ -75,8 +75,9 @@ def cmdline_for_machine_spec(lines, monitor_path):
         raise ValueError('No -machine specification found')
     ans.extend(['-k', 'en-us'])
     ans.extend(['-monitor', f'unix:{monitor_path},server,nowait'])
-    if not with_gui:
-        ans.append('-nographic')
+    ans.append('-nographic')
+    if with_gui:
+        ans.extend(('-vnc', '0.0.0.0:1'))  # 1 corresponds to port 5901
     return prefix + ans
 
 
@@ -131,7 +132,10 @@ def startup(vm_dir, timeout=30):
     # print(shlex.join(cmdline), file=sys.stderr)
     p = subprocess.Popen(cmdline, cwd=vm_dir)
     user = USER
-    print(f'VM started, attach to its console with: sudo -u {user} screen -r {session_name}', file=sys.stderr)
+    if with_gui:
+        print('VM started attach to its GUI with vnc://localhost:5901')
+    else:
+        print(f'VM started, attach to its console with: sudo -u {user} screen -r {session_name}', file=sys.stderr)
     print('Waiting for monitor socket creation', monitor_path, '...', file=sys.stderr)
     rc = p.wait()
     if rc != 0:
