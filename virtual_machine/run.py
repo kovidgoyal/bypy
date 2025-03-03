@@ -133,7 +133,7 @@ def startup(vm_dir, timeout=30):
     p = subprocess.Popen(cmdline, cwd=vm_dir)
     user = USER
     if with_gui:
-        print('VM started attach to its GUI with vnc://localhost:5901')
+        print('VM started attach to its GUI with remmina -c vnc://localhost:5901')
     else:
         print(f'VM started, attach to its console with: sudo -u {user} screen -r {session_name}', file=sys.stderr)
     print('Waiting for monitor socket creation', monitor_path, '...', file=sys.stderr)
