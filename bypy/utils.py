@@ -577,6 +577,15 @@ def fix_install_names(m, output_dir):
             change_lib_names(p, changes)
 
 
+def python_build_env():
+    env = {}
+    # For some reason with Xcode 15.4 python's idiotic extension build system output the
+    # -arch flags in the linker but not the compiler command.
+    if ismacos and len(UNIVERSAL_ARCHES) > 1:
+        env['CFLAGS'] = f'{worker_env["CFLAGS"]} ' + ' '.join(f'-arch {x}' for x in UNIVERSAL_ARCHES)
+    return env
+
+
 def python_build(extra_args=(), ignore_dependencies=False):
     if isinstance(extra_args, str):
         extra_args = split(extra_args)
@@ -585,7 +594,8 @@ def python_build(extra_args=(), ignore_dependencies=False):
     extra_args = [f'--config-setting={x}' for x in extra_args]
     if ignore_dependencies:
         extra_args.append('--skip-dependency-check')
-    run(PYTHON, '-m', 'build', '--wheel', '--no-isolation', *extra_args, library_path=True)
+    env = python_build_env()
+    run(PYTHON, '-m', 'build', '--wheel', '--no-isolation', *extra_args, library_path=True, env=env)
     whl = glob.glob('dist/*.whl')[0]
     os.symlink(whl, 'wheel')
     wheel_build()

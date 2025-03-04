@@ -6,7 +6,7 @@
 import os
 
 from bypy.constants import PREFIX, PYTHON, iswindows
-from bypy.utils import python_build, python_install, replace_in_file, run
+from bypy.utils import python_build, python_build_env, python_install, replace_in_file, run
 
 
 def main(args):
@@ -17,7 +17,7 @@ def main(args):
         replace_in_file('setupinfo.py', ", 'iconv'", ', "libiconv"')
         run(PYTHON, *('setup.py build_ext -I {0}/include;{0}/include/libxml2 -L {0}/lib'.format(PREFIX.replace(os.sep, '/')).split()))
     else:
-        run(PYTHON, *('setup.py build_ext -I {0}/include/libxml2 -L {0}/lib'.format(PREFIX).split()), library_path=True)
+        run(PYTHON, *('setup.py build_ext -I {0}/include/libxml2 -L {0}/lib'.format(PREFIX).split()), library_path=True, env=python_build_env())
     python_build()
     python_install()
 
