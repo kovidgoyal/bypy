@@ -49,7 +49,8 @@ Create the following :file:`machine-spec` file based on OpenCore-Boot.sh::
     -cpu Haswell-noTSX,kvm=on,vendor=GenuineIntel,+invtsc,vmware-cpuid-freq=on,+ssse3,+sse4.2,+popcnt,+avx,+aes,+xsave,+xsaveopt,check
     -machine q35
     -device qemu-xhci,id=xhci
-    -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0
+    -device usb-kbd,bus=xhci.0
+    -device usb-tablet,bus=xhci.0
     -device usb-ehci,id=ehci
     -device isa-applesmc,osk="ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
     -drive if=pflash,format=raw,readonly=on,file="OVMF_CODE.fd"
@@ -108,6 +109,10 @@ After the OS is installed:
 
 * Turn off sleep, screensaver, auto-updates (system preferences->Energy saver,
   Screen saver and Lock Screen)
+
+* Turn on TRIM so QEMU can recover disk space::
+
+  sudo trimforce enable
 
 * Change the hostname to sonoma::
 
