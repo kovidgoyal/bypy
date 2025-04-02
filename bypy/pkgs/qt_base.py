@@ -5,7 +5,10 @@
 import os
 
 from bypy.constants import BIN, CMAKE, PERL, PREFIX, UNIVERSAL_ARCHES, build_dir, currently_building_dep, islinux, ismacos, iswindows
-from bypy.utils import relocate_pkgconfig_files, replace_in_file, run, run_shell
+from bypy.utils import apply_patch, relocate_pkgconfig_files, replace_in_file, run, run_shell
+
+
+apply_patch
 
 
 def cmake(args):
@@ -43,6 +46,7 @@ def cmake(args):
             # 'INPUT_wflags': 'l,-rpath-link,/sw/sw/lib--',
         })
     if ismacos:
+        apply_patch('qtbug-134073.patch', level=0)
         if len(UNIVERSAL_ARCHES) > 1:
             cmake_defines['CMAKE_OSX_ARCHITECTURES'] = ';'.join(UNIVERSAL_ARCHES)
         cmake_defines.update({
