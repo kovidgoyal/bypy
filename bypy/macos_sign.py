@@ -7,7 +7,9 @@ import plistlib
 import re
 import shlex
 import subprocess
+import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from uuid import uuid4
 
@@ -88,7 +90,12 @@ def codesign(items):
 
 def verify_signature(appdir):
     run('codesign', '-vvv', '--deep', '--strict', appdir)
-    run('spctl', '--verbose=4', '--assess', '--type', 'execute', appdir)
+    try:
+        run('spctl', '--verbose=4', '--assess', '--type', 'execute', appdir)
+    except SystemExit:
+        print('Verify signature failed, retrying', file=sys.stderr)
+        time.sleep(1)
+        run('spctl', '--verbose=4', '--assess', '--type', 'execute', appdir)
 
 
 def create_entitlements_file(entitlements=None):
