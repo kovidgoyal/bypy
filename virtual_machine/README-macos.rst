@@ -1,9 +1,9 @@
 On the Linux machine::
 
-    git clone https://github.com/kholia/OSX-KVM.git && cd OSX-KVM
-    ./fetch-macOS-v2.py (choose Sonoma)
-    dmg2img -i BaseSystem.dmg BaseSystem.img
-    qemu-img create -f qcow2 mac_hdd_ng.img 240G
+    git clone https://github.com/kholia/OSX-KVM.git && cd OSX-KVM && \
+    ./fetch-macOS-v2.py -s sonoma && \
+    dmg2img -i BaseSystem.dmg BaseSystem.img && \
+    qemu-img create -f qcow2 mac_hdd_ng.img 240G && \
     echo 1 | sudo tee /sys/module/kvm/parameters/ignore_msrs
 
 
