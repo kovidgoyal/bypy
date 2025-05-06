@@ -103,5 +103,5 @@ Edit /etc/sshd_config and set the following as we only want
 login via key::
 
     PasswordAuthentication no
-    ChallengeResponseAuthentication no
+    KbdInteractiveAuthentication no
     UsePAM no
