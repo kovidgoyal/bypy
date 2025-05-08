@@ -116,7 +116,7 @@ After the OS is installed:
 Download the version of Xcode (12.4 for kitty and 15.4 for calibre) you need as a .xip archive. Run::
 
     curl -fSsL -O https://github.com/saagarjha/unxip/releases/download/v3.1/unxip && chmod +x unxip && \
-    ./unxip Xco*.xip && mv Xco*.app /Applications && \
+    ./unxip -v Xco*.xip && mv Xco*.app /Applications && \
     sudo xcodebuild -license && \
     rm Xco*.xip && \
     python3 -m pip install certifi html5lib
