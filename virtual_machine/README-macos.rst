@@ -20,17 +20,17 @@ Use arrow keys and enter to boot the macOS base system image. Once booted,
 install the OS:
 
 * First, run Disk Utility and create a single APFS partition named ``SystemDisk`` to install to.
-  Then quit disk utility and choose: Reinstall macos sonoma.
+  Then quit disk utility and choose: Reinstall macos Sonoma.
 
 * Create a user account named: ``kovid`` during OS installation
 
 Run::
 
-    mkdir macos-sonoma && \
-    mv mac_hdd_ng.img macos-sonoma/SystemDisk.qcow2 && \
-    cp OVMF*.fd macos-sonoma/ && \
-    cp OpenCore/OpenCore.qcow2 macos-sonoma/ && \
-    cd macos-sonoma
+    mkdir macos && \
+    mv mac_hdd_ng.img macos/SystemDisk.qcow2 && \
+    cp OVMF*.fd macos/ && \
+    cp OpenCore/OpenCore.qcow2 macos/ && \
+    cd macos
 
 Create the following :file:`machine-spec` file based on OpenCore-Boot.sh::
 
@@ -111,6 +111,10 @@ After the OS is installed:
 * Change the hostname::
 
   sudo scutil --set HostName sonoma
+
+* Update to macOS Sequoia using the in OS update facility (System
+  settings->General->Software update). This takes about an hour, but works, it
+  might hang on final reboot, in which case quit and restart the VM.
 
 * Install Xcode from https://developer.apple.com/download/all/
 Download the version of Xcode (12.4 for kitty and 15.4 for calibre) you need as a .xip archive. Run::
