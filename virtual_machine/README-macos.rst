@@ -7,35 +7,29 @@ On the Linux machine::
     echo 1 | sudo tee /sys/module/kvm/parameters/ignore_msrs
 
 
-Edit OpenCore-Boot.sh, replacing Penryn with Haswell-noTSX and add the
-following lines to args at the bottom::
+Edit OpenCore-Boot.sh, replacing Penryn with Haswell-noTSX and change the
+``-device vmware-svga`` line to:
 
-  -display none
-  -vnc 0.0.0.0:1 -k en-us
+  -display gtk,zoom-to-fit=on
 
 Run the machine with::
 
     ./OpenCore-Boot.sh
 
-Connect to its GUI with a vnc client such as remmima at localhost:5091.
-At the prompt type exit and enter. Then go to Boot maintenance manager->Boot
-from File then choose the first entry which should be named EFI something.
-Then choose EFI/BOOT/bootx64.efi as the file to boot. Boot the macos Base
-system image.
+Use arrow keys and enter to boot the macOS base system image. Once booted,
+install the OS:
 
-Install the OS:
-
-* First, run Disk Utility and create a single APFS partition to install to.
-  Then quit disk utility and choose: Reinstall macos Sonoma
+* First, run Disk Utility and create a single APFS partition named ``SystemDisk`` to install to.
+  Then quit disk utility and choose: Reinstall macos sonoma.
 
 * Create a user account named: ``kovid`` during OS installation
 
 Run::
 
-    mkdir macos-sonoma
-    mv mac_hdd_ng.img macos-sonoma/SystemDisk.qcow2
-    cp OVMF*.fd macos-sonoma/
-    cp OpenCore/OpenCore.qcow2 macos-sonoma/
+    mkdir macos-sonoma && \
+    mv mac_hdd_ng.img macos-sonoma/SystemDisk.qcow2 && \
+    cp OVMF*.fd macos-sonoma/ && \
+    cp OpenCore/OpenCore.qcow2 macos-sonoma/ && \
     cd macos-sonoma
 
 Create the following :file:`machine-spec` file based on OpenCore-Boot.sh::
@@ -114,17 +108,17 @@ After the OS is installed:
 
   sudo trimforce enable
 
-* Change the hostname to sonoma::
+* Change the hostname::
 
   sudo scutil --set HostName sonoma
 
 * Install Xcode from https://developer.apple.com/download/all/
 Download the version of Xcode (12.4 for kitty and 15.4 for calibre) you need as a .xip archive. Run::
 
-    curl -fSsL -O https://github.com/saagarjha/unxip/releases/download/v3.1/unxip && chmod +x unxip
-    ./unxip Xco*.xip && mv Xco*.app /Applications
-    sudo xcodebuild -license
-    rm Xco*.xip
+    curl -fSsL -O https://github.com/saagarjha/unxip/releases/download/v3.1/unxip && chmod +x unxip && \
+    ./unxip Xco*.xip && mv Xco*.app /Applications && \
+    sudo xcodebuild -license && \
+    rm Xco*.xip && \
     python3 -m pip install certifi html5lib
 
 * Install an up-to-date rsync::
