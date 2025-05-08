@@ -75,9 +75,10 @@ def cmdline_for_machine_spec(lines, monitor_path):
         raise ValueError('No -machine specification found')
     ans.extend(['-k', 'en-us'])
     ans.extend(['-monitor', f'unix:{monitor_path},server,nowait'])
-    ans.append('-nographic')
     if with_gui:
-        ans.extend(('-vnc', '0.0.0.0:1'))  # 1 corresponds to port 5901
+        ans.extend(('-display', 'gtk,zoom-to-fit=on'))
+    else:
+        ans.append('-nographic')
     return prefix + ans
 
 
@@ -133,7 +134,7 @@ def startup(vm_dir, timeout=30):
     p = subprocess.Popen(cmdline, cwd=vm_dir)
     user = USER
     if with_gui:
-        print('VM started attach to its GUI with remmina -c vnc://localhost:5901')
+        print('VM started')
     else:
         print(f'VM started, attach to its console with: sudo -u {user} screen -r {session_name}', file=sys.stderr)
     print('Waiting for monitor socket creation', monitor_path, '...', file=sys.stderr)
