@@ -24,7 +24,7 @@ Use the following ``install.sh``::
     -rtc base=localtime,clock=host \
     -usb -device usb-tablet
 
-Skip entering the product key as windows 10 works fine without activation.
+Skip entering the product key as windows 10 and 11 work fine without activation.
 
 Choose Win10 Pro as the windows edition.
 
