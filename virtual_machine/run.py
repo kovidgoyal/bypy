@@ -128,6 +128,8 @@ def startup(vm_dir, timeout=30):
     monitor_path = monitor_template.format(vm_dir)
     with open(machine_spec_template.format(vm_dir)) as f:
         cmdline = cmdline_for_machine_spec(f, monitor_path)
+    if (tpm_dir := os.path.join(vm_dir, 'tpm')) and os.path.isdir(tpm_dir):
+        subprocess.Popen(f'swtpm socket --tpmstate dir={tpm_dir} --ctrl type=unixio,path={tpm_dir}/swtpm.sock,terminate --tpm2'.split())
     session_name = vm_dir.strip('/').replace('/', '-').replace(' ', '_')
     cmdline = ['screen', '-U', '-d', '-m', '-S', session_name] + cmdline
     # print(shlex.join(cmdline), file=sys.stderr)
