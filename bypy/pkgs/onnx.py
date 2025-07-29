@@ -4,10 +4,12 @@
 import os
 import re
 
-from bypy.constants import CMAKE, PREFIX, PYTHON, UNIVERSAL_ARCHES, build_dir, ismacos, iswindows
+from bypy.constants import CMAKE, PREFIX, PYTHON, current_build_arch, build_dir, ismacos, iswindows
 from bypy.utils import copy_headers, install_binaries, replace_in_file, run, run_shell
 
 run_shell
+# sadly putting both arches in CMAKE_OSX_ARCHITECTURES caused build failures, so we lipo, sigh
+needs_lipo=True
 
 
 def main(args):
@@ -15,8 +17,8 @@ def main(args):
     cmdline = f'{build_sh} --config Release --build_shared_lib --parallel --compile_no_warning_as_error --skip_submodule_sync --skip_tests'
     kw = {}
     if ismacos:
-        arches = ';'.join(UNIVERSAL_ARCHES)
-        cmdline += f' --cmake_extra_defines CMAKE_OSX_ARCHITECTURES={arches} CMAKE_VERBOSE_MAKEFILE=ON'
+        if current_build_arch():
+            cmdline += f' --cmake_extra_defines CMAKE_OSX_ARCHITECTURES={current_build_arch()}'
         kw['append_to_path'] = os.path.dirname(CMAKE)
         kw['prepend_to_path'] = os.path.dirname(PYTHON)  # onnx build script requires python >= 3.10
     elif iswindows:
