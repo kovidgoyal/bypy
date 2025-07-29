@@ -28,10 +28,10 @@ def main(args):
     copy_headers('include/onnxruntime/core/providers/cpu/*.h', 'include/onnxruntime')
     copy_headers('include/onnxruntime/core/framework/provider_options.h', 'include/onnxruntime')
     if ismacos:
-        install_binaries('build/*/Release/libonnxruntime*.dylib', 'onnx')
+        install_binaries('build/*/Release/libonnxruntime*.dylib')
     elif iswindows:
-        install_binaries('build/Windows/Release/Release/onnxruntime*.dll', 'onnx')
-        install_binaries('build/Windows/Release/Release/onnxruntime*.lib', 'onnx')
+        install_binaries('build/Windows/Release/Release/onnxruntime*.dll')
+        install_binaries('build/Windows/Release/Release/onnxruntime*.lib')
     else:
         copy_headers('build/*/Release/*.pc', 'lib/pkgconfig')
         replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/libonnxruntime.pc'), '/usr/local', PREFIX)
