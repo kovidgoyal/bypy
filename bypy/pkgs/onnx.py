@@ -27,7 +27,7 @@ def main(args):
         replace_in_file('cmake/CMakeLists.txt', re.compile(r'cmake_minimum_required.+'), '')
         replace_in_file('cmake/onnxruntime_common.cmake', re.compile(r'if.+cxx_std_23.+'), 'if(FALSE)')
     else:
-        cmdline += f' --allow_running_as_root --cmake_extra_defines CMAKE_SYSTEM_PREFIX_PATH={PREFIX}'
+        cmdline += f' --allow_running_as_root --cmake_extra_defines CMAKE_SYSTEM_PREFIX_PATH={PREFIX} CMAKE_SHARED_LINKER_FLAGS=-Wl,-z,noexecstack'
     run(cmdline, **kw)
     # run_shell()
     copy_headers('include/onnxruntime/core/session/*.h', 'include/onnxruntime')
