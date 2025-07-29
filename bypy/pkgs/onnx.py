@@ -3,7 +3,7 @@
 
 import os
 
-from bypy.constants import CMAKE, PREFIX, PYTHON, UNIVERSAL_ARCHES, ismacos, iswindows
+from bypy.constants import CMAKE, PREFIX, PYTHON, UNIVERSAL_ARCHES, build_dir, ismacos, iswindows
 from bypy.utils import copy_headers, install_binaries, replace_in_file, run, run_shell
 
 run_shell
@@ -24,13 +24,15 @@ def main(args):
         cmdline += f' --allow_running_as_root --cmake_extra_defines CMAKE_SYSTEM_PREFIX_PATH={PREFIX}'
     run(cmdline, **kw)
     # run_shell()
-    copy_headers('include/onnxruntime/core/session/*.h', 'onnx/include')
-    copy_headers('include/onnxruntime/core/providers/cpu/*.h', 'onnx/include')
-    copy_headers('include/onnxruntime/core/framework/provider_options.h', 'onnx/include')
+    copy_headers('include/onnxruntime/core/session/*.h', 'include/onnxruntime')
+    copy_headers('include/onnxruntime/core/providers/cpu/*.h', 'include/onnxruntime')
+    copy_headers('include/onnxruntime/core/framework/provider_options.h', 'include/onnxruntime')
     if ismacos:
         install_binaries('build/*/Release/libonnxruntime*.dylib', 'onnx')
     elif iswindows:
         install_binaries('build/Windows/Release/Release/onnxruntime*.dll', 'onnx')
         install_binaries('build/Windows/Release/Release/onnxruntime*.lib', 'onnx')
     else:
-        install_binaries('build/*/Release/libonnxruntime.so*', 'onnx')
+        copy_headers('build/*/Release/*.pc', 'lib/pkgconfig')
+        replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/libonnxruntime.pc'), '/usr/local', PREFIX)
+        install_binaries('build/*/Release/libonnxruntime.so*')
