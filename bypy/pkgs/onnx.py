@@ -10,7 +10,7 @@ from bypy.utils import copy_headers, install_binaries, replace_in_file, run, run
 run_shell
 # sadly putting both arches in CMAKE_OSX_ARCHITECTURES caused build failures, so we lipo, sigh
 needs_lipo=True
-add_directml=True
+add_directml=False
 
 
 def main(args):
