@@ -10,6 +10,7 @@ from bypy.utils import copy_headers, install_binaries, replace_in_file, run, run
 run_shell
 # sadly putting both arches in CMAKE_OSX_ARCHITECTURES caused build failures, so we lipo, sigh
 needs_lipo=True
+add_directml=True
 
 
 def main(args):
@@ -22,6 +23,8 @@ def main(args):
         kw['append_to_path'] = os.path.dirname(CMAKE)
         kw['prepend_to_path'] = os.path.dirname(PYTHON)  # onnx build script requires python >= 3.10
     elif iswindows:
+        if add_directml:
+            cmdline += ' --use_dml'
         replace_in_file('tools/ci_build/build.py', 'target_arch = platform.machine()', 'target_arch = platform.machine().upper()')
         kw['append_to_path'] = os.path.dirname(PYTHON)
         # Visual Studio 2022 ships with ancient CMake, but we dont actually
@@ -41,8 +44,10 @@ def main(args):
     if ismacos:
         install_binaries('build/*/Release/libonnxruntime*.dylib')
     elif iswindows:
-        install_binaries('build/Windows/Release/Release/onnxruntime*.dll')
-        install_binaries('build/Windows/Release/Release/onnxruntime*.lib')
+        install_binaries('build/*/Release/Release/onnxruntime*.dll')
+        if add_directml:
+            install_binaries('build/*/Release/Release/DirectML.dll')
+        install_binaries('build/*/Release/Release/onnxruntime*.lib')
     else:
         copy_headers('build/*/Release/*.pc', 'lib/pkgconfig')
         replace_in_file(os.path.join(build_dir(), 'lib/pkgconfig/libonnxruntime.pc'), '/usr/local', PREFIX)
