@@ -90,11 +90,17 @@ class Dependency:
         return True
 
     @property
-    def filename(self) -> str:
+    def _filename(self) -> str:
         return f'{self.name}-{self.version}.{self.file_extension}'
 
+    @property
+    def filename(self) -> str:
+        if not self.file_extension:
+            self.ensure_downloaded()
+        return self._filename
+
     def ensure_pypi_downloaded(self) -> str:
-        filename = self.filename
+        filename = self._filename
         path = os.path.join(SOURCES, filename)
         if os.path.exists(path):
             return path
@@ -105,20 +111,21 @@ class Dependency:
                     return os.path.join(SOURCES, x)
         with urlopen(f'https://pypi.org/pypi/{self.name}/{self.version}/json') as f:
             metadata = json.loads(f.read())
+
+        def commit(e: dict[str, Any], file_extension: str) -> str:
+            self.urls = (e['url'],)
+            self.file_extension = file_extension
+            self.expected_hash = 'sha256:' + e['digests']['sha256']
+            path = os.path.join(SOURCES, self._filename)
+            download_pkg(self, path)
+            return path
+
         for e in metadata['urls']:
             if e['packagetype'] == 'sdist':
                 source = e
             elif e['packagetype'] == 'bdist_wheel' and e['filename'].endswith('none-any.whl'):
-                self.urls = (e['url'],)
-                self.file_extension = '.whl'
-                self.expected_hash = 'sha256:' + e['digests']['sha256']
-                download_pkg(self, path)
-                return path
-        self.urls = (source['url'],)
-        self.file_extension = 'tar.' + source['filename'].rpartition('.')[-1]
-        self.expected_hash = 'sha256:' + source['digests']['sha256']
-        download_pkg(self, path)
-        return path
+                return commit(e, 'whl')
+        return commit(source, 'tar.' + source['filename'].rpartition('.')[-1])
 
     def verify_hash(self, path: str) -> bool:
         try:
