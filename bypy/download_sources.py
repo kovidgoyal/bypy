@@ -56,9 +56,10 @@ class Dependency:
 
     @classmethod
     def from_sources_json_entry(self, e: dict[str, Any], global_metadata: GlobalMetadata) -> 'Dependency':
-        name, version = e['name'].split(' ', 1)
+        name, _, version = e['name'].partition(' ')
         if name.startswith('qt-'):
-            populate_qt_dep(e, global_metadata.qt_version)
+            version = global_metadata.qt_version
+            populate_qt_dep(e, version)
         order = ('windows', 'unix') if iswindows else ('unix', 'windows')
         s = e.get(order[0], e.get(order[1]))
         assert s
@@ -109,8 +110,11 @@ class Dependency:
                 if x.startswith(filename):
                     self.file_extension = x[len(filename):]
                     return os.path.join(SOURCES, x)
-        with urlopen(f'https://pypi.org/pypi/{self.name}/{self.version}/json') as f:
-            metadata = json.loads(f.read())
+        try:
+            with urlopen(f'https://pypi.org/pypi/{self.name}/{self.version}/json') as f:
+                metadata = json.loads(f.read())
+        except Exception as err:
+            raise SystemExit(f'Could not get pypi package: {self.name}/{self.version} with error: {err}') from err
 
         def commit(e: dict[str, Any], file_extension: str) -> str:
             self.urls = (e['url'],)
@@ -247,7 +251,7 @@ def download_pkg(pkg: Dependency, path: str) -> None:
                 return try_once(pkg, url, path)
             except HTTPError as err:
                 if err.code == 404:
-                    raise
+                    raise SystemExit(f'Download of {url} failed, with error: {err}') from err
                 import traceback
                 traceback.print_exc()
                 print(f'Download of {url} failed, with error: {err}', flush=True, file=sys.stderr)
