@@ -59,9 +59,9 @@ class Dependency:
         name, version = e['name'].split(' ', 1)
         if name.startswith('qt-'):
             populate_qt_dep(e, global_metadata.qt_version)
-        s = e['unix']
-        if iswindows:
-            s = e.get('windows', s)
+        order = ('windows', 'unix') if iswindows else ('unix', 'windows')
+        s = e.get(order[0], e.get(order[1]))
+        assert s
         ext = s.get('file_extension', 'tar.gz').lstrip('.')
         filename = f'{name}-{version}.{ext}'
         urls = tuple(u.format(
