@@ -166,7 +166,7 @@ def install_packages(which_deps: Sequence[Dependency], dest_dir: str = PREFIX) -
 
 def init_env(which_deps: None | Sequence[Dependency] = None):
     if which_deps is None:
-        which_deps = read_deps()
+        which_deps = read_deps(True)
     install_packages(which_deps)
 
 
@@ -182,7 +182,7 @@ def accept_func_from_names(names):
 
 def main(parsed_args: Any) -> None:
     accept_func = unbuilt
-    all_deps = read_deps()
+    all_deps = read_deps(True)
     all_dep_names = frozenset({d.name for d in all_deps})
     if parsed_args.dependencies:
         accept_func = accept_func_from_names(parsed_args.dependencies)

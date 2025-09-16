@@ -67,7 +67,7 @@ class Dependency:
         urls = tuple(u.format(
             version=version, file_extension=ext, filename=filename, name=name,
             version_except_last=version.rpartition('.')[0],
-            version_with_underscores=version.replace('.', '_'),
+            version_with_underscores=version.replace('.', '_').replace('-', '_'),
         ) for u in s['urls'])
         os = tuple(x.strip().lower() for x in e.get('os', '').split(',')) if e.get('os') else ()
         return Dependency(
@@ -82,7 +82,7 @@ class Dependency:
         name, version = parts[0], parts[-1]
         return Dependency(name=name, version=version, ecosystem='pypi', marker=marker)
 
-    def __bool__(self) -> bool:
+    def is_buildable(self) -> bool:
         if self.allowed_os_names and OS_NAME not in self.allowed_os_names:
             return False
         if self.marker and not eval(self.marker, globals={}, locals={'sys_platform': sys.platform, 'os_name': os.name}):
@@ -154,8 +154,8 @@ def read_python_deps(src: str, global_metadata: GlobalMetadata) -> tuple[list[De
     return build_deps, runtime_deps
 
 
-@lru_cache()
-def read_deps() -> tuple[Dependency, ...]:
+@lru_cache(2)
+def read_deps(only_buildable: bool = False) -> tuple[Dependency, ...]:
     src = SRC if os.path.exists(SRC) else os.getcwd()
     with open(os.path.join(src, 'bypy', 'sources.json')) as f:
         base_data = json.load(f)
@@ -174,6 +174,8 @@ def read_deps() -> tuple[Dependency, ...]:
         if data[-1].name == 'python':
             data.extend(python_build_deps)
     data.extend(python_runtime_deps)
+    if only_buildable:
+        return tuple(d for d in data if d.is_buildable())
     return tuple(data)
 
 
