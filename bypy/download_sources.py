@@ -79,7 +79,7 @@ class Dependency:
     def is_buildable(self) -> bool:
         if self.allowed_os_names and OS_NAME not in self.allowed_os_names:
             return False
-        if self.marker and not eval(self.marker, globals={}, locals={'sys_platform': sys.platform, 'os_name': os.name}):
+        if self.marker and not eval(self.marker, {}, {'sys_platform': sys.platform, 'os_name': os.name}):
             return False
         return True
 
