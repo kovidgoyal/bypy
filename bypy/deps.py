@@ -5,30 +5,39 @@
 import importlib
 import os
 import sys
-from operator import itemgetter
+from collections.abc import Sequence
+from typing import Any
 
-from .constants import (
-    PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir, current_build_arch,
-    currently_building_dep, ismacos, lipo_data, mkdtemp
-)
-from .download_sources import download, read_deps
+from .constants import PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir, current_build_arch, currently_building_dep, ismacos, lipo_data, mkdtemp
+from .download_sources import Dependency, ensure_downloaded, read_deps
 from .utils import (
-    RunFailure, create_package, ensure_clear_dir, extract_source_and_chdir,
-    fix_install_names, install_package, lipo, python_build, python_install,
-    qt_build, rmtree, run_shell, set_title, simple_build
+    RunFailure,
+    create_package,
+    ensure_clear_dir,
+    extract_source_and_chdir,
+    fix_install_names,
+    install_package,
+    lipo,
+    python_build,
+    python_install,
+    qt_build,
+    rmtree,
+    run_shell,
+    set_title,
+    simple_build,
 )
 
 
-def pkg_path(dep):
-    return os.path.join(PKG, dep['name'])
+def pkg_path(dep: Dependency) -> str:
+    return os.path.join(PKG, dep.name)
 
 
 def make_build_dir(dep_name):
     return mkdtemp(prefix=f'{dep_name}-')
 
 
-def module_for_dep(dep):
-    dep_name = dep['name']
+def module_for_dep(dep: Dependency):
+    dep_name = dep.name
     idep = dep_name.replace('-', '_')
     try:
         m = importlib.import_module('bypy.pkgs.' + idep)
@@ -60,23 +69,23 @@ class CleanupDirs:
         self.dirs.append(x)
 
 
-def build_once(dep, m, args, cleanup, target=None):
-    base = dep['name']
+def build_once(dep: Dependency, m, args, cleanup, target=None):
+    base = dep.name
     if target:
         base += f'.{target}.'
     output_dir = make_build_dir(base)
     build_dir(output_dir, target)
     cleanup(output_dir)
-    cleanup(extract_source_and_chdir(os.path.join(SOURCES, dep['filename'])))
+    cleanup(extract_source_and_chdir(os.path.join(SOURCES, dep.filename)))
     try:
         if hasattr(m, 'main'):
             m.main(args)
         else:
-            if 'python' in dep:
+            if dep.ecosystem == 'pypi':
                 python_build()
                 python_install()
-            elif dep['name'].startswith('qt-'):
-                qt_build(dep_name=dep['name'])
+            elif dep.name.startswith('qt-'):
+                qt_build(dep_name=dep.name)
             else:
                 simple_build()
         if ismacos:
@@ -98,10 +107,10 @@ def build_once(dep, m, args, cleanup, target=None):
     return output_dir
 
 
-def build_dep(dep, args, dest_dir=PREFIX):
+def build_dep(dep: Dependency, args, dest_dir: str = PREFIX):
     current_build_arch(None)
     currently_building_dep(dep)
-    dep_name = dep['name']
+    dep_name = dep.name
     owd = os.getcwd()
     m = module_for_dep(dep)
     needs_lipo = ismacos and getattr(
@@ -139,27 +148,23 @@ def unbuilt(dep):
     return not os.path.exists(pkg_path(dep))
 
 
-def install_packages(which_deps, dest_dir=PREFIX):
+def install_packages(which_deps: Sequence[Dependency], dest_dir: str = PREFIX) -> None:
     ensure_clear_dir(dest_dir)
-    paths = {dep['name']: pkg_path(dep) for dep in which_deps
-             if os.path.exists(pkg_path(dep))}
+    paths = {dep.name: pkg_path(dep) for dep in which_deps if os.path.exists(pkg_path(dep))}
     if not paths:
         return
     print(f'Installing {len(paths)} previously compiled packages:',
           end=' ')
     sys.stdout.flush()
     for dep in which_deps:
-        if dep['name'] not in paths:
-            continue
-        pkg = paths[dep['name']]
-        print(dep['name'], end=', ')
-        sys.stdout.flush()
-        install_package(pkg, dest_dir)
+        if pkg := paths.get(dep.name):
+            print(dep.name, end=', ', flush=True)
+            install_package(pkg, dest_dir)
     print()
     sys.stdout.flush()
 
 
-def init_env(which_deps=None):
+def init_env(which_deps: None | Sequence[Dependency] = None):
     if which_deps is None:
         which_deps = read_deps()
     install_packages(which_deps)
@@ -169,16 +174,16 @@ def accept_func_from_names(names):
     names = frozenset(names)
     wants_qt = 'qt' in names
 
-    def ffunc(dep):
-        return dep['name'] in names or (
-                wants_qt and dep['name'].startswith('qt-'))
+    def ffunc(dep: Dependency):
+        return dep.name in names or (
+                wants_qt and dep.name.startswith('qt-'))
     return ffunc
 
 
-def main(parsed_args):
+def main(parsed_args: Any) -> None:
     accept_func = unbuilt
     all_deps = read_deps()
-    all_dep_names = frozenset(map(itemgetter('name'), all_deps))
+    all_dep_names = frozenset({d.name for d in all_deps})
     if parsed_args.dependencies:
         accept_func = accept_func_from_names(parsed_args.dependencies)
         if (frozenset(parsed_args.dependencies) - {'qt'}) - all_dep_names:
@@ -190,23 +195,20 @@ def main(parsed_args):
             print('No unbuilt dependencies left')
             raise SystemExit(0)
         raise SystemExit('No buildable deps were specified')
-    names_of_deps_to_build = frozenset(map(itemgetter('name'), deps_to_build))
-    other_deps = [
-        dep for dep in all_deps if dep['name'] not in names_of_deps_to_build]
+    names_of_deps_to_build = frozenset({d.name for d in deps_to_build})
+    other_deps = [dep for dep in all_deps if dep.name not in names_of_deps_to_build]
     init_env(other_deps)
-    download(deps_to_build)
+    ensure_downloaded()
 
     built_names = set()
     for i, dep in enumerate(deps_to_build):
-        set_title(f'Building {dep["name"]} -- {i+1} of {len(deps_to_build)}')
+        set_title(f'Building {dep.name} -- {i+1} of {len(deps_to_build)}')
         try:
             build_dep(dep, parsed_args)
-            built_names.add(dep['name'])
-            print(f'\x1b[36m{dep["name"]} successfully built!\x1b[m')
+            built_names.add(dep.name)
+            print(f'\x1b[36m{dep.name} successfully built!\x1b[m')
         finally:
-            remaining = tuple(
-                    d['name'] for d in deps_to_build
-                    if d['name'] not in built_names)
+            remaining = tuple(d.name for d in deps_to_build if d.name not in built_names)
             if remaining:
                 print('Remaining deps:', ', '.join(remaining))
 

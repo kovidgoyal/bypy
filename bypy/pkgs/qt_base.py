@@ -143,7 +143,7 @@ def modify_exclude_extensions(extensions):
 
 
 def modify_excludes(excludes):
-    if currently_building_dep()['name'] == 'qt-declarative':
+    if currently_building_dep().name == 'qt-declarative':
         # qt-declarative puts artifacts needed for modules that depnd on it to
         # build in the test directory. Bloody lunacy.
         excludes.discard('test')

@@ -436,7 +436,7 @@ def qt_build(configure_args='', for_webengine=False, dep_name='', **env):
         if for_webengine:
             append_to_path.insert(0, f'{PREFIX}/private/gnuwin32/bin')
             append_to_path.append(os.path.dirname(NODEJS))
-        if currently_building_dep()['name'] == 'qt-imageformats':
+        if currently_building_dep().name == 'qt-imageformats':
             # the qt tiff cmake file as broken so give up on system tiff
             configure_args += ' -qt-tiff'
     if ismacos:
@@ -1236,7 +1236,7 @@ def setup_dependencies_parser(p):
         deps = read_deps()
     except FileNotFoundError:
         deps = ()
-    choices = (x['name'] for x in deps)
+    choices = (x.name for x in deps)
     p.add_argument(
         'dependencies', nargs='*',
         help='The dependencies to build. If none are specified missing dependencies' +

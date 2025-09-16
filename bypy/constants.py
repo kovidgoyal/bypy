@@ -7,8 +7,10 @@ import shutil
 import sys
 import tempfile
 import platform
-from functools import lru_cache
+from typing import Optional, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .download_sources import Dependency
 
 _plat = sys.platform.lower()
 iswindows = hasattr(sys, 'getwindowsversion')
@@ -36,7 +38,7 @@ def in_chroot():
     return getattr(in_chroot, 'ans', False)
 
 
-UNIVERSAL_ARCHES = ()
+UNIVERSAL_ARCHES: tuple[str, ...] = ()
 ROOT = os.environ.get('BYPY_ROOT', '/').replace('/', os.sep)
 if 'BUILD_ARCH' in os.environ:
     is64bit = os.environ['BUILD_ARCH'] != '32'
@@ -172,10 +174,10 @@ def current_build_arch(val=False):
     return getattr(current_build_arch, 'ans', None)
 
 
-def currently_building_dep(val=False):
-    if val is not False:
-        currently_building_dep.ans = val
-    return getattr(currently_building_dep, 'ans', None)
+def currently_building_dep(val: Optional['Dependency'] = None) -> 'Dependency':
+    if val is not None:
+        setattr(currently_building_dep, 'ans', val)
+    return getattr(currently_building_dep, 'ans')
 
 
 def build_dir(newval=None, current_arch=None):
@@ -192,11 +194,9 @@ def is_cross_half_of_lipo_build():
     return bool(cba) and cba != UNIVERSAL_ARCHES[0]
 
 
-lipo_data = {}
+lipo_data: dict[str, str] = {}
 
 
-@lru_cache()
-def python_major_minor_version():
-    from .download_sources import read_deps, ok_dep
-    read_deps()
-    return ok_dep.major_version, ok_dep.minor_version
+def python_major_minor_version() -> tuple[int, int]:
+    from .download_sources import python_version
+    return python_version()

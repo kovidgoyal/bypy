@@ -5,58 +5,22 @@
 import hashlib
 import json
 import os
-import re
 import sys
 import time
+from dataclasses import dataclass
 from functools import lru_cache
-from operator import itemgetter
-from urllib.parse import urljoin
+from typing import Any, NamedTuple
 from urllib.request import urlopen, urlretrieve
+from urllib.error import HTTPError
+
+import tomllib
 
 from .constants import OS_NAME, SOURCES, SRC, iswindows
 
-all_filenames = set()
+DOWNLOAD_RETRIES = 3
 
-
-def process_url(url, filename):
-    return url.replace('{filename}', filename)
-
-
-def add_filenames(item):
-    for q in ('windows', 'unix'):
-        q = item.get(q)
-        if q is not None:
-            all_filenames.add(q['filename'].lower())
-
-
-def ok_dep(dep):
-    os = dep.get('os')
-    if os is not None:
-        oses = {x.strip().lower() for x in os.split(',')}
-        if OS_NAME not in oses:
-            return False
-    py = dep.get('python')
-    if py is not None:
-        q = ok_dep.major_version
-        if isinstance(py, str):
-            return q < int(py[1:])
-        return q >= py
-    return True
-
-
-def download_information(dep):
-    s = dep.get('unix', {'urls': ()})
-    if iswindows:
-        s = dep.get('windows') or s
-    return s
-
-
-def decorate_dep(dep):
-    s = download_information(dep)
-    if 'python' not in dep and s['urls'] == ['pypi']:
-        dep['python'] = 2
-    dep['filename'] = s.get('filename')
-    return dep
+class GlobalMetadata(NamedTuple):
+    qt_version: str
 
 
 def populate_qt_dep(dep, qt_version):
@@ -79,55 +43,152 @@ def populate_qt_dep(dep, qt_version):
         }
 
 
-@lru_cache()
-def read_deps(only_buildable=True):
-    src = SRC if os.path.exists(SRC) else os.getcwd()
-    with open(os.path.join(src, 'bypy', 'sources.json')) as f:
-        data = json.load(f)
-    qt_version = None
-    for dep in data:
-        if dep['name'].startswith('qt-'):
-            if dep['name'] == 'qt-base':
-                qt_version = dep['version']
-            populate_qt_dep(dep, qt_version)
-        if dep['name'] == 'python':
-            vraw = dep['unix']['filename'].split('-')[-1]
-            parts = vraw.split('.')
-            ok_dep.major_version = int(parts[0])
-            ok_dep.minor_version = int(parts[1])
-    if only_buildable:
-        return tuple(filter(ok_dep, map(decorate_dep, data)))
-    ans = {}
-    for item in data:
-        add_filenames(item)
-        s = download_information(item)
-        s['name'] = item['name']
-        s['urls'] = [process_url(x, s['filename']) for x in s['urls']]
-        ans[s['name']] = s
-    return ans
+@dataclass
+class Dependency:
+    name: str
+    version: str
+    ecosystem: str = ''
+    marker: str = ''
+    allowed_os_names: tuple[str, ...] = ()
+    urls: tuple[str, ...] = ()
+    file_extension: str = ''
+    expected_hash: str = ''
 
+    @classmethod
+    def from_sources_json_entry(self, e: dict[str, Any], global_metadata: GlobalMetadata) -> 'Dependency':
+        name, version = e['name'].split(' ', 1)
+        if name.startswith('qt-'):
+            populate_qt_dep(e, global_metadata.qt_version)
+        s = e['unix']
+        if iswindows:
+            s = e.get('windows', s)
+        ext = s.get('file_extension', 'tar.gz').lstrip('.')
+        filename = f'{name}-{version}.{ext}'
+        urls = tuple(u.format(
+            version=version, file_extension=ext, filename=filename, name=name,
+            version_except_last=version.rpartition('.')[0],
+            version_with_underscores=version.replace('.', '_'),
+        ) for u in s['urls'])
+        os = tuple(x.strip().lower() for x in e.get('os', '').split(',')) if e.get('os') else ()
+        return Dependency(
+            name=name, version=version, urls=urls, allowed_os_names=os, file_extension=ext,
+            expected_hash=s['hash'],
+        )
 
-def sha256_for_pkg(pkg):
-    fname = os.path.join(SOURCES, pkg['filename'])
-    with open(fname, 'rb') as f:
-        return hashlib.sha256(f.read()).hexdigest()
+    @classmethod
+    def from_pep_508(self, spec: str, global_metadata: GlobalMetadata) -> 'Dependency':
+        spec, _, marker = spec.partition(';')
+        parts = spec.split()
+        name, version = parts[0], parts[-1]
+        return Dependency(name=name, version=version, ecosystem='pypi', marker=marker)
 
+    def __bool__(self) -> bool:
+        if self.allowed_os_names and OS_NAME not in self.allowed_os_names:
+            return False
+        if self.marker and not eval(self.marker, globals={}, locals={'sys_platform': sys.platform, 'os_name': os.name}):
+            return False
+        return True
 
-def verify_hash(pkg):
-    fname = os.path.join(SOURCES, pkg['filename'])
-    alg, q = pkg['hash'].partition(':')[::2]
-    q = q.strip()
-    matched = False
-    try:
-        f = open(fname, 'rb')
-    except FileNotFoundError:
-        pass
-    else:
+    @property
+    def filename(self) -> str:
+        return f'{self.name}-{self.version}.{self.file_extension}'
+
+    def ensure_pypi_downloaded(self) -> str:
+        filename = self.filename
+        path = os.path.join(SOURCES, filename)
+        if os.path.exists(path):
+            return path
+        if not self.file_extension:
+            for x in os.listdir(SOURCES):
+                if x.startswith(filename):
+                    self.file_extension = x[len(filename):]
+                    return os.path.join(SOURCES, x)
+        with urlopen(f'https://pypi.org/pypi/{self.name}/{self.version}/json') as f:
+            metadata = json.loads(f.read())
+        for e in metadata['urls']:
+            if e['packagetype'] == 'sdist':
+                source = e
+            elif e['packagetype'] == 'bdist_wheel' and e['filename'].endswith('none-any.whl'):
+                self.urls = (e['url'],)
+                self.file_extension = '.whl'
+                self.expected_hash = 'sha256:' + e['digests']['sha256']
+                download_pkg(self, path)
+                return path
+        self.urls = (source['url'],)
+        self.file_extension = 'tar.' + source['filename'].rpartition('.')[-1]
+        self.expected_hash = 'sha256:' + source['digests']['sha256']
+        download_pkg(self, path)
+        return path
+
+    def verify_hash(self, path: str) -> bool:
+        try:
+            f = open(path, 'rb')
+        except FileNotFoundError:
+            return False
+        alg, q = self.expected_hash.partition(':')[::2]
+        q = q.strip()
         with f:
             h = getattr(hashlib, alg.lower())
             fhash = h(f.read()).hexdigest()
-            matched = fhash == q
-    return matched
+            return fhash == q
+
+    def ensure_downloaded(self) -> str:
+        if self.ecosystem == 'pypi':
+            return self.ensure_pypi_downloaded()
+        filename = self.filename
+        path = os.path.join(SOURCES, filename)
+        if self.verify_hash(path):
+            return path
+        download_pkg(self, path)
+        return path
+
+
+def read_python_deps(src: str, global_metadata: GlobalMetadata) -> tuple[list[Dependency], list[Dependency]]:
+    with open(os.path.join(src, 'pyproject.toml'), 'rb') as f:
+        data = tomllib.load(f)
+    build_deps, runtime_deps = [], []
+    for spec in data.get('build-system', {}).get('requires', ()):
+        build_deps.append(Dependency.from_pep_508(spec, global_metadata))
+    for spec in data.get('project', {}).get('dependencies', ()):
+        runtime_deps.append(Dependency.from_pep_508(spec, global_metadata))
+    return build_deps, runtime_deps
+
+
+@lru_cache()
+def read_deps() -> tuple[Dependency, ...]:
+    src = SRC if os.path.exists(SRC) else os.getcwd()
+    with open(os.path.join(src, 'bypy', 'sources.json')) as f:
+        base_data = json.load(f)
+    dmap = {q['name']: q for q in base_data}
+    qt_version = ''
+    if qtb := dmap.get('qt-base'):
+        qt_version = qtb['version']
+    gm = GlobalMetadata(qt_version=qt_version)
+    python_build_deps, python_runtime_deps = read_python_deps(src, gm)
+    data = []
+    for dep in base_data:
+        try:
+            data.append(Dependency.from_sources_json_entry(dep, gm))
+        except Exception as e:
+            raise ValueError(f'Failed to parse Dependency: {dep} with error: {e}') from e
+        if data[-1].name == 'python':
+            data.extend(python_build_deps)
+    data.extend(python_runtime_deps)
+    return tuple(data)
+
+
+@lru_cache()
+def python_version() -> tuple[int, int]:
+    for x in read_deps():
+        if x.name == 'python':
+            parts = x.version.split('.')
+            return int(parts[0]), int(parts[1])
+    raise KeyError('No python package found in sources.json')
+
+
+def sha256_for_path(path: str) -> str:
+    with open(path, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 def reporthook():
@@ -153,80 +214,53 @@ def reporthook():
     return report
 
 
-def get_pypi_url(pkg):
-    if pkg['filename'].endswith('.whl'):
-        pkg_name = pkg['filename'].partition('-')[0]
-    else:
-        parts = pkg['filename'].split('-')
-        pkg_name = '-'.join(parts[:-1])
-    base = 'https://pypi.python.org/simple/%s/' % pkg_name
-    raw = urlopen(base).read().decode('utf-8')
-    for m in re.finditer((
-        r'href="([^"]+)#sha256=%s"' % pkg['hash'].split(':')[-1]), raw
-    ):
-        return urljoin(base, m.group(1))
-    for m in re.finditer((
-        r'href="([^"]+%s)#sha256=.+"' % pkg['filename']), raw
-    ):
-        return urljoin(base, m.group(1))
-    raise ValueError('Failed to find PyPI URL for {}'.format(pkg))
-
-
 def get_github_url(url):
     ident = url.split(':', maxsplit=1)[-1]
     return f'https://api.github.com/repos/{ident}/tarball'
 
 
-def try_once(pkg, url):
-    filename = pkg['filename']
-    fname = os.path.join(SOURCES, filename)
-    if url == 'pypi':
-        url = get_pypi_url(pkg)
-    elif url.startswith('github:'):
+def try_once(pkg: Dependency, url: str, path: str) -> None:
+    if url.startswith('github:'):
         url = get_github_url(url)
-    print('Downloading', filename, 'from', url)
-    urlretrieve(url, fname, reporthook())
-    if not verify_hash(pkg):
+    print('Downloading', os.path.basename(path), 'from', url)
+    urlretrieve(url, path, reporthook())
+    if not pkg.verify_hash(path):
         raise SystemExit(
-            f'The hash of the downloaded file: {filename}'
+            f'The hash of the downloaded file: {os.path.basename(path)}'
             ' does not match the saved hash. It\'s sha256 is'
-            f': {sha256_for_pkg(pkg)}')
+            f': {sha256_for_path(path)}')
 
 
-def download_pkg(pkg):
-    for try_count in range(3):
-        for url in pkg['urls']:
+def download_pkg(pkg: Dependency, path: str) -> None:
+    for try_count in range(DOWNLOAD_RETRIES):
+        for url in pkg.urls:
             try:
-                return try_once(pkg, url)
+                return try_once(pkg, url, path)
+            except HTTPError as err:
+                if err.code == 404:
+                    raise
+                import traceback
+                traceback.print_exc()
+                print(f'Download of {url} failed, with error: {err}', flush=True, file=sys.stderr)
             except Exception as err:
                 import traceback
                 traceback.print_exc()
-                sys.stderr.flush()
-                print(f'Download of {url} failed, with error: {err}')
-                sys.stdout.flush()
+                print(f'Download of {url} failed, with error: {err}', flush=True, file=sys.stderr)
             finally:
                 print()
     raise SystemExit(
-        'Downloading of %s failed after three tries, giving up.' % pkg['name'])
+        f'Downloading of {pkg.name} failed after {DOWNLOAD_RETRIES} tries, giving up.')
 
 
-def cleanup_cache():
+def cleanup_cache(all_filenames: set[str]) -> None:
     if os.path.exists(SOURCES):
         existing = {x.lower(): x for x in os.listdir(SOURCES)}
         for extra in set(existing) - all_filenames:
             os.remove(os.path.join(SOURCES, existing[extra]))
 
 
-def download(pkgs=None):
-    sources = read_deps(only_buildable=False)
-    cleanup_cache()
-    pkg_names = frozenset(map(itemgetter('name'), pkgs or ()))
-    for name, pkg in sources.items():
-        if not pkg_names or name in pkg_names:
-            if not verify_hash(pkg):
-                download_pkg(pkg)
-
-
-def filename_for_dep(dep_name):
-    sources = read_deps(only_buildable=False)
-    return sources[dep_name]['filename']
+def ensure_downloaded() -> None:
+    all_filenames = set()
+    for pkg in read_deps():
+        all_filenames.add(os.path.basename(pkg.ensure_downloaded()).lower())
+    cleanup_cache(all_filenames)
