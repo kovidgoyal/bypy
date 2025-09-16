@@ -84,8 +84,12 @@ class Dependency:
         return True
 
     @property
+    def filename_prefix(self) -> str:
+        return f'{self.name}-{self.version}.'
+
+    @property
     def _filename(self) -> str:
-        return f'{self.name}-{self.version}.{self.file_extension}'
+        return self.filename_prefix + self.file_extension
 
     @property
     def filename(self) -> str:
@@ -258,15 +262,23 @@ def download_pkg(pkg: Dependency, path: str) -> None:
         f'Downloading of {pkg.name} failed after {DOWNLOAD_RETRIES} tries, giving up.')
 
 
-def cleanup_cache(all_filenames: set[str]) -> None:
+def cleanup_cache(all_filename_prefixes: set[str]) -> None:
+
+    def matches_prefix(x: str) -> bool:
+        for q in all_filename_prefixes:
+            if x.startswith(q):
+                return True
+        return False
+
     if os.path.exists(SOURCES):
-        existing = {x.lower(): x for x in os.listdir(SOURCES)}
-        for extra in set(existing) - all_filenames:
-            os.remove(os.path.join(SOURCES, existing[extra]))
+        for not_needed in (x for x in os.listdir(SOURCES) if not matches_prefix(x)):
+            print('Removing obsolete source file:', not_needed)
+            os.unlink(os.path.join(SOURCES, not_needed))
 
 
 def ensure_downloaded() -> None:
-    all_filenames = set()
+    all_filename_prefixes = set()
     for pkg in read_deps():
-        all_filenames.add(os.path.basename(pkg.ensure_downloaded()).lower())
-    cleanup_cache(all_filenames)
+        pkg.ensure_downloaded()
+        all_filename_prefixes.add(pkg.filename_prefix)
+    cleanup_cache(all_filename_prefixes)
