@@ -24,23 +24,16 @@ class GlobalMetadata(NamedTuple):
 
 
 def populate_qt_dep(dep, qt_version):
-    f = dep['name'].replace('-', '')
+    f = dep['name'].partition(' ')[0].replace('-', '')
     filename = f'{f}-everywhere-src-{qt_version}'
     p = qt_version.rpartition('.')[0]
     url = ('https://download.qt.io/official_releases/qt/'
-           f'{p}/{qt_version}/submodules/{{filename}}')
-    if 'unix' in dep['hashes']:
-        dep['unix'] = {
-            'filename': filename + '.tar.xz',
-            'hash': dep['hashes']['unix'],
-            'urls': [url],
-        }
-    if 'windows' in dep['hashes']:
-        dep['windows'] = {
-            'filename': filename + '.zip',
-            'hash': dep['hashes']['windows'],
-            'urls': [url],
-        }
+           f'{p}/{qt_version}/submodules/{filename}.tar.xz')
+    dep['unix'] = {
+        'file_extension': 'tar.xz',
+        'hash': dep['hashes']['unix'],
+        'urls': [url],
+    }
 
 
 @dataclass
