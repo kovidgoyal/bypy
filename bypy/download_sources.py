@@ -159,10 +159,10 @@ def read_deps(only_buildable: bool = False) -> tuple[Dependency, ...]:
     src = SRC if os.path.exists(SRC) else os.getcwd()
     with open(os.path.join(src, 'bypy', 'sources.json')) as f:
         base_data = json.load(f)
-    dmap = {q['name']: q for q in base_data}
+    dmap = {q['name'].partition(' ')[0]: q for q in base_data}
     qt_version = ''
     if qtb := dmap.get('qt-base'):
-        qt_version = qtb['version']
+        qt_version = qtb['name'].partition(' ')[-1]
     gm = GlobalMetadata(qt_version=qt_version)
     python_build_deps, python_runtime_deps = read_python_deps(src, gm)
     data = []
