@@ -85,11 +85,13 @@ class Dependency:
 
     @property
     def filename_prefix(self) -> str:
-        return f'{self.name}-{self.version}.'
+        return f'{self.name}-{self.version}'
 
     @property
     def _filename(self) -> str:
-        return self.filename_prefix + self.file_extension
+        if not (s := self.file_extension).startswith('-'):
+            s = '.' + s
+        return self.filename_prefix + s
 
     @property
     def filename(self) -> str:
@@ -124,8 +126,9 @@ class Dependency:
         for e in metadata['urls']:
             if e['packagetype'] == 'sdist':
                 source = e
-            elif e['packagetype'] == 'bdist_wheel' and e['filename'].endswith('none-any.whl'):
-                return commit(e, 'whl')
+            elif e['packagetype'] == 'bdist_wheel' and e['filename'].endswith('-none-any.whl'):
+                suffix = '-' + '-'.join(e['filename'].split('-')[-3:])
+                return commit(e, suffix)
         return commit(source, 'tar.' + source['filename'].rpartition('.')[-1])
 
     def verify_hash(self, path: str) -> bool:
