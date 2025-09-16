@@ -175,7 +175,7 @@ def accept_func_from_names(names):
     wants_qt = 'qt' in names
 
     def ffunc(dep: Dependency):
-        return dep.name in names or (
+        return dep.name in names or dep.name.lower() in names or (
                 wants_qt and dep.name.startswith('qt-'))
     return ffunc
 
@@ -184,9 +184,10 @@ def main(parsed_args: Any) -> None:
     accept_func = unbuilt
     all_deps = read_deps(True)
     all_dep_names = frozenset({d.name for d in all_deps})
+    all_dep_names_lower = frozenset({d.name.lower() for d in all_deps})
     if parsed_args.dependencies:
         accept_func = accept_func_from_names(parsed_args.dependencies)
-        if (frozenset(parsed_args.dependencies) - {'qt'}) - all_dep_names:
+        if (frozenset(parsed_args.dependencies) - {'qt'}) - all_dep_names - all_dep_names_lower:
             raise SystemExit('Unknown dependencies: {}'.format(
                 frozenset(parsed_args.dependencies) - all_dep_names))
     deps_to_build = tuple(filter(accept_func, all_deps))
