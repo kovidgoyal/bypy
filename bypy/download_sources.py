@@ -179,8 +179,8 @@ class Dependency:
             if (le := PROJECT_LICENSE_MAP.get(self.name)):
                 self._spdx_license_id = le
                 return
-            which = license_classifiers or classifiers
-            raise ValueError(f'No recognizable pypi license information for {self.name}@{self.version}: {"\n".join(which)}')
+            which = '\n'.join(license_classifiers or classifiers)
+            raise ValueError(f'No recognizable pypi license information for {self.name}@{self.version}: {which}')
 
     @property
     def spdx_license_id(self) -> str:

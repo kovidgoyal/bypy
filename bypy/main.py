@@ -209,7 +209,7 @@ def sbom(args):
     if args.output == '-':
         print(end=output)
     else:
-        with open(output, 'w') as f:
+        with open(args.output, 'w') as f:
             f.write(output)
 
 
