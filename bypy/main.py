@@ -205,7 +205,12 @@ def sbom(args):
             "relatedSpdxElement": project_id,
             "relationshipType": 'BUILD_DEPENDENCY_OF' if pkg.for_building else 'DEPENDENCY_OF',
         })
-    print(json.dumps(sbom_document, indent=2))
+    output = json.dumps(sbom_document, indent=2)
+    if args.output == '-':
+        print(end=output)
+    else:
+        with open(output, 'w') as f:
+            f.write(output)
 
 
 def setup_sbom_parser(p):
@@ -214,6 +219,7 @@ def setup_sbom_parser(p):
     p.add_argument('--license', default='GPL-3.0-only', help='Project license')
     p.add_argument('--url', default='', help='Project download URL')
     p.add_argument('--person', default='Kovid Goyal', help='Name of person creating this SBOM')
+    p.add_argument('--output', default='-', help='Where to output the SBOM')
     p.set_defaults(func=sbom)
 
 
