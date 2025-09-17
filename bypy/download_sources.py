@@ -193,6 +193,7 @@ class Dependency:
     @property
     def sbom_spdx(self) -> dict[str, Any]:
         self.ensure_download_data()
+        alg, _, val = self.expected_hash.partition(':')
         return {
             "name": self.name,
             "SPDXID": f"SPDXRef-Package-{self.unique_id_in_list}",
@@ -201,6 +202,7 @@ class Dependency:
             "filesAnalyzed": False,
             "licenseConcluded": self.spdx_license_id,
             "licenseDeclared": self.spdx_license_id,
+            "checksums": [{'algorithm': alg.upper(), 'checksumValue': val}],
         }
 
     def ensure_pypi_download_data(self) -> None:
