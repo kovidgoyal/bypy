@@ -66,7 +66,7 @@ CLASSIFIER_TO_SPDX_MAP = {
     "BSD-3-Clause": "BSD-3-Clause",
     "BSD-2-Clause": "BSD-2-Clause",
     "Apache Software License": "Apache-2.0",
-    "GNU GPL 3": "GPL-3.0-or-later",
+    "GNU GPL 3": "GPL-3.0-only",
     "GPL": "GPL-2.0-or-later",
     "GNU General Public License v2 (GPLv2)": "GPL-2.0-only",
     "GNU General Public License v3 (GPLv3)": "GPL-3.0-only",
