@@ -106,6 +106,7 @@ class Dependency:
     file_extension: str = ''
     expected_hash: str = ''
     unique_id_in_list: int = field(default_factory=lambda: next(list_counter))
+    for_building: bool = False
     _spdx_license_id: str = ''
 
     @classmethod
@@ -127,15 +128,15 @@ class Dependency:
         os = tuple(x.strip().lower() for x in e.get('os', '').split(',')) if e.get('os') else ()
         return Dependency(
             name=name, version=version, urls=urls, allowed_os_names=os, file_extension=ext,
-            expected_hash=s['hash'], _spdx_license_id=e['spdx'],
+            expected_hash=s['hash'], _spdx_license_id=e['spdx'], for_building=e.get('type') == 'build',
         )
 
     @classmethod
-    def from_pep_508(self, spec: str, global_metadata: GlobalMetadata) -> 'Dependency':
+    def from_pep_508(self, spec: str, global_metadata: GlobalMetadata, for_building: bool = False) -> 'Dependency':
         spec, _, marker = spec.partition(';')
         parts = spec.split()
         name, version = parts[0], parts[-1]
-        return Dependency(name=name, version=version, ecosystem='pypi', marker=marker)
+        return Dependency(name=name, version=version, ecosystem='pypi', marker=marker, for_building=for_building)
 
     def is_buildable(self) -> bool:
         if self.allowed_os_names and OS_NAME not in self.allowed_os_names:
@@ -274,7 +275,7 @@ def read_python_deps(src: str, global_metadata: GlobalMetadata) -> tuple[list[De
         data = tomllib.load(f)
     build_deps, runtime_deps = [], []
     for spec in data.get('build-system', {}).get('requires', ()):
-        build_deps.append(Dependency.from_pep_508(spec, global_metadata))
+        build_deps.append(Dependency.from_pep_508(spec, global_metadata, True))
     for spec in data.get('project', {}).get('dependencies', ()):
         runtime_deps.append(Dependency.from_pep_508(spec, global_metadata))
     return build_deps, runtime_deps

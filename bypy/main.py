@@ -167,7 +167,8 @@ def sbom(args):
     from datetime import datetime
 
     from .download_sources import read_deps
-    project = os.path.basename(os.getcwd())
+    project = args.name
+    project_id = f'SPDXRef-{project}'
     sbom_document = {
         "spdxVersion": "SPDX-2.3",
         "dataLicense": "CC0-1.0",
@@ -176,24 +177,42 @@ def sbom(args):
         "documentNamespace": f"http://spdx.org/spdxdocs/{project}-sbom-{uuid.uuid4()}",
         "creationInfo": {
             "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "creators": ["Tool: bypy"],
+            "creators": ["Tool: bypy", 'Person: Kovid Goyal'],
         },
-        "packages": [],
-        "relationships": [],
+        "packages": [
+            {
+                "name": project,
+                "SPDXID": project_id,
+                "versionInfo": f"{args.version}",
+                "downloadLocation": args.url or "NOASSERTION",
+                "licenseConcluded": args.license,
+            },
+        ],
+        "relationships": [
+            {
+                "spdxElementId": "SPDXRef-DOCUMENT",
+                "relatedSpdxElement": project_id,
+                "relationshipType": "DESCRIBES"
+            }
+        ],
     }
     for pkg in read_deps():
         package_spdx = pkg.sbom_spdx
         sbom_document["packages"].append(package_spdx)
         # Add a relationship to describe that the document describes this package
         sbom_document["relationships"].append({
-            "spdxElementId": "SPDXRef-DOCUMENT",
-            "relatedSpdxElement": package_spdx["SPDXID"],
-            "relationshipType": "DESCRIBES"
+            "spdxElementId": package_spdx["SPDXID"],
+            "relatedSpdxElement": project_id,
+            "relationshipType": 'BUILD_DEPENDENCY_OF' if pkg.for_building else 'DEPENDENCY_OF',
         })
     print(json.dumps(sbom_document, indent=2))
 
 
 def setup_sbom_parser(p):
+    p.add_argument('name', help='Project name')
+    p.add_argument('version', help='Project version')
+    p.add_argument('--license', default='GPL-3.0-only', help='Project license')
+    p.add_argument('--url', default='', help='Project download URL')
     p.set_defaults(func=sbom)
 
 
