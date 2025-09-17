@@ -3,15 +3,17 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import hashlib
+from contextlib import suppress
 import json
 import os
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any, NamedTuple
 from urllib.request import urlopen, urlretrieve
 from urllib.error import HTTPError
+from itertools import count
 
 import tomllib
 
@@ -36,6 +38,47 @@ def populate_qt_dep(dep, qt_version):
     }
 
 
+@lru_cache(2)
+def cache_dir() -> str:
+    ans = os.path.join(os.path.expanduser('~'), '.cache', 'bypy')
+    os.makedirs(ans, exist_ok=True)
+    return ans
+
+
+@lru_cache(2)
+def get_pypi_metadata(name: str, version: str) -> dict[str, Any]:
+    cached = os.path.join(cache_dir(), f'pypi-{name}-{version}.json')
+    with suppress(FileNotFoundError), open(cached, 'rb') as f:
+        return json.loads(f.read())
+    try:
+        with urlopen(f'https://pypi.org/pypi/{name}/{version}/json') as f:
+            raw = f.read()
+            with open(cached, 'wb') as c:
+                c.write(raw)
+            return json.loads(raw)
+    except Exception as err:
+        raise SystemExit(f'Could not get pypi package: {name}/{version} with error: {err}') from err
+
+
+CLASSIFIER_TO_SPDX_MAP = {
+    "BSD License": "BSD-3-Clause",
+    "Apache Software License": "Apache-2.0",
+    "GNU General Public License v2 (GPLv2)": "GPL-2.0-only",
+    "GNU General Public License v3 (GPLv3)": "GPL-3.0-only",
+    "GNU Affero General Public License v3": "AGPL-3.0-only",
+    "GNU Lesser General Public License v2.1 (LGPLv2.1)": "LGPL-2.1-only",
+    "GNU Lesser General Public License v3 (LGPLv3)": "LGPL-3.0-only",
+    'ISC License (ISCL)': 'ISC',
+    "MIT License": "MIT",
+    "Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
+    "Common Development and Distribution License (CDDL)": "CDDL-1.0",
+    "Eclipse Public License 1.0 (EPL-1.0)": "EPL-1.0",
+    "Eclipse Public License 2.0 (EPL-2.0)": "EPL-2.0",
+}
+
+list_counter = count(1)
+
+
 @dataclass
 class Dependency:
     name: str
@@ -46,6 +89,8 @@ class Dependency:
     urls: tuple[str, ...] = ()
     file_extension: str = ''
     expected_hash: str = ''
+    unique_id_in_list: int = field(default_factory=lambda: next(list_counter))
+    _spdx_license_id: str = ''
 
     @classmethod
     def from_sources_json_entry(self, e: dict[str, Any], global_metadata: GlobalMetadata) -> 'Dependency':
@@ -66,7 +111,7 @@ class Dependency:
         os = tuple(x.strip().lower() for x in e.get('os', '').split(',')) if e.get('os') else ()
         return Dependency(
             name=name, version=version, urls=urls, allowed_os_names=os, file_extension=ext,
-            expected_hash=s['hash'],
+            expected_hash=s['hash'], _spdx_license_id=e['spdx'],
         )
 
     @classmethod
@@ -99,6 +144,69 @@ class Dependency:
             self.ensure_downloaded()
         return self._filename
 
+    def fetch_license_from_pypi(self) -> None:
+        data = get_pypi_metadata(self.name, self.version)
+        if license_info := data.get('info', {}).get('license'):
+            self._spdx_license_id = license_info
+            return
+        classifiers = data.get('info', {}).get('classifiers', [])
+        license_classifiers = [c.split('::')[-1].strip() for c in classifiers if c.startswith('License :: OSI Approved')]
+        for q in license_classifiers:
+            if val := CLASSIFIER_TO_SPDX_MAP.get(q):
+                self._spdx_license_id = val
+                break
+        else:
+            which = license_classifiers or classifiers
+            raise ValueError(f'No recognizable pypi license information for {self.name}@{self.version}: {"\n".join(which)}')
+
+    @property
+    def spdx_license_id(self) -> str:
+        if not self._spdx_license_id:
+            if self.ecosystem == 'pypi':
+                self.fetch_license_from_pypi()
+            else:
+                raise ValueError(f'No license information for {self.name}@{self.version}')
+        return self._spdx_license_id
+
+    @property
+    def sbom_spdx(self) -> dict[str, Any]:
+        self.ensure_download_data()
+        return {
+            "name": self.name,
+            "SPDXID": f"SPDXRef-Package-{self.unique_id_in_list}",
+            "versionInfo": self.version,
+            "downloadLocation": self.urls[0],
+            "filesAnalyzed": False,
+            "licenseConcluded": self.spdx_license_id,
+            "licenseDeclared": self.spdx_license_id,
+        }
+
+    def ensure_pypi_download_data(self) -> None:
+        def commit(e: dict[str, Any], file_extension: str) -> str:
+            self.urls = (e['url'],)
+            self.file_extension = file_extension
+            self.expected_hash = 'sha256:' + e['digests']['sha256']
+            path = os.path.join(SOURCES, self._filename)
+            return path
+
+        metadata = get_pypi_metadata(self.name, self.version)
+        for e in metadata['urls']:
+            if e['packagetype'] == 'sdist':
+                source = e
+            elif e['packagetype'] == 'bdist_wheel' and e['filename'].endswith('-none-any.whl'):
+                suffix = '-' + '-'.join(e['filename'].split('-')[-3:])
+                commit(e, suffix)
+                return
+        commit(source, 'tar.' + source['filename'].rpartition('.')[-1])
+
+    def ensure_download_data(self) -> None:
+        if self.urls:
+            return
+        if self.ecosystem == 'pypi':
+            self.ensure_pypi_download_data()
+            return
+        raise ValueError(f'No download URLs for {self.name}@{self.version}')
+
     def ensure_pypi_downloaded(self) -> str:
         filename = self._filename
         path = os.path.join(SOURCES, filename)
@@ -109,27 +217,10 @@ class Dependency:
                 if x.startswith(filename):
                     self.file_extension = x[len(filename):]
                     return os.path.join(SOURCES, x)
-        try:
-            with urlopen(f'https://pypi.org/pypi/{self.name}/{self.version}/json') as f:
-                metadata = json.loads(f.read())
-        except Exception as err:
-            raise SystemExit(f'Could not get pypi package: {self.name}/{self.version} with error: {err}') from err
-
-        def commit(e: dict[str, Any], file_extension: str) -> str:
-            self.urls = (e['url'],)
-            self.file_extension = file_extension
-            self.expected_hash = 'sha256:' + e['digests']['sha256']
-            path = os.path.join(SOURCES, self._filename)
-            download_pkg(self, path)
-            return path
-
-        for e in metadata['urls']:
-            if e['packagetype'] == 'sdist':
-                source = e
-            elif e['packagetype'] == 'bdist_wheel' and e['filename'].endswith('-none-any.whl'):
-                suffix = '-' + '-'.join(e['filename'].split('-')[-3:])
-                return commit(e, suffix)
-        return commit(source, 'tar.' + source['filename'].rpartition('.')[-1])
+        self.ensure_pypi_download_data()
+        path = os.path.join(SOURCES, self._filename)
+        download_pkg(self, path)
+        return path
 
     def verify_hash(self, path: str) -> bool:
         try:

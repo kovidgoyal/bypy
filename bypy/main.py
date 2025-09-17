@@ -161,6 +161,42 @@ def setup_reconnect_parser(p):
     p.set_defaults(func=reconnect)
 
 
+def sbom(args):
+    import json
+    import uuid
+    from datetime import datetime
+
+    from .download_sources import read_deps
+    project = os.path.basename(os.getcwd())
+    sbom_document = {
+        "spdxVersion": "SPDX-2.3",
+        "dataLicense": "CC0-1.0",
+        "SPDXID": "SPDXRef-DOCUMENT",
+        "name": f"{project} SBOM",
+        "documentNamespace": f"http://spdx.org/spdxdocs/{project}-sbom-{uuid.uuid4()}",
+        "creationInfo": {
+            "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "creators": ["Tool: bypy"],
+        },
+        "packages": [],
+        "relationships": [],
+    }
+    for pkg in read_deps():
+        package_spdx = pkg.sbom_spdx
+        sbom_document["packages"].append(package_spdx)
+        # Add a relationship to describe that the document describes this package
+        sbom_document["relationships"].append({
+            "spdxElementId": "SPDXRef-DOCUMENT",
+            "relatedSpdxElement": package_spdx["SPDXID"],
+            "relationshipType": "DESCRIBES"
+        })
+    print(json.dumps(sbom_document, indent=2))
+
+
+def setup_sbom_parser(p):
+    p.set_defaults(func=sbom)
+
+
 def build_deps(args):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(WORKER_DIR, exist_ok=True)
@@ -196,6 +232,7 @@ def global_main(args):
     setup_program_parser(s.add_parser('program', help='Build the program'))
     setup_build_deps_parser(s.add_parser('dependencies', aliases=['deps'], help='Build the dependencies'))
     setup_shell_parser(s.add_parser('shell', help='Run a shell with a completely initialized environment'))
+    setup_sbom_parser(s.add_parser('sbom', help='Generate a SBOM which is printed to STDOUT in SPDX JSON format'))
     setup_reconnect_parser(s.add_parser('__reconnect__', help='For internal use'))
     parsed_args = p.parse_args(args[1:])
     parsed_args.func(parsed_args)
