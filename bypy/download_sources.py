@@ -62,18 +62,34 @@ def get_pypi_metadata(name: str, version: str) -> dict[str, Any]:
 
 CLASSIFIER_TO_SPDX_MAP = {
     "BSD License": "BSD-3-Clause",
+    "BSD": "BSD-3-Clause",
+    "BSD-3-Clause": "BSD-3-Clause",
+    "BSD-2-Clause": "BSD-2-Clause",
     "Apache Software License": "Apache-2.0",
+    "GNU GPL 3": "GPL-3.0-or-later",
+    "GPL": "GPL-2.0-or-later",
     "GNU General Public License v2 (GPLv2)": "GPL-2.0-only",
     "GNU General Public License v3 (GPLv3)": "GPL-3.0-only",
+    "GPL v3": "GPL-3.0-only",
     "GNU Affero General Public License v3": "AGPL-3.0-only",
     "GNU Lesser General Public License v2.1 (LGPLv2.1)": "LGPL-2.1-only",
     "GNU Lesser General Public License v3 (LGPLv3)": "LGPL-3.0-only",
+    "GNU Lesser General Public License v2 or later (LGPLv2+)": "GPL-2.0-or-later",
+    "GNU General Public License v3 or later (GPLv3+)": "GPL-3.0-or-later",
+    "LGPL 3.0 or later": "LGPL-3.0-or-later",
+    "LGPL-2.1-or-later": "LGPL-2.1-or-later",
     'ISC License (ISCL)': 'ISC',
     "MIT License": "MIT",
     "Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
     "Common Development and Distribution License (CDDL)": "CDDL-1.0",
     "Eclipse Public License 1.0 (EPL-1.0)": "EPL-1.0",
     "Eclipse Public License 2.0 (EPL-2.0)": "EPL-2.0",
+    "OSI Approved": "BSD-3-Clause",
+}
+
+PROJECT_LICENSE_MAP = {
+    'pillow': 'MIT-CMU', # https://pypi.org/project/pillow/
+    'zeroconf': "LGPL-2.1-or-later", # https://pypi.org/project/zeroconf/
 }
 
 list_counter = count(1)
@@ -146,8 +162,11 @@ class Dependency:
 
     def fetch_license_from_pypi(self) -> None:
         data = get_pypi_metadata(self.name, self.version)
-        if license_info := data.get('info', {}).get('license'):
-            self._spdx_license_id = license_info
+        if (le := data.get('info', {}).get('license_expression')):
+            self._spdx_license_id = le
+            return
+        if (license_info := data.get('info', {}).get('license')) and (sid := CLASSIFIER_TO_SPDX_MAP.get(license_info)):
+            self._spdx_license_id = sid
             return
         classifiers = data.get('info', {}).get('classifiers', [])
         license_classifiers = [c.split('::')[-1].strip() for c in classifiers if c.startswith('License :: OSI Approved')]
@@ -156,6 +175,9 @@ class Dependency:
                 self._spdx_license_id = val
                 break
         else:
+            if (le := PROJECT_LICENSE_MAP.get(self.name)):
+                self._spdx_license_id = le
+                return
             which = license_classifiers or classifiers
             raise ValueError(f'No recognizable pypi license information for {self.name}@{self.version}: {"\n".join(which)}')
 
