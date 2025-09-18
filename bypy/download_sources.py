@@ -3,6 +3,7 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import hashlib
+from base64 import standard_b64decode
 from contextlib import suppress
 import json
 import os
@@ -111,7 +112,7 @@ class Dependency:
     purl: str = ''
 
     @classmethod
-    def from_sources_json_entry(self, e: dict[str, Any], global_metadata: GlobalMetadata) -> 'Dependency':
+    def from_sources_json_entry(cls, e: dict[str, Any], global_metadata: GlobalMetadata) -> 'Dependency':
         name, _, version = e['name'].partition(' ')
         if name.startswith('qt-'):
             version = global_metadata.qt_version
@@ -133,12 +134,23 @@ class Dependency:
         )
 
     @classmethod
-    def from_pep_508(self, spec: str, global_metadata: GlobalMetadata, for_building: bool = False) -> 'Dependency':
+    def from_pep_508(cls, spec: str, global_metadata: GlobalMetadata, for_building: bool = False) -> 'Dependency':
         spec, _, marker = spec.partition(';')
         parts = spec.split()
         name, version = parts[0], parts[-1]
         return Dependency(name=name, version=version, ecosystem='pypi', marker=marker,
                           for_building=for_building, purl=f'pkg:pypi/{name}@{version}')
+
+    @classmethod
+    def from_go_sum(cls, name: str, version: str, alg: str) -> 'Dependency':
+        alg, _, csum = alg.partition(':')
+        if alg != 'h1':
+            raise ValueError(f'Unkown checksum algorithm {alg} for go dep: {name}')
+        csum = 'sha256:' + standard_b64decode(csum).hex()
+        version = version[1:]
+        purl = f'pkg:golang/{name}@{version}'
+        return Dependency(
+            name=name, version=version, purl=purl, ecosystem='go', expected_hash=csum, urls=('https://' + name,))
 
     def is_buildable(self) -> bool:
         if self.allowed_os_names and OS_NAME not in self.allowed_os_names:
@@ -237,9 +249,12 @@ class Dependency:
     def ensure_download_data(self) -> None:
         if self.urls:
             return
-        if self.ecosystem == 'pypi':
-            self.ensure_pypi_download_data()
-            return
+        match self.ecosystem:
+            case 'pypi':
+                self.ensure_pypi_download_data()
+                return
+            case 'go':
+                return
         raise ValueError(f'No download URLs for {self.name}@{self.version}')
 
     def ensure_pypi_downloaded(self) -> str:
@@ -289,6 +304,29 @@ def read_python_deps(src: str, global_metadata: GlobalMetadata) -> tuple[list[De
     for spec in data.get('project', {}).get('dependencies', ()):
         runtime_deps.append(Dependency.from_pep_508(spec, global_metadata))
     return build_deps, runtime_deps
+
+
+@lru_cache(2)
+def read_go_deps(src: str) -> list[Dependency]:
+    ans = []
+    package_hashes = {}
+    package_go_mod_hashes = {}
+    with open('go.sum') as f:
+        for line in f:
+            name, version, alg = line.split()
+            version, sep, q = version.partition('/')
+            if sep == '/':
+                if q == 'go.mod':
+                    package_go_mod_hashes[name] = version, alg
+                else:
+                    raise ValueError(f'Unknown hash type: {q} for package: {name}')
+            else:
+                package_hashes[name] = version, alg
+    for name in set(package_hashes) | set(package_go_mod_hashes):
+        version, alg = package_hashes.get(name) or package_go_mod_hashes[name]
+        ans.append(Dependency.from_go_sum(name, version, alg))
+    return ans
+
 
 
 @lru_cache(2)
