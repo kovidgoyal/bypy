@@ -205,7 +205,7 @@ class Dependency:
         ) for u in s['urls'])
         os = tuple(x.strip().lower() for x in e.get('os', '').split(',')) if e.get('os') else ()
         return Dependency(
-            name=name, version=version, urls=urls, allowed_os_names=os, file_extension=ext,
+            name=name, version=version, urls=urls, allowed_os_names=os, file_extension='.'+ext,
             expected_hash=s['hash'], _spdx_license_id=spdx, for_building=e.get('type') == 'build',
         )
 
@@ -237,16 +237,15 @@ class Dependency:
 
     @property
     def filename_prefix(self) -> str:
-        name = self.name
+        name = self.name.lower()
         if self.ecosystem == 'pypi':
+            # fucking python wheel filenames have to match the importable package name
             name = name.replace('-', '_')
         return f'{name}-{self.version}'
 
     @property
     def _filename(self) -> str:
-        if not (s := self.file_extension).startswith('-'):
-            s = '.' + s
-        return self.filename_prefix + s
+        return self.filename_prefix + self.file_extension
 
     @property
     def filename(self) -> str:
@@ -342,10 +341,10 @@ class Dependency:
         if os.path.exists(path):
             return path
         if not self.file_extension:
-            q = filename.rstrip('.').lower()
+            q = filename
             for x in os.listdir(SOURCES):
-                if x.lower().startswith(q):
-                    self.file_extension = x[len(q):]
+                if x.startswith(q):
+                    self.file_extension = x[len(filename):]
                     return os.path.join(SOURCES, x)
         self.ensure_pypi_download_data()
         path = os.path.join(SOURCES, self._filename)
