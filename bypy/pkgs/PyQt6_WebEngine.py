@@ -5,7 +5,7 @@
 import os
 
 from bypy.constants import PREFIX, PYTHON
-from bypy.pkgs.pyqt import run_sip_install
+from bypy.pkgs.PyQt6 import run_sip_install
 from bypy.utils import run
 
 
