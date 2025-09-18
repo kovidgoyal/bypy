@@ -108,6 +108,7 @@ class Dependency:
     unique_id_in_list: int = field(default_factory=lambda: next(list_counter))
     for_building: bool = False
     _spdx_license_id: str = ''
+    purl: str = ''
 
     @classmethod
     def from_sources_json_entry(self, e: dict[str, Any], global_metadata: GlobalMetadata) -> 'Dependency':
@@ -136,7 +137,8 @@ class Dependency:
         spec, _, marker = spec.partition(';')
         parts = spec.split()
         name, version = parts[0], parts[-1]
-        return Dependency(name=name, version=version, ecosystem='pypi', marker=marker, for_building=for_building)
+        return Dependency(name=name, version=version, ecosystem='pypi', marker=marker,
+                          for_building=for_building, purl=f'pkg:pypi/{name}@{version}')
 
     def is_buildable(self) -> bool:
         if self.allowed_os_names and OS_NAME not in self.allowed_os_names:
@@ -195,6 +197,13 @@ class Dependency:
     def sbom_spdx(self) -> dict[str, Any]:
         self.ensure_download_data()
         alg, _, val = self.expected_hash.partition(':')
+        refs = []
+        if self.purl:
+            refs.append({
+                "referenceCategory": "PACKAGE-MANAGER",
+                "referenceType": "purl",
+                "referenceLocator": self.purl,
+            })
         return {
             "name": self.name,
             "SPDXID": f"SPDXRef-Package-{self.unique_id_in_list}",
@@ -204,6 +213,7 @@ class Dependency:
             "licenseConcluded": self.spdx_license_id,
             "licenseDeclared": self.spdx_license_id,
             "checksums": [{'algorithm': alg.upper(), 'checksumValue': val}],
+            "externalRefs": refs,
         }
 
     def ensure_pypi_download_data(self) -> None:
