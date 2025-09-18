@@ -167,7 +167,7 @@ def sbom(args):
     from datetime import datetime
 
     from .download_sources import read_deps
-    project = args.name
+    foundry, _, project = args.name.partition('/')
     project_id = f'SPDXRef-{project}'
     sbom_document = {
         "spdxVersion": "SPDX-2.3",
@@ -186,6 +186,19 @@ def sbom(args):
                 "versionInfo": f"{args.version}",
                 "downloadLocation": args.url or "NOASSERTION",
                 "licenseConcluded": args.license,
+                "externalRefs": [
+                    {
+                        "referenceCategory": "PACKAGE-MANAGER",
+                        "referenceType": "purl",
+                        "referenceLocator": f'pkg:generic/{foundry}/{project}@{args.version}',
+                    },
+                    {
+                        "referenceCategory": "SECURITY",
+                        "referenceType": "cpe23Type",
+                        "referenceLocator": f'cpe:2.3:a:{foundry}:{project}:{args.version}:*:*:*:*:*:*:*',
+                    }
+
+                ],
             },
         ],
         "relationships": [
