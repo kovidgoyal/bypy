@@ -92,6 +92,7 @@ LICENSE_INFORMATION = {
     "simde": "MIT",
     "wayland": "MIT",
     "wayland-protocols": "MIT",
+    "easylzma": "BSD-2-Clause",  # its actually public domain
 }
 
 class GlobalMetadata(NamedTuple):
