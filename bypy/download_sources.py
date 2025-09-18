@@ -80,6 +80,18 @@ LICENSE_INFORMATION = {
     "speech-dispatcher-client": "GPL-2.0-or-later",
     "onnx": "MIT",
     "espeak":"GPL-3.0-only",
+    "pkg-config": "GPL-2.0-or-later",
+    "xkbcommon": "X11",
+    "libxxhash": "BSD-2-Clause",
+    "xcrypt": "LGPL-2.1-only",
+    "lcms2": "MIT",
+    "pcre": "BSD-3-Clause",
+    "pixman": "MIT",
+    "cairo": "LGPL-2.1-only",
+    "harfbuzz": "MIT",
+    "simde": "MIT",
+    "wayland": "MIT",
+    "wayland-protocols": "MIT",
 }
 
 class GlobalMetadata(NamedTuple):
