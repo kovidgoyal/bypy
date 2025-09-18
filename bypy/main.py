@@ -174,7 +174,6 @@ def sbom(args):
         "dataLicense": "CC0-1.0",
         "SPDXID": "SPDXRef-DOCUMENT",
         "name": f"{project}-{args.version}",
-        "documentName": f'{project}-{args.version}',
         "documentNamespace": f"http://spdx.org/spdxdocs/{project}-sbom-{uuid.uuid4()}",
         "creationInfo": {
             "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -218,7 +217,7 @@ def setup_sbom_parser(p):
     p.add_argument('name', help='Project name')
     p.add_argument('version', help='Project version')
     p.add_argument('--license', default='GPL-3.0-only', help='Project license')
-    p.add_argument('--url', default='', help='Project download URL')
+    p.add_argument('--url', default='', help='Project homepage URL')
     p.add_argument('--person', default='Kovid Goyal', help='Name of person creating this SBOM')
     p.add_argument('--output', default='-', help='Where to output the SBOM')
     p.set_defaults(func=sbom)
