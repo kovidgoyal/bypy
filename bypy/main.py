@@ -173,7 +173,8 @@ def sbom(args):
         "spdxVersion": "SPDX-2.3",
         "dataLicense": "CC0-1.0",
         "SPDXID": "SPDXRef-DOCUMENT",
-        "name": f"{project} SBOM",
+        "name": f"{project}-{args.version}",
+        "documentName": f'{project}-{args.version}',
         "documentNamespace": f"http://spdx.org/spdxdocs/{project}-sbom-{uuid.uuid4()}",
         "creationInfo": {
             "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
