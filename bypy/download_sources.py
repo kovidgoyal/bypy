@@ -237,7 +237,10 @@ class Dependency:
 
     @property
     def filename_prefix(self) -> str:
-        return f'{self.name}-{self.version}'
+        name = self.name
+        if self.ecosystem == 'pypi':
+            name = name.replace('-', '_')
+        return f'{name}-{self.version}'
 
     @property
     def _filename(self) -> str:
