@@ -342,9 +342,10 @@ class Dependency:
         if os.path.exists(path):
             return path
         if not self.file_extension:
+            q = filename.rstrip('.').lower()
             for x in os.listdir(SOURCES):
-                if x.startswith(filename):
-                    self.file_extension = x[len(filename):]
+                if x.lower().startswith(q):
+                    self.file_extension = x[len(q):]
                     return os.path.join(SOURCES, x)
         self.ensure_pypi_download_data()
         path = os.path.join(SOURCES, self._filename)
