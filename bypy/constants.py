@@ -180,6 +180,12 @@ def currently_building_dep(val: Optional['Dependency'] = None) -> 'Dependency':
     return getattr(currently_building_dep, 'ans')
 
 
+def qt_webengine_is_used(val: bool | None = None) -> bool:
+    if val is not None:
+        setattr(qt_webengine_is_used, 'ans', val)
+    return getattr(qt_webengine_is_used, 'ans', False)
+
+
 def build_dir(newval=None, current_arch=None):
     if newval is not None:
         build_dir.ans = newval

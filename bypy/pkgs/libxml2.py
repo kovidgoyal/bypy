@@ -5,23 +5,24 @@
 
 import re
 
-from bypy.constants import PREFIX, build_dir, ismacos, iswindows
+from bypy.constants import PREFIX, build_dir, ismacos, iswindows, qt_webengine_is_used
 from bypy.utils import cmake_build, replace_in_file, simple_build, walk
 
 
 def main(args):
+    needs_icu = qt_webengine_is_used()
     if iswindows or ismacos:
         extra = {}
         cmake_build(
-            LIBXML2_WITH_ICU='ON', LIBXML2_WITH_PYTHON='OFF', LIBXML2_WITH_TESTS='OFF',
+            LIBXML2_WITH_ICU='ON' if needs_icu else 'OFF', LIBXML2_WITH_PYTHON='OFF', LIBXML2_WITH_TESTS='OFF',
             LIBXML2_WITH_LZMA='OFF', relocate_pkgconfig=not iswindows, **extra
         )
     else:
-        # ICU is needed to use libxml2 in qt-webengine
-        simple_build(
+        icu = '--with-icu' if needs_icu else '--without-icu'
+        simple_build((
             '--disable-dependency-tracking --disable-static --enable-shared'
             ' --without-python --without-debug --with-iconv={0} --disable-silent-rules'
-            ' --with-zlib={0} --with-icu'.format(PREFIX))
+            ' --with-zlib={0} {1}').format(PREFIX, icu))
         for path in walk(build_dir()):
             if path.endswith('/xml2-config'):
                 replace_in_file(

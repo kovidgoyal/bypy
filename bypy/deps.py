@@ -8,7 +8,7 @@ import sys
 from collections.abc import Sequence
 from typing import Any
 
-from .constants import PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir, current_build_arch, currently_building_dep, ismacos, lipo_data, mkdtemp
+from .constants import PKG, PREFIX, SOURCES, UNIVERSAL_ARCHES, build_dir, current_build_arch, currently_building_dep, ismacos, lipo_data, mkdtemp, qt_webengine_is_used
 from .download_sources import Dependency, ensure_downloaded, read_deps
 from .utils import (
     RunFailure,
@@ -185,6 +185,7 @@ def main(parsed_args: Any) -> None:
     all_deps = read_deps(True)
     all_dep_names = frozenset({d.name for d in all_deps})
     all_dep_names_lower = frozenset({d.name.lower() for d in all_deps})
+    qt_webengine_is_used('qt-webengine' in all_dep_names)
     if parsed_args.dependencies:
         accept_func = accept_func_from_names(parsed_args.dependencies)
         if (frozenset(parsed_args.dependencies) - {'qt'}) - all_dep_names - all_dep_names_lower:
