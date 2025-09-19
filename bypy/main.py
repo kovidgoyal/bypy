@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 from contextlib import suppress
+from itertools import chain
 
 from .constants import BYPY, OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, WORKER_DIR, build_dir, in_chroot, islinux
 from .deps import init_env
@@ -166,7 +167,7 @@ def sbom(args):
     import uuid
     from datetime import datetime
 
-    from .download_sources import read_deps
+    from .download_sources import read_deps, read_go_deps
     foundry, _, project = args.name.partition('/')
     project_id = f'SPDXRef-{project}'
     sbom_document = {
@@ -209,7 +210,7 @@ def sbom(args):
             }
         ],
     }
-    for pkg in read_deps():
+    for pkg in chain(read_deps(), read_go_deps()):
         package_spdx = pkg.sbom_spdx
         sbom_document["packages"].append(package_spdx)
         # Add a relationship to describe that the document describes this package

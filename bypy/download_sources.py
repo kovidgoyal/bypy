@@ -21,6 +21,8 @@ import tomllib
 from .constants import OS_NAME, SOURCES, SRC, iswindows
 
 DOWNLOAD_RETRIES = 3
+
+# data tables {{{
 LICENSE_INFORMATION = {
     "nasm": "BSD-2-Clause",
     "cmake": "BSD-3-Clause",
@@ -95,6 +97,82 @@ LICENSE_INFORMATION = {
     "easylzma": "BSD-2-Clause",  # its actually public domain
 }
 
+GOLANG_LICENSE_INFORMATION = {
+    "github.com/ALTree/bigfloat": "MIT",
+    "github.com/alecthomas/assert/v2": "MIT",
+    "github.com/alecthomas/chroma/v2": "MIT",
+    "github.com/alecthomas/repr": "MIT",
+    "github.com/bmatcuk/doublestar/v4": "MIT",
+    "github.com/davecgh/go-spew": "ISC",
+    "github.com/disintegration/imaging": "MIT",
+    "github.com/dlclark/regexp2": "MIT",
+    "github.com/edwvee/exiffix": "MIT",
+    "github.com/google/go-cmp": "BSD-3-Clause",
+    "github.com/google/uuid": "BSD-3-Clause",
+    "github.com/hexops/gotextdiff": "BSD-3-Clause",
+    "github.com/jessevdk/go-flags": "BSD-3-Clause",
+    "github.com/klauspost/cpuid/v2": "MIT",
+    "github.com/kovidgoyal/dbus": "BSD-2-Clause",
+    "github.com/kovidgoyal/imaging": "MIT",
+    "github.com/lufia/plan9stats": "BSD-3-Clause",
+    "github.com/pmezard/go-difflib": "BSD-3-Clause",
+    "github.com/power-devops/perfstat": "MIT",
+    "github.com/rwcarlsen/goexif": "BSD-2-Clause",
+    "github.com/seancfoley/bintree": "Apache-2.0",
+    "github.com/seancfoley/ipaddress-go": "Apache-2.0",
+    "github.com/shirou/gopsutil/v3": "BSD-3-Clause",
+    "github.com/shoenig/go-m1cpu": "MPL-2.0",
+    "github.com/shoenig/test": "MPL-2.0",
+    "github.com/stretchr/testify": "MIT",
+    "github.com/tklauser/go-sysconf": "BSD-3-Clause",
+    "github.com/tklauser/numcpus": "Apache-2.0",
+    "github.com/yusufpapurcu/wmi": "MIT",
+    "github.com/zeebo/assert": "CC0-1.0",
+    "github.com/zeebo/xxh3": "BSD-2-Clause",
+    "golang.org/x/exp": "BSD-3-Clause",
+    "golang.org/x/image": "BSD-3-Clause",
+    "golang.org/x/sys": "BSD-3-Clause",
+    "golang.org/x/text": "BSD-3-Clause",
+    "gopkg.in/check.v1": "BSD-2-Clause",
+    "gopkg.in/yaml.v1": "LGPL-3.0-only",
+    "gopkg.in/yaml.v3": "MIT",
+    "howett.net/plist": "BSD-3-Clause",
+    "github.com/go-ole/go-ole": "MIT",
+}
+
+CLASSIFIER_TO_SPDX_MAP = {
+    "BSD License": "BSD-3-Clause",
+    "BSD": "BSD-3-Clause",
+    "BSD-3-Clause": "BSD-3-Clause",
+    "BSD-2-Clause": "BSD-2-Clause",
+    "Apache Software License": "Apache-2.0",
+    "GNU GPL 3": "GPL-3.0-only",
+    "GPL": "GPL-2.0-or-later",
+    "GNU General Public License v2 (GPLv2)": "GPL-2.0-only",
+    "GNU General Public License v3 (GPLv3)": "GPL-3.0-only",
+    "GPL v3": "GPL-3.0-only",
+    "GNU Affero General Public License v3": "AGPL-3.0-only",
+    "GNU Lesser General Public License v2.1 (LGPLv2.1)": "LGPL-2.1-only",
+    "GNU Lesser General Public License v3 (LGPLv3)": "LGPL-3.0-only",
+    "GNU Lesser General Public License v2 or later (LGPLv2+)": "GPL-2.0-or-later",
+    "GNU General Public License v3 or later (GPLv3+)": "GPL-3.0-or-later",
+    "LGPL 3.0 or later": "LGPL-3.0-or-later",
+    "LGPL-2.1-or-later": "LGPL-2.1-or-later",
+    'ISC License (ISCL)': 'ISC',
+    "MIT License": "MIT",
+    "Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
+    "Common Development and Distribution License (CDDL)": "CDDL-1.0",
+    "Eclipse Public License 1.0 (EPL-1.0)": "EPL-1.0",
+    "Eclipse Public License 2.0 (EPL-2.0)": "EPL-2.0",
+    "OSI Approved": "BSD-3-Clause",
+}
+
+PROJECT_LICENSE_MAP = {
+    'pillow': 'MIT-CMU', # https://pypi.org/project/pillow/
+    'zeroconf': "LGPL-2.1-or-later", # https://pypi.org/project/zeroconf/
+}
+# }}}
+
 class GlobalMetadata(NamedTuple):
     qt_version: str
 
@@ -133,38 +211,6 @@ def get_pypi_metadata(name: str, version: str) -> dict[str, Any]:
     except Exception as err:
         raise SystemExit(f'Could not get pypi package: {name}/{version} with error: {err}') from err
 
-
-CLASSIFIER_TO_SPDX_MAP = {
-    "BSD License": "BSD-3-Clause",
-    "BSD": "BSD-3-Clause",
-    "BSD-3-Clause": "BSD-3-Clause",
-    "BSD-2-Clause": "BSD-2-Clause",
-    "Apache Software License": "Apache-2.0",
-    "GNU GPL 3": "GPL-3.0-only",
-    "GPL": "GPL-2.0-or-later",
-    "GNU General Public License v2 (GPLv2)": "GPL-2.0-only",
-    "GNU General Public License v3 (GPLv3)": "GPL-3.0-only",
-    "GPL v3": "GPL-3.0-only",
-    "GNU Affero General Public License v3": "AGPL-3.0-only",
-    "GNU Lesser General Public License v2.1 (LGPLv2.1)": "LGPL-2.1-only",
-    "GNU Lesser General Public License v3 (LGPLv3)": "LGPL-3.0-only",
-    "GNU Lesser General Public License v2 or later (LGPLv2+)": "GPL-2.0-or-later",
-    "GNU General Public License v3 or later (GPLv3+)": "GPL-3.0-or-later",
-    "LGPL 3.0 or later": "LGPL-3.0-or-later",
-    "LGPL-2.1-or-later": "LGPL-2.1-or-later",
-    'ISC License (ISCL)': 'ISC',
-    "MIT License": "MIT",
-    "Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
-    "Common Development and Distribution License (CDDL)": "CDDL-1.0",
-    "Eclipse Public License 1.0 (EPL-1.0)": "EPL-1.0",
-    "Eclipse Public License 2.0 (EPL-2.0)": "EPL-2.0",
-    "OSI Approved": "BSD-3-Clause",
-}
-
-PROJECT_LICENSE_MAP = {
-    'pillow': 'MIT-CMU', # https://pypi.org/project/pillow/
-    'zeroconf': "LGPL-2.1-or-later", # https://pypi.org/project/zeroconf/
-}
 
 list_counter = count(1)
 
@@ -226,7 +272,9 @@ class Dependency:
         version = version[1:]
         purl = f'pkg:golang/{name}@{version}'
         return Dependency(
-            name=name, version=version, purl=purl, ecosystem='go', expected_hash=csum, urls=('https://' + name,))
+            name=name, version=version, purl=purl, ecosystem='go', expected_hash=csum, urls=('https://' + name,),
+            _spdx_license_id=GOLANG_LICENSE_INFORMATION[name],
+        )
 
     def is_buildable(self) -> bool:
         if self.allowed_os_names and OS_NAME not in self.allowed_os_names:
@@ -386,11 +434,11 @@ def read_python_deps(src: str, global_metadata: GlobalMetadata) -> tuple[list[De
 
 
 @lru_cache(2)
-def read_go_deps(src: str) -> list[Dependency]:
+def read_go_deps() -> list[Dependency]:
     ans = []
     package_hashes = {}
     package_go_mod_hashes = {}
-    with open('go.sum') as f:
+    with suppress(FileNotFoundError), open('go.sum') as f:
         for line in f:
             name, version, alg = line.split()
             version, sep, q = version.partition('/')
