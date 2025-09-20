@@ -24,77 +24,77 @@ DOWNLOAD_RETRIES = 3
 
 # data tables {{{
 LICENSE_INFORMATION = {
-    "nasm": "BSD-2-Clause",
-    "cmake": "BSD-3-Clause",
-    "autoconf": "GPL-3.0-or-later",
-    "automake": "GPL-2.0-or-later",
-    "libtool": "LGPL-2.1-or-later",
-    "zlib": "Zlib",
-    "bzip2": "bzip2-1.0.6",
-    "xz": "0BSD",
-    "unrar": "unrar",
-    "brotli": "MIT",
-    "libdeflate": "MIT",
-    "zstd": "BSD-2-Clause",
-    "expat": "MIT",
-    "sqlite": "blessing",
-    "libffi": "MIT",
-    "hyphen": "MPL-1.1",
-    "openssl": "Apache-2.0",
-    "ncurses": "MIT",
-    "readline": "GPL-3.0-only",
-    "python": "PSF-2.0",
-    "uchardet": "Apache-2.0",
-    "icu": "ICU",
-    "libstemmer": "BSD-2-Clause",
-    "libjpeg": "IJG",
-    "libpng": "libpng-2.0",
-    "libjbig": "GPL-2.0-or-later",
-    "libtiff": "libtiff",
-    "libwebp": "Apache-2.0",
-    "jxrlib": "BSD-2-Clause",
-    "freetype": "FTL",
-    "graphite": "MIT",
-    "fontconfig": "MIT",
-    "iconv": "LGPL-2.0-only",
-    "libxml2": "MIT",
-    "libxslt": "MIT",
-    "chmlib": "LGPL-2.1-or-later",
-    "optipng": "Zlib",
-    "mozjpeg": "IJG",
-    "libusb": "LGPL-2.1-or-later",
-    "libmtp": "LGPL-2.1-or-later",
-    "openjpeg": "BSD-2-Clause",
-    "poppler": "GPL-2.0-only",
-    "podofo": "LGPL-2.0-or-later",
-    "libgpg-error": "LGPL-2.1-or-later",
-    "libgcrypt": "LGPL-2.1-or-later",
-    "glib": "LGPL-2.1-or-later",
-    "dbus": "LGPL-2.1-or-later",
-    "dbusglib": "GPL-2.0-or-later",
-    "gnuwin32": "GPL-2.0-only",
-    "hunspell": "LGPL-2.1-or-later",
-    "ninja": "Apache-2.0",
-    "nodejs": "MIT",
-    "nv-codec-headers": "MIT",
-    "ffmpeg": "LGPL-2.1-or-later",
-    "qt": "GPL-3.0-only",
-    "speech-dispatcher-client": "GPL-2.0-or-later",
-    "onnx": "MIT",
-    "espeak":"GPL-3.0-only",
-    "pkg-config": "GPL-2.0-or-later",
-    "xkbcommon": "X11",
-    "libxxhash": "BSD-2-Clause",
-    "xcrypt": "LGPL-2.1-only",
-    "lcms2": "MIT",
-    "pcre": "BSD-3-Clause",
-    "pixman": "MIT",
-    "cairo": "LGPL-2.1-only",
-    "harfbuzz": "MIT",
-    "simde": "MIT",
-    "wayland": "MIT",
-    "wayland-protocols": "MIT",
-    "easylzma": "BSD-2-Clause",  # its actually public domain
+    "nasm": ("BSD-2-Clause", 'nasm/netwide_assembler'),
+    "cmake": ("BSD-3-Clause", 'cmake_project/cmake'),
+    "autoconf": ("GPL-3.0-or-later", ''),
+    "automake": ("GPL-2.0-or-later", ''),
+    "libtool": ("LGPL-2.1-or-later", ''),
+    "zlib": ("Zlib", 'zlib/zlib'),
+    "bzip2": ("bzip2-1.0.6", 'bzip/bzip2'),
+    "xz": ("0BSD", 'tukaani/xz'),
+    "unrar": ("unrar", 'rarlab/unrar'),
+    "brotli": ("MIT", 'google/brotli'),
+    "libdeflate": ("MIT", ''),
+    "zstd": ("BSD-2-Clause", ''),
+    "expat": ("MIT", ''),
+    "sqlite": ("blessing", 'sqlite/sqlite'),
+    "libffi": ("MIT", ''),
+    "hyphen": ("MPL-1.1", 'libffi_project/libffi'),
+    "openssl": ("Apache-2.0", 'openssl/openssl'),
+    "ncurses": ("MIT", 'gnu/ncurses'),
+    "readline": ("GPL-3.0-only", 'gnu/readline'),
+    "python": ("PSF-2.0", 'python/python'),
+    "uchardet": ("Apache-2.0", ''),
+    "icu": ("ICU", 'icu-project/international_components_for_unicode'),
+    "libstemmer": ("BSD-2-Clause", ''),
+    "libjpeg": ("IJG", 'libjpeg-turbo/libjpeg-turbo'),
+    "libpng": ("libpng-2.0", 'libpng/libpng'),
+    "libjbig": ("GPL-2.0-or-later", ''),
+    "libtiff": ("libtiff", 'libtiff/libtiff'),
+    "libwebp": ("Apache-2.0", 'webmproject/libwebp'),
+    "jxrlib": ("BSD-2-Clause", ''),
+    "freetype": ("FTL", 'freetype/freetype2'),
+    "graphite": ("MIT", 'sil/graphite2'),
+    "fontconfig": ("MIT", 'fontconfig_project/fontconfig'),
+    "iconv": ("LGPL-2.0-only", ''),
+    "libxml2": ("MIT", 'xmlsoft/libxml2'),
+    "libxslt": ("MIT", 'xmlsoft/libxslt'),
+    "chmlib": ("LGPL-2.1-or-later", ''),
+    "optipng": ("Zlib", 'optipng_project/optipng'),
+    "mozjpeg": ("IJG", 'mozilla/mozjpeg'),
+    "libusb": ("LGPL-2.1-or-later", 'libusb/libusb'),
+    "libmtp": ("LGPL-2.1-or-later", 'libmtp_project/libmtp'),
+    "openjpeg": ("BSD-2-Clause", 'openjpeg/openjpeg'),
+    "poppler": ("GPL-2.0-only", 'freedesktop/poppler'),
+    "podofo": ("LGPL-2.0-or-later", 'podofo_project/podofo'),
+    "libgpg-error": ("LGPL-2.1-or-later", 'gnupg/libgpg-error'),
+    "libgcrypt": ("LGPL-2.1-or-later", 'gnupg/libgcrypt'),
+    "glib": ("LGPL-2.1-or-later", 'gnome/glib'),
+    "dbus": ("LGPL-2.1-or-later", 'freedesktop/dbus'),
+    "dbusglib": ("GPL-2.0-or-later", 'freedesktop/dbus-glib'),
+    "gnuwin32": ("GPL-2.0-only", ''),
+    "hunspell": ("LGPL-2.1-or-later", 'hunspell_project/hunspell'),
+    "ninja": ("Apache-2.0", ''),
+    "nodejs": ("MIT", 'nodejs/node.js'),
+    "nv-codec-headers": ("MIT", ''),
+    "ffmpeg": ("LGPL-2.1-or-later", 'ffmpeg/ffmpeg'),
+    "qt": ("GPL-3.0-only", ''),
+    "speech-dispatcher-client": ("GPL-2.0-or-later", ''),
+    "onnx": ("MIT", 'linuxfoundation/onnx'),
+    "espeak": ("GPL-3.0-only", 'espeak-ng/espeak_ng'),
+    "pkg-config": ("GPL-2.0-or-later", ''),
+    "xkbcommon": ("X11", 'xkbcommon/libxkbcommon'),
+    "libxxhash": ("BSD-2-Clause", ''),
+    "xcrypt": ("LGPL-2.1-only", ''),
+    "lcms2": ("MIT", 'littlecms/little_cms_color_engine'),
+    "pcre": ("BSD-3-Clause", ''),
+    "pixman": ("MIT", 'pixman/pixman'),
+    "cairo": ("LGPL-2.1-only", 'cairographics/cairo'),
+    "harfbuzz": ("MIT", 'harfbuzz_project/harfbuzz'),
+    "simde": ("MIT", ''),
+    "wayland": ("MIT", 'wayland/wayland'),
+    "wayland-protocols": ("MIT", ''),
+    "easylzma": ("BSD-2-Clause", ''),  # its actually public domain
 }
 
 GOLANG_LICENSE_INFORMATION = {
@@ -228,6 +228,7 @@ class Dependency:
     for_building: bool = False
     _spdx_license_id: str = ''
     purl: str = ''
+    cpe: str = ''
 
     @classmethod
     def from_sources_json_entry(cls, e: dict[str, Any], global_metadata: GlobalMetadata) -> 'Dependency':
@@ -235,9 +236,18 @@ class Dependency:
         if name.startswith('qt-'):
             version = global_metadata.qt_version
             populate_qt_dep(e, version)
-            spdx = LICENSE_INFORMATION['qt']
+            spdx, purl = LICENSE_INFORMATION['qt']
+            cpe_name = name.replace('-', '')
+            cpe = f'cpe:2.3:a:qt:{cpe_name}:{version}:*:*:*:*:*:*:*'
+            purl = f'pkg:generic/TheQtCompany/{cpe_name}@{version}'
         else:
-            spdx = LICENSE_INFORMATION[name]
+            spdx, purl = LICENSE_INFORMATION[name]
+            cpe = ''
+            if purl:
+                parts = purl.split('/')
+                if len(parts) == 2:
+                    purl = f'generic/{purl}'
+                cpe = f'cpe:2.3:a:{parts[-2]}:{parts[-1]}:{version}:*:*:*:*:*:*:*'
         order = ('windows', 'unix') if iswindows else ('unix', 'windows')
         s = e.get(order[0], e.get(order[1]))
         assert s
@@ -250,8 +260,8 @@ class Dependency:
         ) for u in s['urls'])
         os = tuple(x.strip().lower() for x in e.get('os', '').split(',')) if e.get('os') else ()
         return Dependency(
-            name=name, version=version, urls=urls, allowed_os_names=os, file_extension='.'+ext,
-            expected_hash=s['hash'], _spdx_license_id=spdx, for_building=e.get('type') == 'build',
+            name=name, version=version, urls=urls, allowed_os_names=os, file_extension='.'+ext, cpe=cpe,
+            expected_hash=s['hash'], _spdx_license_id=spdx, for_building=e.get('type') == 'build', purl=purl,
         )
 
     @classmethod
@@ -340,6 +350,12 @@ class Dependency:
                 "referenceCategory": "PACKAGE-MANAGER",
                 "referenceType": "purl",
                 "referenceLocator": self.purl,
+            })
+        if self.cpe:
+            refs.append({
+                "referenceCategory": "SECURITY",
+                "referenceType": "cpe23Type",
+                "referenceLocator": self.cpe,
             })
         return {
             "name": self.name,
