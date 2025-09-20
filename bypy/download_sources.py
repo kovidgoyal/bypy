@@ -3,18 +3,19 @@
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import hashlib
-from base64 import standard_b64decode
-from contextlib import suppress
 import json
 import os
+import re
 import sys
 import time
+from base64 import standard_b64decode
+from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, NamedTuple
-from urllib.request import urlopen, urlretrieve
-from urllib.error import HTTPError
 from itertools import count
+from typing import Any, NamedTuple
+from urllib.error import HTTPError
+from urllib.request import urlopen, urlretrieve
 
 import tomllib
 
@@ -97,48 +98,6 @@ LICENSE_INFORMATION = {
     "easylzma": ("BSD-2-Clause", ''),  # its actually public domain
 }
 
-GOLANG_LICENSE_INFORMATION = {
-    "github.com/ALTree/bigfloat": "MIT",
-    "github.com/alecthomas/assert/v2": "MIT",
-    "github.com/alecthomas/chroma/v2": "MIT",
-    "github.com/alecthomas/repr": "MIT",
-    "github.com/bmatcuk/doublestar/v4": "MIT",
-    "github.com/davecgh/go-spew": "ISC",
-    "github.com/dlclark/regexp2": "MIT",
-    "github.com/kovidgoyal/exiffix": "MIT",
-    "github.com/google/go-cmp": "BSD-3-Clause",
-    "github.com/google/uuid": "BSD-3-Clause",
-    "github.com/hexops/gotextdiff": "BSD-3-Clause",
-    "github.com/jessevdk/go-flags": "BSD-3-Clause",
-    "github.com/klauspost/cpuid/v2": "MIT",
-    "github.com/kovidgoyal/dbus": "BSD-2-Clause",
-    "github.com/kovidgoyal/imaging": "MIT",
-    "github.com/lufia/plan9stats": "BSD-3-Clause",
-    "github.com/pmezard/go-difflib": "BSD-3-Clause",
-    "github.com/power-devops/perfstat": "MIT",
-    "github.com/rwcarlsen/goexif": "BSD-2-Clause",
-    "github.com/seancfoley/bintree": "Apache-2.0",
-    "github.com/seancfoley/ipaddress-go": "Apache-2.0",
-    "github.com/shirou/gopsutil/v3": "BSD-3-Clause",
-    "github.com/shoenig/go-m1cpu": "MPL-2.0",
-    "github.com/shoenig/test": "MPL-2.0",
-    "github.com/stretchr/testify": "MIT",
-    "github.com/tklauser/go-sysconf": "BSD-3-Clause",
-    "github.com/tklauser/numcpus": "Apache-2.0",
-    "github.com/yusufpapurcu/wmi": "MIT",
-    "github.com/zeebo/assert": "CC0-1.0",
-    "github.com/zeebo/xxh3": "BSD-2-Clause",
-    "golang.org/x/exp": "BSD-3-Clause",
-    "golang.org/x/image": "BSD-3-Clause",
-    "golang.org/x/sys": "BSD-3-Clause",
-    "golang.org/x/text": "BSD-3-Clause",
-    "gopkg.in/check.v1": "BSD-2-Clause",
-    "gopkg.in/yaml.v1": "LGPL-3.0-only",
-    "gopkg.in/yaml.v3": "MIT",
-    "howett.net/plist": "BSD-3-Clause",
-    "github.com/go-ole/go-ole": "MIT",
-}
-
 CLASSIFIER_TO_SPDX_MAP = {
     "BSD License": "BSD-3-Clause",
     "BSD": "BSD-3-Clause",
@@ -196,7 +155,7 @@ def cache_dir() -> str:
     return ans
 
 
-@lru_cache(2)
+@lru_cache()
 def get_pypi_metadata(name: str, version: str) -> dict[str, Any]:
     cached = os.path.join(cache_dir(), f'pypi-{name}-{version}.json')
     with suppress(FileNotFoundError), open(cached, 'rb') as f:
@@ -209,6 +168,31 @@ def get_pypi_metadata(name: str, version: str) -> dict[str, Any]:
             return json.loads(raw)
     except Exception as err:
         raise SystemExit(f'Could not get pypi package: {name}/{version} with error: {err}') from err
+
+
+GO_PRIVATE_PACKAGES = {
+    'github.com/kovidgoyal/exiffix': 'MIT',
+}
+
+
+@lru_cache()
+def get_go_metadata(name: str, version: str) -> dict[str, str]:
+    # Stupidly pkg.go.dev has no API: https://github.com/golang/go/issues/36785
+    cached = os.path.join(cache_dir(), f'go-{name.replace("/", "_")}-{version}.json')
+    with suppress(FileNotFoundError), open(cached, 'rb') as f:
+        return json.loads(f.read())
+    try:
+        with urlopen(f'https://pkg.go.dev/{name}') as f:
+            raw = f.read().decode()
+            if m := re.search(r'data-test-id="UnitHeader-license".+?>(.+?)<', raw, flags=re.DOTALL):
+                ans = {'spdx_id': m.group(1).strip()}
+            else:
+                raise SystemExit(f'Could not find license for go package: {name}/{version}')
+            with open(cached, 'w') as c:
+                c.write(json.dumps(ans))
+            return ans
+    except Exception as err:
+        raise SystemExit(f'Could not get go package: {name}/{version} with error: {err}') from err
 
 
 list_counter = count(1)
@@ -280,9 +264,11 @@ class Dependency:
         csum = 'sha256:' + standard_b64decode(csum).hex()
         version = version[1:]
         purl = f'pkg:golang/{name}@{version}'
+        if not (spdx := GO_PRIVATE_PACKAGES.get(name, '')):
+            spdx = get_go_metadata(name, version)['spdx_id']
         return Dependency(
             name=name, version=version, purl=purl, ecosystem='go', expected_hash=csum, urls=('https://' + name,),
-            _spdx_license_id=GOLANG_LICENSE_INFORMATION[name],
+            _spdx_license_id=spdx,
         )
 
     def is_buildable(self) -> bool:
