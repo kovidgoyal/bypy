@@ -4,7 +4,7 @@
 
 import os
 
-from bypy.constants import PREFIX, ismacos, iswindows
+from bypy.constants import PREFIX, iswindows
 from bypy.utils import (cmake_build, install_binaries, replace_in_file,
                         windows_cmake_build)
 
@@ -18,6 +18,7 @@ def main(args):
         ENABLE_QT5='OFF',
         ENABLE_QT6='OFF',
         ENABLE_GPGME='OFF',
+        ENABLE_NSS3='OFF',
         ENABLE_BOOST='OFF',
         ENABLE_LIBCURL='OFF',
         BUILD_GTK_TESTS='OFF',
@@ -28,8 +29,6 @@ def main(args):
     replace_in_file('CMakeLists.txt',
                     'macro_optional_find_package(Cairo ${CAIRO_VERSION})',
                     'set(CAIRO_FOUND false)')
-    if ismacos:
-        cmake_args['ENABLE_NSS3'] = 'OFF'
     if iswindows:
         opjinc = f'{PREFIX}/include/openjpeg'.replace('\\', '/')
         opjlib = f'{PREFIX}/lib/openjp2.lib'.replace('\\', '/')
@@ -45,9 +44,6 @@ def main(args):
             'set(poppler_LIBS ${poppler_LIBS} openjp2)',
             'set(poppler_LIBS ${poppler_LIBS} %s)' % opjlib
         )
-        replace_in_file(  # even though optional searching for it requires pkg-config causing failure
-            'CMakeLists.txt',
-            'macro_optional_find_package(NSS3)', '')
         windows_cmake_build(**cmake_args)
         install_binaries('build/utils/*.exe', 'bin')
         install_binaries('build/*.dll', 'bin')
