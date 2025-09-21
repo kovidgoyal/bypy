@@ -178,6 +178,8 @@ GO_PRIVATE_PACKAGES = {
 @lru_cache()
 def get_go_metadata(name: str, version: str) -> dict[str, str]:
     # Stupidly pkg.go.dev has no API: https://github.com/golang/go/issues/36785
+    # you can get hash using: https://proxy.golang.org/{name}/@v/v{version}.info but not bothering
+    # see endpoints at https://go.dev/ref/mod#goproxy-protocol
     cached = os.path.join(cache_dir(), f'go-{name.replace("/", "_")}-{version}.json')
     with suppress(FileNotFoundError), open(cached, 'rb') as f:
         return json.loads(f.read())
