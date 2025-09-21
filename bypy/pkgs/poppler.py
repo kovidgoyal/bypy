@@ -29,9 +29,7 @@ def main(args):
                     'macro_optional_find_package(Cairo ${CAIRO_VERSION})',
                     'set(CAIRO_FOUND false)')
     if ismacos:
-        replace_in_file('CMakeLists.txt',
-                        'macro_optional_find_package(NSS3)',
-                        'set(NSS3_FOUND false)')
+        cmake_args['ENABLE_NSS3'] = 'OFF'
     if iswindows:
         opjinc = f'{PREFIX}/include/openjpeg'.replace('\\', '/')
         opjlib = f'{PREFIX}/lib/openjp2.lib'.replace('\\', '/')
