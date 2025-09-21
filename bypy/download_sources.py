@@ -66,7 +66,7 @@ LICENSE_INFORMATION = {
     "libusb": ("LGPL-2.1-or-later", 'libusb/libusb'),
     "libmtp": ("LGPL-2.1-or-later", 'libmtp_project/libmtp'),
     "openjpeg": ("BSD-2-Clause", 'openjpeg/openjpeg'),
-    "poppler": ("GPL-2.0-only", 'freedesktop/poppler'),
+    "poppler": ("GPL-2.0-or-later", 'freedesktop/poppler'),
     "podofo": ("LGPL-2.0-or-later", 'podofo_project/podofo'),
     "libgpg-error": ("LGPL-2.1-or-later", 'gnupg/libgpg-error'),
     "libgcrypt": ("LGPL-2.1-or-later", 'gnupg/libgcrypt'),
