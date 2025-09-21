@@ -17,6 +17,7 @@ def main(args):
         ENABLE_CMS='none',
         ENABLE_QT5='OFF',
         ENABLE_QT6='OFF',
+        ENABLE_GPGME='OFF',
         ENABLE_BOOST='OFF',
         ENABLE_LIBCURL='OFF',
         BUILD_GTK_TESTS='OFF',
