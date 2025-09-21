@@ -21,13 +21,35 @@ import tempfile
 import time
 import zipfile
 from contextlib import closing, contextmanager, suppress
-from functools import partial, lru_cache
+from functools import lru_cache, partial
 
 from .constants import (
-    BIN, CMAKE, LIBDIR, MAKEOPTS, NMAKE, NODEJS, PATCHES, PERL, PREFIX, PYTHON,
-    SH, UNIVERSAL_ARCHES, build_dir, cpu_count, current_build_arch,
-    currently_building_dep, is64bit, is_cross_half_of_lipo_build, islinux,
-    ismacos, iswindows, mkdtemp, python_major_minor_version, worker_env
+    BIN,
+    CMAKE,
+    LIBDIR,
+    MAKEOPTS,
+    MESON,
+    NINJA,
+    NMAKE,
+    NODEJS,
+    PATCHES,
+    PERL,
+    PREFIX,
+    PYTHON,
+    SH,
+    UNIVERSAL_ARCHES,
+    build_dir,
+    cpu_count,
+    current_build_arch,
+    currently_building_dep,
+    is64bit,
+    is_cross_half_of_lipo_build,
+    islinux,
+    ismacos,
+    iswindows,
+    mkdtemp,
+    python_major_minor_version,
+    worker_env,
 )
 
 if iswindows:
@@ -994,7 +1016,7 @@ def cmake_build(
 
 def meson_build(extra_cmdline='', library_path=None, **options):
     cmd = [
-        'meson', 'setup', '--buildtype=release', f'--prefix={build_dir()}',
+        MESON, 'setup', '--buildtype=release', f'--prefix={build_dir()}',
         f'--libdir={build_dir()}/lib'
     ]
     if extra_cmdline:
@@ -1002,8 +1024,8 @@ def meson_build(extra_cmdline='', library_path=None, **options):
     cmd += [f'-D{k}={v}' for k, v in options.items()]
     cmd.append('build')
     run(*cmd)
-    run('ninja -C build', library_path=library_path)
-    run('ninja -C build install', library_path=library_path)
+    run(NINJA, '-C', 'build', library_path=library_path)
+    run(NINJA, '-C', 'build', 'install', library_path=library_path)
     relocate_pkgconfig_files()
 
 

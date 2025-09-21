@@ -79,6 +79,8 @@ NASM = 'nasm'
 CL = 'cl.exe'
 LINK = 'link.exe'
 LIB = 'lib.exe'
+MESON = 'meson'
+NINJA = 'ninja'
 
 
 def normpath(a):
@@ -112,6 +114,8 @@ if iswindows:
         paths = [p for p in paths if not patheq(p, os.path.dirname(PERL))]
     if RUBY != 'ruby.exe':
         paths = [p for p in paths if not patheq(p, os.path.dirname(RUBY))]
+    MESON = os.path.join(r'C:\Program Files\Meson', 'meson.exe')
+    NINJA = os.path.join(r'C:\Program Files\Meson', 'ninja.exe')
     for k in vcvars_env:
         worker_env[k] = vcvars_env[k]
     worker_env['PATH'] = os.pathsep.join(uniq(paths))
