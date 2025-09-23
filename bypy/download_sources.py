@@ -118,6 +118,7 @@ CLASSIFIER_TO_SPDX_MAP = {
     "LGPL-2.1-or-later": "LGPL-2.1-or-later",
     'ISC License (ISCL)': 'ISC',
     "MIT License": "MIT",
+    "MIT": "MIT",
     "Mozilla Public License 2.0 (MPL 2.0)": "MPL-2.0",
     "Common Development and Distribution License (CDDL)": "CDDL-1.0",
     "Eclipse Public License 1.0 (EPL-1.0)": "EPL-1.0",
@@ -129,6 +130,7 @@ CLASSIFIER_TO_SPDX_MAP = {
 PROJECT_LICENSE_MAP = {
     'pillow': 'MIT-CMU', # https://pypi.org/project/pillow/
     'zeroconf': "LGPL-2.1-or-later", # https://pypi.org/project/zeroconf/
+    'setuptools': "MIT", # https://pypi.org/project/zeroconf/
 }
 # }}}
 
