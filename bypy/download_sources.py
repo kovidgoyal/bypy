@@ -123,6 +123,7 @@ CLASSIFIER_TO_SPDX_MAP = {
     "Eclipse Public License 1.0 (EPL-1.0)": "EPL-1.0",
     "Eclipse Public License 2.0 (EPL-2.0)": "EPL-2.0",
     "OSI Approved": "BSD-3-Clause",
+    "any-OSI": "BSD-3-Clause",
 }
 
 PROJECT_LICENSE_MAP = {
