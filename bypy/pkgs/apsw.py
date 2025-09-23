@@ -38,4 +38,4 @@ def post_install_check():
     c = apsw.Connection(":memory:"); \
     c.cursor().execute( \
     'CREATE VIRTUAL TABLE email USING fts5(title, body);')'''
-    run(PYTHON, '-c', code, library_path=True, env={'LD_DEBUG': 'libs'})
+    run(PYTHON, '-c', code, library_path=True)
