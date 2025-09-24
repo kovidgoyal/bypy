@@ -6,9 +6,11 @@ import os
 
 from virtual_machine.run import shutdown, wait_for_ssh
 
+from .authenticode import EnsureSignedInTree
 from .conf import parse_conf_file
 from .constants import base_dir
 from .utils import single_instance, setup_build_parser
+from .sign_server import run_server
 from .vms import Rsync, get_vm_spec
 
 
@@ -36,13 +38,16 @@ def main(args):
     if args.action == 'shutdown':
         shutdown(vm)
         return
-
-    port = wait_for_ssh(vm)
-    rsync = Rsync(vm, port)
-
     output_dir = os.path.join(base_dir(), 'b', 'windows', args.arch, 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'windows', args.arch, 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
+    signer = EnsureSignedInTree(pkg_dir)
+
+    port = wait_for_ssh(vm)
+    rsync = Rsync(vm, port)
+    signer.wait_till_finished_or_exit()
+    print(f'Signed {signer.signed_count} dependency files in {pkg_dir}')
+
     os.makedirs(sources_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(pkg_dir, exist_ok=True)
@@ -65,7 +70,6 @@ def main(args):
         f'"PYTHON_TWO={python2}"', f'"PERL={perl}"', f'"RUBY={ruby}"',
         f'"MESA={mesa}"', f'BYPY_ARCH={ba}', f'"NODEJS={nodejs}"'
     ]
-    from .sign_server import run_server
     sign_server = run_server()
     remote_port = rsync.setup_port_forwarding(sign_server.server_address[1])
     cmd.append(f'"SIGN_SERVER_PORT={remote_port}"')
