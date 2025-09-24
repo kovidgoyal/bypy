@@ -34,7 +34,7 @@ LICENSE_INFORMATION = {
     "bzip2": ("bzip2-1.0.6", 'bzip/bzip2'),
     "xz": ("0BSD", 'tukaani/xz'),
     "unrar": ("unrar", 'rarlab/unrar'),
-    "brotli": ("MIT", 'google/brotli'),
+    "libbrotli": ("MIT", 'google/brotli'),
     "libdeflate": ("MIT", ''),
     "zstd": ("BSD-2-Clause", ''),
     "expat": ("MIT", ''),
