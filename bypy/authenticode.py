@@ -114,7 +114,7 @@ class EnsureSignedInTree(Thread):
             self.do_print.set()
         self.join()
         if self.exc is None:
-            print(f'Signing took {self.end_time - self.start_time} seconds')
+            print(f'Signing took {self.end_time - self.start_time:.1f} seconds')
             return
         if self.tb:
             print(self.tb, file=sys.stderr)
