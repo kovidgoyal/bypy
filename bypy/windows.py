@@ -6,11 +6,11 @@ import os
 
 from virtual_machine.run import shutdown, wait_for_ssh
 
-from .authenticode import EnsureSignedInTree
+from .authenticode import EnsureSignedInTree, sign_path
 from .conf import parse_conf_file
 from .constants import base_dir
-from .utils import single_instance, setup_build_parser
 from .sign_server import run_server
+from .utils import setup_build_parser, single_instance
 from .vms import Rsync, get_vm_spec
 
 
@@ -81,4 +81,10 @@ def main(args):
     if not singleinstance():
         raise SystemExit(
             'Another instance of the windows container is running')
-    rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, name=f'sw{args.arch}')
+
+    def sign_installers() -> None:
+        for x in os.listdir(output_dir):
+            if x.lowers().rpartition('.')[-1] in ('exe', 'msi'):
+                print(f'Signing: {x}')
+                sign_path(os.path.join(output_dir, x))
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, name=f'sw{args.arch}', callback_after_get=sign_installers)

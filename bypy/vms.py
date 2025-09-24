@@ -100,12 +100,13 @@ exec "$SHELL" -il
                 from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
             raise SystemExit(cp.returncode)
 
-    def main(self, sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix='/', name='sw', get_from_vm=True):
+    def main(self, sources_dir, pkg_dir, output_dir, cmd_prefix, args, prefix='/', name='sw', get_from_vm=True, callback_after_get=lambda : None):
         ws_cmd = list(cmd_prefix) + ['worker-status']
         to_vm(self, ws_cmd, sources_dir, pkg_dir, prefix=prefix, name=name)
         cp = self.run_via_ssh(*cmd_prefix, *remote_cmd(args), allocate_tty=True, raise_exception=False)
         if get_from_vm:
             from_vm(self, sources_dir, pkg_dir, output_dir, prefix=prefix, name=name)
+            callback_after_get()
         raise SystemExit(cp.returncode)
 
     def from_vm(self, from_, to, excludes=frozenset()):
