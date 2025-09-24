@@ -10,7 +10,7 @@ import threading
 import time
 from contextlib import contextmanager
 
-from virtual_machine.run import BUILD_VM_USER, server_from_spec, ssh_command_to
+from virtual_machine.run import BUILD_VM_USER, forwarded_port, server_from_spec, ssh_command_to
 
 from .conf import parse_conf_file
 from .constants import base_dir
@@ -58,6 +58,9 @@ class Rsync(object):
             self.server = server_from_spec(spec)
             self.remote_rsync_cmd = rsync_cmd
             self.port = port
+
+    def setup_port_forwarding(self, port: int) -> str:
+        return forwarded_port(port, server=self.server, port=self.port)
 
     @contextmanager
     def restore_tty_state(self):

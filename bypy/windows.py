@@ -65,6 +65,10 @@ def main(args):
         f'"PYTHON_TWO={python2}"', f'"PERL={perl}"', f'"RUBY={ruby}"',
         f'"MESA={mesa}"', f'BYPY_ARCH={ba}', f'"NODEJS={nodejs}"'
     ]
+    from .sign_server import run_server
+    sign_server = run_server()
+    remote_port = rsync.setup_port_forwarding(sign_server.server_address[1])
+    cmd.append(f'"SIGN_SERVER_PORT={remote_port}"')
     if args.action == 'shell':
         return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args, prefix=prefix, name=f'sw{args.arch}')
     if args.action == 'reconnect':

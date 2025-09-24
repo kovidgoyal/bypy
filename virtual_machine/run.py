@@ -18,7 +18,6 @@ is_running_remotely = False
 monitor_template = '{}/monitor.socket'
 machine_spec_template = '{}/machine-spec'
 BUILD_VM_USER = 'kovid'
-ssh_masters = set()
 disable_known_hosts = ['-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-o', 'LogLevel=ERROR']
 
 try:
@@ -187,24 +186,37 @@ def end_ssh_master(address, socket, process):
     if process.poll() is None:
         sleep(0.1)
         process.kill()
-    ssh_masters.discard(address)
+
+
+def ssh_master_socket_path(server='localhost', port=22) -> str:
+    socket = os.path.expanduser(
+        f'~/.ssh/controlmasters/bypy-{server}-{port}-{os.getpid()}')
+    os.makedirs(os.path.dirname(socket), exist_ok=True)
+    return socket
+
+
+
+def forwarded_port(port_to_forward: int, user=BUILD_VM_USER, server='localhost', port=22) -> str:
+    server = f'{user}@{server}'
+    port = str(port)
+    socket = ssh_master_socket_path(server, port)
+    rp = subprocess.check_output(['ssh', '-S', socket, '-O', 'forward', '-R', f'0:localhost:{port_to_forward}', server]).decode().strip()
+    return rp
 
 
 def ssh_command_to(*args, user=BUILD_VM_USER, server='localhost', port=22, allocate_tty=False, timeout=30, use_master=True):
     server = f'{user}@{server}'
-    socket = os.path.expanduser(
-        f'~/.ssh/controlmasters/bypy-{server}-{port}-{os.getpid()}')
-    os.makedirs(os.path.dirname(socket), exist_ok=True)
+    socket = ssh_master_socket_path(server, port)
     port = str(port)
     address = server, port
     ssh = ['ssh', '-p', port, '-o', f'ConnectTimeout={timeout}'] + disable_known_hosts
     if use_master:
         ssh += ['-S', socket]
-        if address not in ssh_masters:
-            ssh_masters.add(address)
-            atexit.register(
-                end_ssh_master, address, socket,
-                subprocess.Popen(ssh + ['-o', 'ServerAliveInterval=5', '-o', 'ServerAliveCountMax=3', '-M', '-N', server]))
+        if not os.path.exists(socket):
+            master_process = subprocess.Popen(
+                ssh + ['-o', 'ServerAliveInterval=5', '-o', 'ServerAliveCountMax=3', '-M', '-N', server])
+            atexit.register(end_ssh_master, address, socket, master_process)
+
     if allocate_tty:
         ssh.append('-t')
     return ssh + [server] + list(args)
