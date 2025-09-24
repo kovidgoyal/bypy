@@ -4,13 +4,13 @@
 import os
 import subprocess
 import sys
-import tempfile
 import time
 import traceback
-import uuid
 from contextlib import suppress
 from functools import lru_cache
 from threading import Event, Thread
+
+from .pe_sign_check import has_signature
 
 OSSL = 'osslsigncode'
 APPLICATION_NAME = 'calibre - E-book management'
@@ -19,8 +19,6 @@ TIMESTAMP_SERVERS = (
     'http://timestamp.digicert.com',        # DigiCert
     'http://timestamp.acs.microsoft.com/',  # this is Microsoft Azure Code Signing
     'http://rfc3161.ai.moda/windows',       # this is a load balancer
-    'http://timestamp.comodoca.com/rfc3161',
-    'http://timestamp.sectigo.com'
 )
 
 
@@ -51,7 +49,8 @@ def sign_using_certificate(path: str) -> None:
     st = os.stat(path)
     cp = subprocess.run([
         OSSL, '-pkcs12', os.path.join(base, 'authenticode.pfx'), '-pass', file_as_astring(os.path.join(base, 'cert-cred')),
-        '-n', APPLICATION_NAME, '-i', APPLICATION_URL, '-ts', TIMESTAMP_SERVERS[0], '-h', 'sha256',
+        '-n', APPLICATION_NAME, '-i', APPLICATION_URL, '-h', 'sha256',
+        '-ts', TIMESTAMP_SERVERS[0], '-ts', TIMESTAMP_SERVERS[1], '-ts', TIMESTAMP_SERVERS[2],
         '-in', path, '-out', output
     ], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     if cp.returncode == 0:
@@ -65,16 +64,8 @@ def sign_using_certificate(path: str) -> None:
 sign_path = sign_using_certificate
 
 
-def is_signed(path: str) -> bool:
-    tname = os.path.join(tempfile.gettempdir(), uuid.uuid4().hex)
-    cp = subprocess.run([OSSL, 'extract-signature', '-in', path, '-out', tname], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    with suppress(FileNotFoundError):
-        os.remove(tname)
-    return cp.returncode == 0
-
-
 def ensure_signed(path: str) -> bool:
-    if is_signed(path):
+    if has_signature(path):
         return False
     sign_path(path)
     return True
