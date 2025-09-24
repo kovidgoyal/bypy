@@ -10,7 +10,8 @@ import tempfile
 
 
 def sign_file_(path: str) -> None:
-    pass
+    with open(path, 'a') as f:
+        f.write('\n\rTODO: Implement me!')
 
 
 def sign_file(fname: str, fdata: bytes) -> bytes:
