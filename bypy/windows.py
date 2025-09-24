@@ -84,7 +84,7 @@ def main(args):
 
     def sign_installers() -> None:
         for x in os.listdir(output_dir):
-            if x.lowers().rpartition('.')[-1] in ('exe', 'msi'):
+            if x.lower().rpartition('.')[-1] in ('exe', 'msi'):
                 print(f'Signing: {x}')
                 sign_path(os.path.join(output_dir, x))
     rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, name=f'sw{args.arch}', callback_after_get=sign_installers)
