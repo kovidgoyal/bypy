@@ -10,17 +10,14 @@ import sys
 import tempfile
 import threading
 
-
-def sign_file_(path: str) -> None:
-    with open(path, 'a') as f:
-        f.write('\n\rTODO: Implement me!')
+from .authenticode import sign_path
 
 
 def sign_file(fname: str, fdata: bytes) -> bytes:
     with tempfile.NamedTemporaryFile(suffix=fname) as f:
         f.write(fdata)
         f.flush()
-        sign_file_(f.name)
+        sign_path(f.name)
         # in case the file was deleted and recreated, re-open it
         with open(f.name, 'rb') as s:
             return s.read()
@@ -28,19 +25,19 @@ def sign_file(fname: str, fdata: bytes) -> bytes:
 
 def sign_file_in_client(path: str) -> None:
     from urllib.request import Request, urlopen
-    print('Signing:', os.path.basename(path))
+    print('Signing:', os.path.basename(path), flush=True)
     port = os.environ['SIGN_SERVER_PORT']
     with open(path, 'rb') as f:
         data = f.read()
     rq = Request(f'http://localhost:{port}/{os.path.basename(path)}', data=data)
     with urlopen(rq) as res:
-        data = res.read()
+        rdata = res.read()
         if res.status == 200:
             with open(path, 'wb') as f:
-                f.write(data)
+                f.write(rdata)
         else:
             print(f'Sign request failed with http code: {res.status}', file=sys.stderr)
-            sys.stderr.write(data)
+            sys.stderr.write(rdata)
             sys.stderr.flush()
             raise SystemExit(1)
 
