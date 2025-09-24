@@ -132,6 +132,10 @@ PROJECT_LICENSE_MAP = {
     'zeroconf': "LGPL-2.1-or-later", # https://pypi.org/project/zeroconf/
     'setuptools': "MIT", # https://pypi.org/project/zeroconf/
 }
+
+GO_TESTING_PACKAGES = {
+    'github.com/shoenig/test',
+}
 # }}}
 
 class GlobalMetadata(NamedTuple):
@@ -458,6 +462,8 @@ def read_go_deps() -> list[Dependency]:
     with suppress(FileNotFoundError), open('go.sum') as f:
         for line in f:
             name, version, alg = line.split()
+            if name in GO_TESTING_PACKAGES:
+                continue
             version, sep, q = version.partition('/')
             if sep == '/':
                 if q == 'go.mod':
