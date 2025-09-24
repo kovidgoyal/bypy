@@ -62,5 +62,20 @@ def has_signature(file_path: str) -> bool:
         return size > 0
 
 
+def check_all_files_in_folder_are_signed(path: str) -> None:
+    rc = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fpath = os.path.join(dirpath, f)
+            if f.rpartition('.')[-1].lower() in ('exe', 'pyd', 'dll') and not has_signature(fpath):
+                print('Unsigned:', fpath, file=sys.stderr)
+                rc = 1
+    raise SystemExit(rc)
+
+
+
 if __name__ == '__main__':
-    print(sys.argv[-1], 'has signature' if has_signature(sys.argv[-1]) else 'is not signed')
+    if os.path.isdir(sys.argv[-1]):
+        check_all_files_in_folder_are_signed(sys.argv[-1])
+    else:
+        print(sys.argv[-1], 'has signature' if has_signature(sys.argv[-1]) else 'is not signed')
