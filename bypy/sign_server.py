@@ -28,6 +28,7 @@ def sign_file(fname: str, fdata: bytes) -> bytes:
 
 def sign_file_in_client(path: str) -> None:
     from urllib.request import Request, urlopen
+    print('Signing:', os.path.basename(path))
     port = os.environ['SIGN_SERVER_PORT']
     with open(path, 'rb') as f:
         data = f.read()
