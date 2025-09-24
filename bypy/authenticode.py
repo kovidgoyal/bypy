@@ -15,6 +15,13 @@ from threading import Event, Thread
 OSSL = 'osslsigncode'
 APPLICATION_NAME = 'calibre - E-book management'
 APPLICATION_URL = 'https://calibre-ebook.com'
+TIMESTAMP_SERVERS = (
+    'http://timestamp.digicert.com',        # DigiCert
+    'http://timestamp.acs.microsoft.com/',  # this is Microsoft Azure Code Signing
+    'http://rfc3161.ai.moda/windows',       # this is a load balancer
+    'http://timestamp.comodoca.com/rfc3161',
+    'http://timestamp.sectigo.com'
+)
 
 
 def set_application(name: str, url: str) -> None:
@@ -44,7 +51,7 @@ def sign_using_certificate(path: str) -> None:
     st = os.stat(path)
     cp = subprocess.run([
         OSSL, '-pkcs12', os.path.join(base, 'authenticode.pfx'), '-pass', file_as_astring(os.path.join(base, 'cert-cred')),
-        '-n', APPLICATION_NAME, '-i', APPLICATION_URL, '-ts', 'http://timestamp.digicert.com', '-h', 'sha256',
+        '-n', APPLICATION_NAME, '-i', APPLICATION_URL, '-ts', TIMESTAMP_SERVERS[0], '-h', 'sha256',
         '-in', path, '-out', output
     ], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     if cp.returncode == 0:
