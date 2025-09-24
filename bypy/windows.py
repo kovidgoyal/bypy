@@ -41,7 +41,8 @@ def main(args):
     output_dir = os.path.join(base_dir(), 'b', 'windows', args.arch, 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'windows', args.arch, 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
-    signer = EnsureSignedInTree(pkg_dir)
+    if args.sign_installers:
+        signer = EnsureSignedInTree(pkg_dir)
 
     port = wait_for_ssh(vm)
     rsync = Rsync(vm, port)
