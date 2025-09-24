@@ -50,6 +50,9 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
 
+    def log_message(self, fmt: str, *args) -> None:
+        pass  # silence access logging
+
     def do_POST(self) -> None:
         content_length = int(self.headers['Content-Length'])
         fname = posixpath.basename(self.path)
