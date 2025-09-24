@@ -3,10 +3,12 @@
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
 import http.server
+import os
 import posixpath
 import socketserver
-import threading
+import sys
 import tempfile
+import threading
 
 
 def sign_file_(path: str) -> None:
@@ -23,6 +25,23 @@ def sign_file(fname: str, fdata: bytes) -> bytes:
         with open(f.name, 'rb') as s:
             return s.read()
 
+
+def sign_file_in_client(path: str) -> None:
+    from urllib.request import Request, urlopen
+    port = os.environ['SIGN_SERVER_PORT']
+    with open(path, 'rb') as f:
+        data = f.read()
+    rq = Request(f'http://localhost:{port}/{os.path.basename(path)}', data=data)
+    with urlopen(rq) as res:
+        data = res.read()
+        if res.status == 200:
+            with open(path, 'wb') as f:
+                f.write(data)
+        else:
+            print(f'Sign request failed with http code: {res.status}', file=sys.stderr)
+            sys.stderr.write(data)
+            sys.stderr.flush()
+            raise SystemExit(1)
 
 
 class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
