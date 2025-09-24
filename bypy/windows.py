@@ -45,8 +45,9 @@ def main(args):
 
     port = wait_for_ssh(vm)
     rsync = Rsync(vm, port)
-    signer.wait_till_finished_or_exit()
-    print(f'Signed {signer.signed_count} dependency files in {pkg_dir}')
+    if args.sign_installers:
+        signer.wait_till_finished_or_exit()
+        print(f'Signed {signer.signed_count} dependency files in {pkg_dir}')
 
     os.makedirs(sources_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
@@ -70,9 +71,10 @@ def main(args):
         f'"PYTHON_TWO={python2}"', f'"PERL={perl}"', f'"RUBY={ruby}"',
         f'"MESA={mesa}"', f'BYPY_ARCH={ba}', f'"NODEJS={nodejs}"'
     ]
-    sign_server = run_server()
-    remote_port = rsync.setup_port_forwarding(sign_server.server_address[1])
-    cmd.append(f'"SIGN_SERVER_PORT={remote_port}"')
+    if args.sign_installers:
+        sign_server = run_server()
+        remote_port = rsync.setup_port_forwarding(sign_server.server_address[1])
+        cmd.append(f'"SIGN_SERVER_PORT={remote_port}"')
     if args.action == 'shell':
         return rsync.run_shell(sources_dir, pkg_dir, output_dir, cmd, ba, args, prefix=prefix, name=f'sw{args.arch}')
     if args.action == 'reconnect':
@@ -83,8 +85,9 @@ def main(args):
             'Another instance of the windows container is running')
 
     def sign_installers() -> None:
-        for x in os.listdir(output_dir):
-            if x.lower().rpartition('.')[-1] in ('exe', 'msi'):
-                print(f'Signing: {x}')
-                sign_path(os.path.join(output_dir, x))
+        if args.sign_installers:
+            for x in os.listdir(output_dir):
+                if x.lower().rpartition('.')[-1] in ('exe', 'msi'):
+                    print(f'Signing: {x}')
+                    sign_path(os.path.join(output_dir, x))
     rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, name=f'sw{args.arch}', callback_after_get=sign_installers)
