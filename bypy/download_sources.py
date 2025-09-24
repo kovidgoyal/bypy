@@ -452,6 +452,7 @@ def read_go_deps() -> list[Dependency]:
                 ans.append(Dependency(
                     name='go', ecosystem='go', version=v, cpe=cpe, purl=f'pkg:golang/std@{v}',
                     _spdx_license_id='BSD-3-Clause', urls=('https://go.dev/doc/install',)))
+                break
     with suppress(FileNotFoundError), open('go.sum') as f:
         for line in f:
             name, version, alg = line.split()
