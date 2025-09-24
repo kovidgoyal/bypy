@@ -444,6 +444,14 @@ def read_go_deps() -> list[Dependency]:
     ans = []
     package_hashes = {}
     package_go_mod_hashes = {}
+    with suppress(FileNotFoundError), open('go.mod') as f:
+        for line in f:
+            if line.startswith('toolchain '):
+                v = line.partition(' ')[2][2:].strip()
+                cpe = f'cpe:2.3:a:golang:go:{v}:*:*:*:*:*:*:*'
+                ans.append(Dependency(
+                    name='go', ecosystem='go', version=v, cpe=cpe, purl=f'pkg:golang/std@{v}',
+                    _spdx_license_id='BSD-3-Clause', urls=('https://go.dev/doc/install',)))
     with suppress(FileNotFoundError), open('go.sum') as f:
         for line in f:
             name, version, alg = line.split()
