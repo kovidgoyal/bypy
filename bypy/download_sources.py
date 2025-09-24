@@ -57,7 +57,7 @@ LICENSE_INFORMATION = {
     "freetype": ("FTL", 'freetype/freetype2'),
     "graphite": ("MIT", 'sil/graphite2'),
     "fontconfig": ("MIT", 'fontconfig_project/fontconfig'),
-    "iconv": ("LGPL-2.0-only", ''),
+    "iconv": ("LGPL-2.1-only", ''),
     "libxml2": ("MIT", 'xmlsoft/libxml2'),
     "libxslt": ("MIT", 'xmlsoft/libxslt'),
     "chmlib": ("LGPL-2.1-or-later", ''),
