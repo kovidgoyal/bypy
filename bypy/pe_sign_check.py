@@ -4,7 +4,6 @@
 import os
 import struct
 import sys
-from ctypes import wintypes
 
 # --- Constants ---
 IMAGE_DIRECTORY_ENTRY_SECURITY = 4
@@ -36,7 +35,10 @@ def has_signature(file_path: str) -> bool:
         f.seek(20, os.SEEK_CUR)
         optional_header_start = f.tell()
         f.seek(optional_header_start)
-        magic = wintypes.WORD.from_buffer_copy(f.read(2)).value
+        try:
+            magic, = struct.unpack('<H', f.read(2))
+        except Exception:
+            return False
         f.seek(optional_header_start)
 
         if magic == PE32_MAGIC:
