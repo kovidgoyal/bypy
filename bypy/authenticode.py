@@ -2,6 +2,7 @@
 # License: GPLv3 Copyright: 2025, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
+import struct
 import subprocess
 import sys
 import time
@@ -9,8 +10,6 @@ import traceback
 from contextlib import suppress
 from functools import lru_cache
 from threading import Event, Thread
-
-from .pe_sign_check import has_signature
 
 OSSL = 'osslsigncode'
 APPLICATION_NAME = 'calibre - E-book management'
@@ -62,6 +61,75 @@ def sign_using_certificate(path: str) -> None:
 
 
 sign_path = sign_using_certificate
+
+
+IMAGE_DIRECTORY_ENTRY_SECURITY = 4
+PE32_MAGIC = 0x10b
+PE32PLUS_MAGIC = 0x20b
+
+
+def has_signature(file_path: str) -> bool:
+    """
+    Robustly and quickly checks if a PE file contains a digital signature
+    block by parsing the PE header and checking if the image signature block
+    exists and has a non-zero size. Returns False on any parsing error.
+    """
+    with open(file_path, 'rb') as f:
+        if f.read(2) != b'MZ':
+            return False
+        f.seek(60)
+        try:
+            e_lfanew, = struct.unpack('<I', f.read(4))
+        except Exception:
+            return False
+
+        # PE Header
+        f.seek(e_lfanew)
+        if f.read(4) != b'PE\0\0':
+            return False
+
+        # 4. Optional Header and Data Directories
+        f.seek(20, os.SEEK_CUR)
+        optional_header_start = f.tell()
+        f.seek(optional_header_start)
+        try:
+            magic, = struct.unpack('<H', f.read(2))
+        except Exception:
+            return False
+        f.seek(optional_header_start)
+
+        if magic == PE32_MAGIC:
+            f.seek(92, os.SEEK_CUR)
+        elif magic == PE32PLUS_MAGIC:
+            f.seek(108, os.SEEK_CUR)
+        else:
+            return False
+        try:
+            num, = struct.unpack('<I', f.read(4))
+        except Exception:
+            return False
+        if num <= IMAGE_DIRECTORY_ENTRY_SECURITY:
+            return False
+
+        # The data directories immediately follow the optional header
+        sizeof_image_data_directory = 8
+        f.seek(sizeof_image_data_directory * IMAGE_DIRECTORY_ENTRY_SECURITY + 4, os.SEEK_CUR)
+        try:
+            size, = struct.unpack('<I', f.read(4))
+        except Exception:
+            return False
+        return size > 0
+
+
+def check_all_files_in_folder_are_signed(path: str) -> None:
+    rc = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fpath = os.path.join(dirpath, f)
+            if f.rpartition('.')[-1].lower() in ('exe', 'pyd', 'dll') and not has_signature(fpath):
+                print('Unsigned:', fpath, file=sys.stderr)
+                rc = 1
+    raise SystemExit(rc)
 
 
 def ensure_signed(path: str) -> bool:
@@ -119,5 +187,43 @@ class EnsureSignedInTree(Thread):
         raise SystemExit(str(self.exc))
 
 
+def has_valid_signature(path: str) -> bool:
+    return subprocess.run([OSSL, 'verify', path], capture_output=True).returncode == 0
+
+
+def verify_path(path: str) -> None:
+    print(f'{path}: signature is {"valid" if has_valid_signature(path) else "not valid!"}')
+
+
+def verify_tree(root_folder: str) -> None:
+    invalid = []
+    count = 0
+    for dirpath, dirnames, filenames in os.walk(root_folder):
+        for f in filenames:
+            if f.rpartition('.')[-1].lower() in ('exe', 'pyd', 'dll', 'msi'):
+                path = os.path.join(dirpath, f)
+                count += 1
+                if not has_valid_signature(path):
+                    invalid.append(path)
+                    print(f'{path} does not have a valid signature')
+    if invalid:
+        print(f'{len(invalid)} invalid signatures out of {count} files')
+    else:
+        print(f'Checked {count} files, all have valid signatures.')
+    raise SystemExit(1 if invalid else 0)
+
+
 if __name__ == '__main__':
-    ensure_signed(sys.argv[-1])
+    is_dir = os.path.isdir(sys.argv[-1])
+    if 'verify' in sys.argv:
+        if is_dir:
+            verify_tree(sys.argv[-1])
+        else:
+            verify_path(sys.argv[-1])
+    else:
+        if is_dir:
+            do_print = Event()
+            do_print.set()
+            ensure_signed_in_tree(sys.argv[-1], do_print)
+        else:
+            ensure_signed(sys.argv[-1])
