@@ -1147,6 +1147,12 @@ def py_compile(basedir, optimization_level='-OO'):
 
 
 def get_dll_path(base, levels=1, loc=LIBDIR):
+    if levels == 0:
+        q = tuple(glob.glob(os.path.join(loc, f'lib{base}.so')))
+        if not q:
+            raise ValueError(f'Could not find library for base name: {base}')
+        return q[0]
+
     pat = f'lib{base}.so.*'
     candidates = tuple(glob.glob(os.path.join(loc, pat)))
     if not candidates:
