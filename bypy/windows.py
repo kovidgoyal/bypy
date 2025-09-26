@@ -41,12 +41,13 @@ def main(args):
     output_dir = os.path.join(base_dir(), 'b', 'windows', args.arch, 'dist')
     pkg_dir = os.path.join(base_dir(), 'b', 'windows', args.arch, 'pkg')
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
-    if args.sign_installers:
+    sign_installers = getattr(args, 'sign_installers', False)
+    if sign_installers:
         signer = EnsureSignedInTree(pkg_dir)
 
     port = wait_for_ssh(vm)
     rsync = Rsync(vm, port)
-    if args.sign_installers:
+    if sign_installers:
         signer.wait_till_finished_or_exit()
         print(f'Signed {signer.signed_count} dependency files in {pkg_dir}')
 
@@ -72,7 +73,7 @@ def main(args):
         f'"PYTHON_TWO={python2}"', f'"PERL={perl}"', f'"RUBY={ruby}"',
         f'"MESA={mesa}"', f'BYPY_ARCH={ba}', f'"NODEJS={nodejs}"'
     ]
-    if args.sign_installers:
+    if sign_installers:
         sign_server = run_server()
         remote_port = rsync.setup_port_forwarding(sign_server.server_address[1])
         cmd.append(f'"SIGN_SERVER_PORT={remote_port}"')
@@ -85,10 +86,10 @@ def main(args):
         raise SystemExit(
             'Another instance of the windows container is running')
 
-    def sign_installers() -> None:
-        if args.sign_installers:
+    def do_sign_installers() -> None:
+        if sign_installers:
             for x in os.listdir(output_dir):
                 if x.lower().rpartition('.')[-1] in ('exe', 'msi'):
                     print(f'Signing: {x}')
                     sign_path(os.path.join(output_dir, x))
-    rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, name=f'sw{args.arch}', callback_after_get=sign_installers)
+    rsync.main(sources_dir, pkg_dir, output_dir, cmd, args, prefix=prefix, name=f'sw{args.arch}', callback_after_get=do_sign_installers)
