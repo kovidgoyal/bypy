@@ -4,6 +4,7 @@
 
 
 import os
+import re
 
 from bypy.constants import PREFIX, PYTHON, iswindows
 from bypy.utils import python_build, python_build_env, python_install, replace_in_file, run
@@ -11,7 +12,7 @@ from bypy.utils import python_build, python_build_env, python_install, replace_i
 
 def main(args):
     # Dont actually need Cython but pyproject.toml declares it anayway, sigh
-    replace_in_file('pyproject.toml', '"Cython>=3.1.2", ', '')
+    replace_in_file('pyproject.toml', re.compile(r'"Cython>=\d+.\d+.\d+", '), '')
     if iswindows:
         # libiconv is named libiconv.lib not iconv.lib for us
         replace_in_file('setupinfo.py', ", 'iconv'", ', "libiconv"')
