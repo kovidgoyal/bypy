@@ -1,17 +1,23 @@
 #!/usr/bin/env python
 # License: GPLv3 Copyright: 2025, Kovid Goyal <kovid at kovidgoyal.net>
 
+import atexit
 import os
 import struct
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
-from contextlib import suppress
+from collections.abc import Iterator
+from contextlib import contextmanager, suppress
 from functools import lru_cache
 from threading import Event, Thread
+from typing import NamedTuple
+from urllib.parse import quote, quote_from_bytes
 
 OSSL = 'osslsigncode'
+HSM_SUBJECT_NAME = 'Kovid Goyal'
 APPLICATION_NAME = 'calibre - E-book management'
 APPLICATION_URL = 'https://calibre-ebook.com'
 TIMESTAMP_SERVERS = (
@@ -40,14 +46,98 @@ class SigningFailed(Exception):
         self.stderr = stderr
 
 
-def sign_using_certificate(path: str) -> None:
+class HSMData(NamedTuple):
+    token_pin: str = ''
+    path_to_full_chain_of_certs: str = ''
+    hsm_private_key_uri: str = ''
+    path_to_pkcs11_module: str =  '/usr/lib/libeToken.so'
+
+
+@lru_cache(2)
+def initialize_hsm() -> HSMData:
+    import PyKCS11  # type: ignore
+    from cryptography import x509
+    from cryptography.hazmat.primitives import serialization
     base = os.path.join(os.environ['PENV'], 'code-signing')
+    ans = HSMData(file_as_astring(os.path.join(base, 'hsm-token-password')).strip())
+
+    pkcs11 = PyKCS11.PyKCS11Lib()
+    pkcs11.load(ans.path_to_pkcs11_module)
+    slots = pkcs11.getSlotList(tokenPresent=True)
+    if not slots:
+        raise SystemExit('No slots found, is the USB token connected?')
+    # use the first slot
+    slot = slots[0]
+    session = pkcs11.openSession(slot, PyKCS11.CKF_SERIAL_SESSION)
+    token_info = pkcs11.getTokenInfo(slot)
+    @contextmanager
+    def sm() -> Iterator[None]:
+        try:
+            session.login(ans.token_pin)
+            try:
+                yield None
+            finally:
+                session.logout()
+        finally:
+            session.closeSession()
+
+    with sm():
+        subject_map = {}
+        chain: list[x509.Certificate] = []
+        cert_objects = session.findObjects([
+            (PyKCS11.CKA_CLASS, PyKCS11.CKO_CERTIFICATE),
+            (PyKCS11.CKA_CERTIFICATE_TYPE, PyKCS11.CKC_X_509),
+        ])
+        for co in cert_objects:
+            cert_der = bytes(session.getAttributeValue(co, [PyKCS11.CKA_VALUE])[0])
+            cert = x509.load_der_x509_certificate(cert_der)
+            s = cert.subject.rfc4514_string()
+            subject_map[cert.subject] = cert
+            if f'CN={HSM_SUBJECT_NAME},' in s and not chain:
+                chain.append(cert)
+                key_objects = session.findObjects([
+                    (PyKCS11.CKA_CLASS, PyKCS11.CKO_PRIVATE_KEY),
+                ])
+                for k in key_objects:
+                    dk = k.to_dict()
+                    if (key_label := dk.get('CKA_LABEL')) == HSM_SUBJECT_NAME:
+                        token_label = token_info.label.strip()
+                        uri_path = [
+                            f"token={quote(token_label)}",
+                            f"object={quote(key_label)}",
+                            f"id={quote_from_bytes(bytes(dk['CKA_ID']))}", # CKA_ID is hex-encoded and then percent-encoded
+                            "type=private"
+                        ]
+                        ans = ans._replace(hsm_private_key_uri=f"pkcs11:{';'.join(uri_path)}")
+        if not chain:
+            subjects = '\n'.join(s.rfc4514_string() for s in subject_map)
+            raise SystemExit(f'No certificate with the subject {HSM_SUBJECT_NAME} found on token. Available certificates are:\n{subjects}')
+        current = chain[0]
+        while True:
+            parent = subject_map.get(current.issuer)
+            if parent is None or parent is current:
+                break
+            chain.append(parent)
+            current = parent
+        with tempfile.NamedTemporaryFile(suffix='.pem', prefix='bypy-hsm-certs-', delete=False) as t:
+            atexit.register(os.remove, t.name)
+            for cert in chain:
+                t.write(cert.public_bytes(serialization.Encoding.PEM))
+        ans = ans._replace(path_to_full_chain_of_certs=t.name)
+    return ans
+
+
+def sign_using_hsm(path: str) -> None:
     output = path + '.signed'
     with suppress(FileNotFoundError):
         os.remove(output)
     st = os.stat(path)
+    hsm = initialize_hsm()
+
     cp = subprocess.run([
-        OSSL, '-pkcs12', os.path.join(base, 'authenticode.pfx'), '-pass', file_as_astring(os.path.join(base, 'cert-cred')),
+        OSSL, 'sign',
+        '-engine', '/usr/lib/engines-3/pkcs11.so', '-pkcs11module', hsm.path_to_pkcs11_module,
+        '-certs', hsm.path_to_full_chain_of_certs, '-key', hsm.hsm_private_key_uri, '-pass', hsm.token_pin,
         '-n', APPLICATION_NAME, '-i', APPLICATION_URL, '-h', 'sha256',
         '-ts', TIMESTAMP_SERVERS[0], '-ts', TIMESTAMP_SERVERS[1], '-ts', TIMESTAMP_SERVERS[2],
         '-in', path, '-out', output
@@ -60,7 +150,7 @@ def sign_using_certificate(path: str) -> None:
         f'Failed to sign {path} with osslsigncode return code: {cp.returncode}', cp.stderr.decode('utf-8', 'replace'))
 
 
-sign_path = sign_using_certificate
+sign_path = sign_using_hsm
 
 
 IMAGE_DIRECTORY_ENTRY_SECURITY = 4
@@ -221,9 +311,14 @@ if __name__ == '__main__':
         else:
             verify_path(sys.argv[-1])
     else:
-        if is_dir:
-            do_print = Event()
-            do_print.set()
-            ensure_signed_in_tree(sys.argv[-1], do_print)
-        else:
-            ensure_signed(sys.argv[-1])
+        try:
+            if is_dir:
+                do_print = Event()
+                do_print.set()
+                ensure_signed_in_tree(sys.argv[-1], do_print)
+            else:
+                ensure_signed(sys.argv[-1])
+        except SigningFailed as e:
+            if e.stderr:
+                print(end=e.stderr, file=sys.stderr)
+            raise SystemExit(str(e))

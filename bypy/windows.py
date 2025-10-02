@@ -6,7 +6,7 @@ import os
 
 from virtual_machine.run import shutdown, wait_for_ssh
 
-from .authenticode import EnsureSignedInTree, sign_path
+from .authenticode import EnsureSignedInTree, sign_path, initialize_hsm
 from .conf import parse_conf_file
 from .constants import base_dir
 from .sign_server import run_server
@@ -43,6 +43,7 @@ def main(args):
     sources_dir = os.path.join(base_dir(), 'b', 'sources-cache')
     sign_installers = getattr(args, 'sign_installers', False)
     if sign_installers:
+        initialize_hsm()
         signer = EnsureSignedInTree(pkg_dir)
 
     port = wait_for_ssh(vm)
