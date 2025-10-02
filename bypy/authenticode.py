@@ -145,15 +145,17 @@ def sign_using_hsm(path: str) -> None:
         os.remove(output)
     st = os.stat(path)
     hsm = initialize_hsm()
-
-    cp = subprocess.run([
+    args = [
         OSSL, 'sign',
         '-engine', '/usr/lib/engines-3/pkcs11.so', '-pkcs11module', hsm.path_to_pkcs11_module,
         '-certs', hsm.path_to_full_chain_of_certs, '-key', hsm.hsm_private_key_uri, '-pass', hsm.token_pin,
         '-n', APPLICATION_NAME, '-i', APPLICATION_URL, '-h', 'sha256',
-        '-ts', TIMESTAMP_SERVERS[0], '-ts', TIMESTAMP_SERVERS[1], '-ts', TIMESTAMP_SERVERS[2],
         '-in', path, '-out', output
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    ]
+    for ts in TIMESTAMP_SERVERS:
+        args.extend(('-ts', ts))
+
+    cp = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     if cp.returncode == 0:
         os.replace(output, path)
         os.chmod(path, st.st_mode)
