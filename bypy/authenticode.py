@@ -3,6 +3,7 @@
 
 import atexit
 import os
+import shlex
 import struct
 import subprocess
 import sys
@@ -41,9 +42,11 @@ def file_as_astring(path: str) -> str:
 class SigningFailed(Exception):
     stderr: str
 
-    def __init__(self, msg: str, stderr: str = ''):
+    def __init__(self, msg: str, stderr: str = '', cmdline: str = ''):
         super().__init__(msg)
-        self.stderr = stderr
+        self.details = ''
+        if cmdline or stderr:
+            self.details = cmdline + '\n' + stderr
 
 
 class HSMData(NamedTuple):
@@ -161,7 +164,9 @@ def sign_using_hsm(path: str) -> None:
         os.chmod(path, st.st_mode)
         return
     raise SigningFailed(
-        f'Failed to sign {path} with osslsigncode return code: {cp.returncode}', cp.stderr.decode('utf-8', 'replace'))
+        f'Failed to sign {path} with osslsigncode return code: {cp.returncode}',
+        cp.stderr.decode('utf-8', 'replace'), shlex.join(args)
+    )
 
 
 sign_path = sign_using_hsm
@@ -273,7 +278,7 @@ class EnsureSignedInTree(Thread):
             self.signed_count = ensure_signed_in_tree(self.folder_path, self.do_print)
         except SigningFailed as e:
             self.exc = e
-            self.tb = e.stderr
+            self.tb = e.details
         except Exception as e:
             self.exc = e
             self.tb = traceback.format_exc()
@@ -333,6 +338,5 @@ if __name__ == '__main__':
             else:
                 ensure_signed(sys.argv[-1])
         except SigningFailed as e:
-            if e.stderr:
-                print(end=e.stderr, file=sys.stderr)
+            print(end=e.details, file=sys.stderr)
             raise SystemExit(str(e))
