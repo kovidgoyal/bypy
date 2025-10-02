@@ -51,6 +51,7 @@ class HSMData(NamedTuple):
     path_to_full_chain_of_certs: str = ''
     hsm_private_key_uri: str = ''
     path_to_pkcs11_module: str =  '/usr/lib/libeToken.so'
+    # path_to_pkcs11_module: str =  '/usr/lib/opensc-pkcs11.so'
 
 
 @lru_cache(2)
@@ -58,6 +59,8 @@ def initialize_hsm() -> HSMData:
     import PyKCS11  # type: ignore
     from cryptography import x509
     from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
     base = os.path.join(os.environ['PENV'], 'code-signing')
     ans = HSMData(file_as_astring(os.path.join(base, 'hsm-token-password')).strip())
 
@@ -98,9 +101,15 @@ def initialize_hsm() -> HSMData:
                 key_objects = session.findObjects([
                     (PyKCS11.CKA_CLASS, PyKCS11.CKO_PRIVATE_KEY),
                 ])
+                public_key = cert.public_key()
+                if not isinstance(public_key, rsa.RSAPublicKey):
+                    raise SystemExit('Certificate is not RSA')
+                cert_modulus_int = public_key.public_numbers().n
                 for k in key_objects:
                     dk = k.to_dict()
-                    if (key_label := dk.get('CKA_LABEL')) == HSM_SUBJECT_NAME:
+                    key_modulus_int = int.from_bytes(bytes(dk['CKA_MODULUS']), 'big')
+                    if key_modulus_int == cert_modulus_int:
+                        key_label = dk['CKA_LABEL']
                         token_label = token_info.label.strip()
                         uri_path = [
                             f"token={quote(token_label)}",
@@ -109,6 +118,9 @@ def initialize_hsm() -> HSMData:
                             "type=private"
                         ]
                         ans = ans._replace(hsm_private_key_uri=f"pkcs11:{';'.join(uri_path)}")
+                        break
+                else:
+                    raise SystemExit(f'Failed to find private key with label: {HSM_SUBJECT_NAME}')
         if not chain:
             subjects = '\n'.join(s.rfc4514_string() for s in subject_map)
             raise SystemExit(f'No certificate with the subject {HSM_SUBJECT_NAME} found on token. Available certificates are:\n{subjects}')
