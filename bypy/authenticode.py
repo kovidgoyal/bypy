@@ -18,6 +18,7 @@ from typing import NamedTuple
 from urllib.parse import quote, quote_from_bytes
 
 OSSL = 'osslsigncode'
+HSM_TOKEN_LABEL = 'calibre cheapssl'
 HSM_SUBJECT_NAME = 'Kovid Goyal'
 APPLICATION_NAME = 'calibre - E-book management'
 APPLICATION_URL = 'https://calibre-ebook.com'
@@ -72,10 +73,15 @@ def initialize_hsm() -> HSMData:
     slots = pkcs11.getSlotList(tokenPresent=True)
     if not slots:
         raise SystemExit('No slots found, is the USB token connected?')
-    # use the first slot
-    slot = slots[0]
+    for slot in slots:
+        token_info = pkcs11.getTokenInfo(slot)
+        token_label = token_info.label.strip()
+        if token_label == HSM_TOKEN_LABEL:
+            break
+    else:
+        raise SystemExit('No slot with token label: {HSM_TOKEN_LABEL} found')
+
     session = pkcs11.openSession(slot, PyKCS11.CKF_SERIAL_SESSION)
-    token_info = pkcs11.getTokenInfo(slot)
     @contextmanager
     def sm() -> Iterator[None]:
         try:
@@ -113,7 +119,6 @@ def initialize_hsm() -> HSMData:
                     key_modulus_int = int.from_bytes(bytes(dk['CKA_MODULUS']), 'big')
                     if key_modulus_int == cert_modulus_int:
                         key_label = dk['CKA_LABEL']
-                        token_label = token_info.label.strip()
                         uri_path = [
                             f"token={quote(token_label)}",
                             f"object={quote(key_label)}",
