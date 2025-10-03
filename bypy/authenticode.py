@@ -79,7 +79,7 @@ def initialize_hsm() -> HSMData:
         if token_label == HSM_TOKEN_LABEL:
             break
     else:
-        raise SystemExit('No slot with token label: {HSM_TOKEN_LABEL} found')
+        raise SystemExit(f'No slot with token label: {HSM_TOKEN_LABEL} found')
 
     session = pkcs11.openSession(slot, PyKCS11.CKF_SERIAL_SESSION)
     @contextmanager
