@@ -174,8 +174,7 @@ def get_pypi_metadata(name: str, version: str) -> dict[str, Any]:
         raise SystemExit(f'Could not get pypi package: {name}/{version} with error: {err}') from err
 
 
-GO_PRIVATE_PACKAGES = {
-    'github.com/kovidgoyal/exiffix': 'MIT',
+GO_PRIVATE_PACKAGES: dict[str, str] = {
 }
 
 
