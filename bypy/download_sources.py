@@ -235,7 +235,7 @@ class Dependency:
             if purl:
                 parts = purl.split('/')
                 if len(parts) == 2:
-                    purl = f'generic/{purl}'
+                    purl = f'pkg:generic/{purl}'
                 cpe = f'cpe:2.3:a:{parts[-2]}:{parts[-1]}:{version}:*:*:*:*:*:*:*'
         order = ('windows', 'unix') if iswindows else ('unix', 'windows')
         s = e.get(order[0], e.get(order[1]))
