@@ -85,7 +85,7 @@ def latest_go_version(base: str) -> str:
     return base + '.0'
 
 
-def install_modern_go(image_name, image_arch, go_version='1.22.6'):
+def install_modern_go(image_name, image_arch, go_version='1.25.3'):
     go_version = latest_go_version(go_version)
     if image_arch == 'i386':
         image_arch = '386'
@@ -169,7 +169,7 @@ class Chroot:
         if os.path.exists(gomod):
             with open(gomod) as f:
                 raw = f.read()
-            m = re.search(r'^go\s+(\S+)', raw, flags=re.M)
+            m = re.search(r'^toolchain\s+go(\S+)', raw, flags=re.M) or re.search(r'^go\s+(\S+)', raw, flags=re.M)
             if m:
                 self.go_version = m.group(1)
         self.vm_name_suffix = self.conf.get('vm_name_suffix', '')
