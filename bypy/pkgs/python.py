@@ -6,9 +6,11 @@ import glob
 import os
 import re
 import shutil
+import sys
 
 from bypy.constants import CFLAGS, LDFLAGS, LIBDIR, PREFIX, PYTHON, UNIVERSAL_ARCHES, build_dir, is64bit, islinux, ismacos, iswindows
-from bypy.utils import ModifiedEnv, apply_patch, copy_headers, get_platform_toolset, get_windows_sdk, install_binaries, replace_in_file, run, simple_build, walk
+from bypy.utils import ModifiedEnv, apply_patch, copy_headers, get_platform_toolset, get_windows_sdk, install_binaries, replace_in_file, run, simple_build, walk, run_shell
+run_shell
 
 
 def unix_python(args):
@@ -98,21 +100,44 @@ def unix_python(args):
 def windows_python(args):
     # https://github.com/python/cpython/issues/108721
     apply_patch('python-3.11-ssl-gh-100372.patch', level=1)
+    env = {}
+    if is64bit:
+        env['PROCESSOR_ARCHITECTURE'] = env['PROCESSOR_ARCHITEW6432'] = 'AMD64'
 
     with open('PCbuild/msbuild.rsp', 'w') as f:
         print(f'/p:PlatformToolset={get_platform_toolset()}', file=f)
         print(f'/p:WindowsTargetPlatformVersion={get_windows_sdk()}', file=f)
 
-    # dont need python 3 to get externals, use git instead
-    replace_in_file('PCbuild\\get_externals.bat',
-                    re.compile(br'^call.+find_python.bat.+$', re.MULTILINE),
-                    '')
-    env = {}
-    if is64bit:
-        env['PROCESSOR_ARCHITECTURE'] = env['PROCESSOR_ARCHITEW6432'] = 'AMD64'
+    # Inform pythons stupid build scripts where python is located
+    pyexe = sys.executable.replace(os.sep, '/')
+    replace_in_file('PCbuild\\get_externals.bat', re.compile(br'^call.+find_python.bat.+$', re.MULTILINE),
+                    f'set "PYTHON={pyexe}"')
+    replace_in_file('PCbuild\\build.bat', re.compile(br'^call.+find_python.bat.+$', re.MULTILINE),
+                    f'set "PYTHON={pyexe}"')
     try:
+        # Download the prebuilt external binary deps
+        run('PCbuild\\get_externals.bat', '--no-tkinter', env=env)
+        # use external OpenSSL
+        openssl_dir = os.path.abspath(glob.glob('externals/openssl-bin-*/' + ('amd64' if is64bit else 'win32'))[0])
+        print(openssl_dir)
+        shutil.rmtree(openssl_dir)
+        os.makedirs(os.path.join(openssl_dir, 'include'))
+        for pat in (
+            'bin/libssl*.dll', 'bin/libssl*.pdb', 'bin/libcrypto*.dll', 'bin/libcrypto*.pdb',
+            'lib/libssl*.lib', 'lib/libcrypto*.lib'
+        ):
+            for f in glob.glob(os.path.abspath(os.path.join(PREFIX, pat))):
+                shutil.copyfile(f, os.path.join(openssl_dir, os.path.basename(f)))
+        shutil.copytree(os.path.join(PREFIX, 'include', 'openssl'), os.path.join(openssl_dir, 'include', 'openssl'))
+        shutil.copyfile(os.path.join(PREFIX, 'include', 'openssl', 'applink.c'), os.path.join(openssl_dir, 'include', 'applink.c'))
+        libssl = glob.glob(os.path.join(openssl_dir, 'libssl*.dll'))[0]
+        suffix = os.path.basename(libssl).split('.')[0][len('libssl'):]
+        replace_in_file('PCbuild/openssl.props', re.compile(r'<_DLLSuffix>.+?<OpenSSLDLLSuffix', re.DOTALL),
+            f'<_DLLSuffix>{suffix}</_DLLSuffix>\n<OpenSSLDLLSuffix'
+        )
+
         run(
-            'PCbuild\\build.bat', '-e', '--no-tkinter', '-c',
+            'PCbuild\\build.bat', '--no-tkinter', '-c',
             'Release', '-m', '-p', ('x64' if is64bit else 'Win32'), '-v',
             '-t', 'Build',
             '--pgo',
@@ -133,10 +158,9 @@ def windows_python(args):
         install_binaries(bindir + os.sep + 'python*.dll', 'private\\python')
         install_binaries(bindir + os.sep + '*.pyd', 'private\\python\\DLLs')
         install_binaries(bindir + os.sep + '*.dll', 'private\\python\\DLLs')
-        for x in glob.glob(
-                os.path.join(build_dir(),
-                             'private\\python\\DLLs\\python*.dll')):
-            os.remove(x)
+        for pat in ('python*.dll', 'libcrypto*.dll', 'libssl*.dll'):
+            for x in glob.glob(os.path.join(build_dir(), r'private\python\DLLs', pat)):
+                os.remove(x)
         install_binaries(bindir + os.sep + '*.lib', 'private\\python\\libs')
         copy_headers('PC\\pyconfig.h', 'private\\python\\include')
         copy_headers('Include\\*.h', 'private\\python\\include')
@@ -185,7 +209,7 @@ def install_name_change_predicate(p):
 
 
 def post_install_check():
-    mods = '_ssl zlib bz2 ctypes sqlite3 lzma math _elementtree'.split()
+    mods = '_ssl _hashlib zlib bz2 ctypes sqlite3 lzma math _elementtree'.split()
     if not iswindows:
         mods.extend('readline _curses'.split())
     run(PYTHON, '-c', 'import sys; print(sys.prefix, sys.exec_prefix); import ' + ','.join(mods), library_path=True)
