@@ -25,6 +25,7 @@ def main(args):
         kw = {}
         if ismacos:
             kw['PNG_SUPPORTED'] = 'FALSE'
+            kw['CMAKE_POLICY_VERSION_MINIMUM'] = '3.5'  # needed on newer cmake
         cmake_build(
             ENABLE_SHARED='FALSE',
             override_prefix=os.path.join(build_dir(), 'private', 'mozjpeg'), **kw
