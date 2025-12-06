@@ -12,6 +12,7 @@ def main(args):
     kw = {
         'BUILD_BINARY': '0',
         'BUILD_STATIC': '0',
+        'CMAKE_POLICY_VERSION_MINIMUM': '3.5',  # needed on newer cmake
     }
     if iswindows:
         return windows_cmake_build(
