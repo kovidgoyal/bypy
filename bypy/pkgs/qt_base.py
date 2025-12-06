@@ -46,7 +46,6 @@ def cmake(args):
             # 'INPUT_wflags': 'l,-rpath-link,/sw/sw/lib--',
         })
     if ismacos:
-        apply_patch('qtbug-134073.patch', level=0)
         if len(UNIVERSAL_ARCHES) > 1:
             cmake_defines['CMAKE_OSX_ARCHITECTURES'] = ';'.join(UNIVERSAL_ARCHES)
         cmake_defines.update({
