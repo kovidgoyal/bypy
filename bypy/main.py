@@ -12,7 +12,7 @@ import sys
 from contextlib import suppress
 from itertools import chain
 
-from .constants import BYPY, OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, WORKER_DIR, build_dir, in_chroot, islinux
+from .constants import BYPY, OS_NAME, OUTPUT_DIR, ROOT, SRC, SW, WORKER_DIR, build_dir, in_chroot, islinux, iswindows
 from .deps import init_env
 from .deps import main as deps_main
 from .utils import mkdtemp, rmtree, run_shell, setup_dependencies_parser
@@ -261,6 +261,12 @@ def global_main(args):
     from bypy.macos import setup_parser as macos_setup_parser
     from bypy.windows import setup_parser as windows_setup_parser
     from virtual_machine.run import setup_parser as vm_setup_parser
+    if not iswindows:
+        import resource
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        if soft < 4096:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (min(4096, hard), hard))
+
     p = argparse.ArgumentParser(prog='bypy')
     s = p.add_subparsers(required=True)
     vm_setup_parser(s.add_parser('vm', help='Control the building and running of Virtual Machines'))
