@@ -18,7 +18,12 @@ def main(args):
         )
     else:
         replace_in_file('setup.py', 'if self.fetch:', 'if False:')
-        python_build(extra_args=('--enable=load_extension'))
+        with open('src/carray.c', 'r+') as f:
+            raw = f.read()
+            f.seek(0)
+            print('#include <sys/uio.h>', file=f)
+            print(raw, file=f)
+        python_build(extra_args='--enable=load_extension')
     python_install()
 
 
