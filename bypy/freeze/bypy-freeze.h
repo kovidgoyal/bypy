@@ -45,7 +45,7 @@ log_error(const char *fmt, ...) {
     va_start(ar, fmt);
     vfprintf(stderr, fmt, ar);
     va_end(ar);
-	fprintf(stderr, "\n");
+    fprintf(stderr, "\n");
 }
 
 static bool stdout_is_a_tty = false, stderr_is_a_tty = false;
@@ -338,11 +338,11 @@ show_windows_error_box(const wchar_t *msg) {
 static int
 _show_error(const wchar_t *preamble, const wchar_t *msg, const int code) {
     static wchar_t buf[4096];
-	static char utf8_buf[4096] = {0};
-	int n = WideCharToMultiByte(CP_UTF8, 0, preamble, -1, utf8_buf, sizeof(utf8_buf) - 1, NULL, NULL);
-	if (n > 0) fprintf(stderr, "%s\r\n  ", utf8_buf);
-	n = WideCharToMultiByte(CP_UTF8, 0, msg, -1, utf8_buf, sizeof(utf8_buf) - 1, NULL, NULL);
-	if (n > 0) fprintf(stderr, "%s (Error Code: %d)\r\n ", utf8_buf, code);
+    static char utf8_buf[4096] = {0};
+    int n = WideCharToMultiByte(CP_UTF8, 0, preamble, -1, utf8_buf, sizeof(utf8_buf) - 1, NULL, NULL);
+    if (n > 0) fprintf(stderr, "%s\r\n  ", utf8_buf);
+    n = WideCharToMultiByte(CP_UTF8, 0, msg, -1, utf8_buf, sizeof(utf8_buf) - 1, NULL, NULL);
+    if (n > 0) fprintf(stderr, "%s (Error Code: %d)\r\n ", utf8_buf, code);
     fflush(stderr);
 
     if (GUI_APP) {
@@ -641,18 +641,18 @@ set_sys_string(const char* key, const wchar_t* val) {
 
 static inline void
 set_sys_bool(const char* key, const bool val) {
-	PyObject *pyval = PyBool_FromLong(val);
-	if (PySys_SetObject(key, pyval) != 0) fatal("Failed to set attribute on sys: %s", key);
-	Py_DECREF(pyval);
+    PyObject *pyval = PyBool_FromLong(val);
+    if (PySys_SetObject(key, pyval) != 0) fatal("Failed to set attribute on sys: %s", key);
+    Py_DECREF(pyval);
 }
 
 
 static void
 bypy_pre_initialize_interpreter(bool use_os_log_) {
-	if (PyImport_AppendInittab("bypy_frozen_importer", bypy_frozen_importer) == -1) {
-		fatal("Failed to add bypy_frozen_importer to the init table");
-	}
-	use_os_log = use_os_log_;
+    if (PyImport_AppendInittab("bypy_frozen_importer", bypy_frozen_importer) == -1) {
+        fatal("Failed to add bypy_frozen_importer to the init table");
+    }
+    use_os_log = use_os_log_;
     PyPreConfig preconfig;
     PyPreConfig_InitIsolatedConfig(&preconfig);
     preconfig.utf8_mode = 1;
@@ -660,7 +660,7 @@ bypy_pre_initialize_interpreter(bool use_os_log_) {
     preconfig.isolated = 1;
 
     PyStatus status = Py_PreInitialize(&preconfig);
-	if (PyStatus_Exception(status)) Py_ExitStatusException(status);
+    if (PyStatus_Exception(status)) Py_ExitStatusException(status);
 }
 
 static void
@@ -703,22 +703,22 @@ show_error_during_setup() {
     }
     if (exc_tb) {
         P("%s", "Traceback (most recent call last):");
-		PyTracebackObject *pactual_trace = (PyTracebackObject*)exc_tb;
+        PyTracebackObject *pactual_trace = (PyTracebackObject*)exc_tb;
         while (pactual_trace != NULL) {
-			PyFrameObject *cur_frame = pactual_trace->tb_frame;
+            PyFrameObject *cur_frame = pactual_trace->tb_frame;
 #if PY_VERSION_HEX >= 0x030b0000
             const PyCodeObject *code = PyFrame_GetCode(cur_frame);
-			const char *fname = PyUnicode_AsUTF8(code->co_filename);
+            const char *fname = PyUnicode_AsUTF8(code->co_filename);
             const char *func = PyUnicode_AsUTF8(code->co_name);
             Py_DECREF(code);
 #else
-			const char *fname = PyUnicode_AsUTF8(cur_frame->f_code->co_filename);
+            const char *fname = PyUnicode_AsUTF8(cur_frame->f_code->co_filename);
             const char *func = PyUnicode_AsUTF8(cur_frame->f_code->co_name);
 #endif
-			int line = PyFrame_GetLineNumber(cur_frame);
+            int line = PyFrame_GetLineNumber(cur_frame);
             P("  File %s, line %d, in %s", fname ? fname : "<unknown file>", line, func ? func : "<unknown function>");
-			pactual_trace = pactual_trace->tb_next;
-		}
+            pactual_trace = pactual_trace->tb_next;
+        }
     }
     Py_CLEAR(exc_type); Py_CLEAR(exc_val); Py_CLEAR(exc_tb);
     fprintf(stderr, "%s", errbuf);
@@ -764,15 +764,15 @@ bypy_setup_importer(const wchar_t *libdir) {
     loads = PyObject_GetAttrString(marshal, "loads");
     if (loads == NULL) goto error;
     importer_code = PyObject_CallFunction(loads, "y#", importer_script, arraysz(importer_script));
-	if (importer_code == NULL) goto error;
+    if (importer_code == NULL) goto error;
 
     PyObject *d = module_dict_for_exec("bypy_importer");
     if (d == NULL) goto error;
     if (PyDict_SetItemString(d, "libdir", PyUnicode_FromWideChar(libdir, -1)) != 0) goto error;
 
-	PyObject *pret = PyEval_EvalCode(importer_code, d, d);
-	if (pret == NULL) goto error;
-	Py_CLEAR(pret);
+    PyObject *pret = PyEval_EvalCode(importer_code, d, d);
+    if (pret == NULL) goto error;
+    Py_CLEAR(pret);
     ok = 1;
 error:
     if (!ok) {
@@ -806,7 +806,7 @@ bypy_initialize_interpreter(
     config.configure_c_stdio = 1;
     config.isolated = 1;
     config.install_signal_handlers = 1;
-	config._init_main = 0;
+    config._init_main = 0;
 
     status = PyConfig_SetString(&config, &config.program_name, program_name);
     CHECK_STATUS;
@@ -828,12 +828,12 @@ bypy_initialize_interpreter(
     CHECK_STATUS;
 
     if (!bypy_setup_importer(libdir)) {
-		PyConfig_Clear(&config);
+        PyConfig_Clear(&config);
         exit(1);
     }
 
-	status = _Py_InitializeMain();
-	CHECK_STATUS;
+    status = _Py_InitializeMain();
+    CHECK_STATUS;
     PyConfig_Clear(&config);
 
 #undef CHECK_STATUS
@@ -853,6 +853,6 @@ bypy_run_interpreter(void) {
     cleanup_console_state();
     Py_CLEAR(WindowsError); Py_CLEAR(OSError); Py_CLEAR(RuntimeError);
 #endif
-	free_frozen_data();
+    free_frozen_data();
     return ret;
 }
