@@ -4,7 +4,7 @@
 
 import os
 
-from bypy.constants import PREFIX, current_build_arch, iswindows
+from bypy.constants import NASM, PREFIX, current_build_arch, iswindows
 from bypy.utils import simple_build, windows_cmake_build
 
 needs_lipo = True
@@ -14,7 +14,7 @@ def main(args):
     if iswindows:
         windows_cmake_build(
             PNG_SHARED='1', ZLIB_INCLUDE_DIR=os.path.join(PREFIX, 'include'),
-            ZLIB_LIBRARY=os.path.join(PREFIX, 'lib', 'zdll.lib'),
+            ZLIB_LIBRARY=os.path.join(PREFIX, 'lib', 'zdll.lib'), extra_env_for_cmake=dict(ASM=NASM),
             binaries='libpng*.dll', libraries='libpng*.lib',
             headers='pnglibconf.h ../png.h ../pngconf.h'
         )

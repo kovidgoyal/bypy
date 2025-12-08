@@ -882,7 +882,7 @@ def timeit():
 
 def windows_cmake_build(
         headers=None, binaries=None, libraries=None, header_dest='include',
-        nmake_target='', make=NMAKE, **kw):
+        nmake_target='', make=NMAKE, extra_env_for_cmake=None, **kw):
     os.makedirs('build', exist_ok=True)
     defs = {'CMAKE_BUILD_TYPE': 'Release'}
     cmd = [CMAKE, '-G', "NMake Makefiles"]
@@ -894,7 +894,7 @@ def windows_cmake_build(
     for k, v in defs.items():
         cmd.append('-D' + k + '=' + v)
     cmd.append('..')
-    run(*cmd, cwd='build')
+    run(*cmd, cwd='build', env=extra_env_for_cmake or {})
     if nmake_target:
         run(f'{make} {nmake_target}', cwd='build')
     else:
