@@ -6,7 +6,6 @@ import glob
 import os
 import re
 import shutil
-import sys
 
 from bypy.constants import CFLAGS, LDFLAGS, LIBDIR, PREFIX, PYTHON, UNIVERSAL_ARCHES, build_dir, is64bit, islinux, ismacos, iswindows
 from bypy.utils import ModifiedEnv, copy_headers, get_platform_toolset, get_windows_sdk, install_binaries, replace_in_file, run, simple_build, walk, run_shell
@@ -107,7 +106,7 @@ def windows_python(args):
         print(f'/p:WindowsTargetPlatformVersion={get_windows_sdk()}', file=f)
 
     # Inform pythons stupid build scripts where python is located
-    pyexe = sys.executable.replace(os.sep, '/')
+    pyexe = r'C:\\Windows\\py.exe'
     replace_in_file('PCbuild\\get_externals.bat', re.compile(br'^call.+find_python.bat.+$', re.MULTILINE),
                     f'set "PYTHON={pyexe}"')
     replace_in_file('PCbuild\\build.bat', re.compile(br'^call.+find_python.bat.+$', re.MULTILINE),
