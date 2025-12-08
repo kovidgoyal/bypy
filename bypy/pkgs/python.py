@@ -9,7 +9,7 @@ import shutil
 import sys
 
 from bypy.constants import CFLAGS, LDFLAGS, LIBDIR, PREFIX, PYTHON, UNIVERSAL_ARCHES, build_dir, is64bit, islinux, ismacos, iswindows
-from bypy.utils import ModifiedEnv, apply_patch, copy_headers, get_platform_toolset, get_windows_sdk, install_binaries, replace_in_file, run, simple_build, walk, run_shell
+from bypy.utils import ModifiedEnv, copy_headers, get_platform_toolset, get_windows_sdk, install_binaries, replace_in_file, run, simple_build, walk, run_shell
 run_shell
 
 
@@ -98,8 +98,6 @@ def unix_python(args):
 
 
 def windows_python(args):
-    # https://github.com/python/cpython/issues/108721
-    apply_patch('python-3.11-ssl-gh-100372.patch', level=1)
     env = {}
     if is64bit:
         env['PROCESSOR_ARCHITECTURE'] = env['PROCESSOR_ARCHITEW6432'] = 'AMD64'
