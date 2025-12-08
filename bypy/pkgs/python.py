@@ -182,6 +182,19 @@ for path in ('{p}/bin', '{p}/qt/bin'):
 
 
 def main(args):
+    # See https://github.com/python/cpython/issues/142417
+    replace_in_file('Include/cpython/pylifecycle.h',
+                    'PyAPI_FUNC(int) Py_RunMain(void);',
+                    'PyAPI_FUNC(int) Py_RunMain(void);\nPyAPI_FUNC(PyStatus) _Py_InitializeMain(void);')
+    replace_in_file('Python/pylifecycle.c', '', '''
+
+PyStatus
+_Py_InitializeMain(void)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    return pyinit_main(tstate);
+}
+''')
     (windows_python if iswindows else unix_python)(args)
 
 

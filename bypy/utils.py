@@ -841,15 +841,18 @@ def replace_in_file(path, old, new, missing_ok=False):
         new = new.encode('utf-8')
     with open(path, 'r+b') as f:
         raw = f.read()
-        if isinstance(old, bytes):
-            nraw = raw.replace(old, new)
-            pat_repr = old.decode('utf-8')
+        if not old:
+            nraw = raw + new
         else:
-            if isinstance(old.pattern, str):
-                old = re.compile(
-                    old.pattern.encode('utf-8'), old.flags & ~re.UNICODE)
-            nraw = old.sub(new, raw)
-            pat_repr = old.pattern.decode('utf-8')
+            if isinstance(old, bytes):
+                nraw = raw.replace(old, new)
+                pat_repr = old.decode('utf-8')
+            else:
+                if isinstance(old.pattern, str):
+                    old = re.compile(
+                        old.pattern.encode('utf-8'), old.flags & ~re.UNICODE)
+                nraw = old.sub(new, raw)
+                pat_repr = old.pattern.decode('utf-8')
         replaced = raw != nraw
         if not replaced and not missing_ok:
             raise ValueError(
