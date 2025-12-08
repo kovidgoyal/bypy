@@ -2,15 +2,15 @@
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
-import glob
 import os
 import shutil
 
 from bypy.constants import build_dir, iswindows
-from bypy.utils import install_binaries, msbuild, replace_in_file, simple_build
+from bypy.utils import install_binaries, msbuild, replace_in_file, simple_build, run_shell
 
 
 needs_lipo = True
+run_shell
 
 
 def main(args):
@@ -27,7 +27,7 @@ def main(args):
             conf = 'Release'
             if static:
                 conf += ' Static'
-            msbuild('builds/windows/vc2010/freetype.sln',
+            msbuild('MSBuild.sln',
                     configuration=conf)
 
         # Build the static library
@@ -36,9 +36,7 @@ def main(args):
         # Build the dynamic library
         build()
         install_binaries('objs/freetype.dll', 'bin')
-        install_binaries('objs/*/Release/*.lib')
-        for f in glob.glob('objs/vc2010/*/freetype*MT.lib'):
-            shutil.copy2(f, os.path.join(build_dir(), 'lib', 'freetype.lib'))
+        install_binaries('objs/freetype.lib')
         shutil.copytree('include',
                         os.path.join(build_dir(), 'include', 'freetype2'))
         shutil.rmtree(
