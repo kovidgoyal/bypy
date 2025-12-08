@@ -3,13 +3,13 @@
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
+import re
 
-from bypy.constants import iswindows, PREFIX
-from bypy.utils import replace_in_file, python_build, python_install
+from bypy.constants import PREFIX, iswindows
+from bypy.utils import python_build, python_install, replace_in_file
 
 
-if iswindows:
-    def main(args):
+def patch_for_windows():
         incdir = os.path.join(PREFIX, 'include')
         libdir = os.path.join(PREFIX, 'lib')
         with open('setup.cfg', 'a') as s:
@@ -32,5 +32,10 @@ enable_freetype = True
         replace_in_file(
             'setup.py', 'feature.zlib = "zlib"', 'feature.zlib = "zdll"')
 
-        python_build()
-        python_install()
+
+def main(args):
+    replace_in_file('src/PIL/features.py', re.compile(r'\{.+\.__file__\)\}'), '')
+    if iswindows:
+        patch_for_windows()
+    python_build()
+    python_install()
