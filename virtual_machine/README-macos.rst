@@ -106,7 +106,7 @@ After the OS is installed:
   might hang on final reboot, in which case quit and restart the VM.
 
 * Install Xcode from https://developer.apple.com/download/all/
-Download the version of Xcode (12.4 for kitty and 15.4 for calibre) you need as a .xip archive. Run::
+Download the version of Xcode (12.4 for kitty and 16.2 for calibre) you need as a .xip archive. Run::
 
     curl -fSsL -O https://github.com/saagarjha/unxip/releases/download/v3.1/unxip && chmod +x unxip && \
     ./unxip -v Xco*.xip && mv Xco*.app /Applications && \
