@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <Python.h>
 #include <frameobject.h>
 #include <stdio.h>
@@ -649,9 +650,6 @@ set_sys_bool(const char* key, const bool val) {
 
 static void
 bypy_pre_initialize_interpreter(bool use_os_log_) {
-    if (PyImport_AppendInittab("bypy_frozen_importer", bypy_frozen_importer) == -1) {
-        fatal("Failed to add bypy_frozen_importer to the init table");
-    }
     use_os_log = use_os_log_;
     PyPreConfig preconfig;
     PyPreConfig_InitIsolatedConfig(&preconfig);
@@ -661,6 +659,9 @@ bypy_pre_initialize_interpreter(bool use_os_log_) {
 
     PyStatus status = Py_PreInitialize(&preconfig);
     if (PyStatus_Exception(status)) Py_ExitStatusException(status);
+    if (PyImport_AppendInittab("bypy_frozen_importer", bypy_frozen_importer) == -1) {
+        fatal("Failed to add bypy_frozen_importer to the init table");
+    }
 }
 
 static void
@@ -739,15 +740,13 @@ show_error_during_setup() {
 
 static inline PyObject*
 module_dict_for_exec(const char *name) {
-    // cloned from python source code
-    _Py_IDENTIFIER(__builtins__);
     PyObject *m, *d = NULL;
 
     m = PyImport_AddModule(name);
     if (m == NULL) return NULL;
     d = PyModule_GetDict(m);
     if (d == NULL) { Py_DECREF(m); return NULL; }
-    if (_PyDict_SetItemId(d, &PyId___builtins__, PyEval_GetBuiltins()) != 0) return NULL;
+    if (PyDict_SetItemString(d, "___builtins__", PyEval_GetBuiltins()) != 0) return NULL;
     return d;  // returning a borrowed reference
 }
 
