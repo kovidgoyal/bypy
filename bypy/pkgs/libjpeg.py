@@ -30,7 +30,7 @@ def main(args):
         ENABLE_STATIC='0',
         binaries='jpeg8.dll',
         libraries='jpeg.lib',
-        headers='jconfig.h ../jerror.h ../jpeglib.h ../jmorecfg.h',
+        headers='jconfig.h ../src/jerror.h ../src/jpeglib.h ../src/jmorecfg.h',
     )
 
 
