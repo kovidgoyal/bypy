@@ -112,6 +112,7 @@ if iswindows:
     # The PERL bin directory contains all manner of crap
     if PERL != 'perl.exe':
         paths = [p for p in paths if not patheq(p, os.path.dirname(PERL))]
+        paths = [p for p in paths if 'Strawberry' not in p.split(os.sep)]
     if RUBY != 'ruby.exe':
         paths = [p for p in paths if not patheq(p, os.path.dirname(RUBY))]
     MESON = os.path.join(r'C:\Program Files\Meson', 'meson.exe')
