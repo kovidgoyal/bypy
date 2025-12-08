@@ -828,7 +828,7 @@ def install_binaries(
     pattern, destdir='lib', do_symlinks=False, fname_map=os.path.basename
 ):
     dest = os.path.join(build_dir(), destdir)
-    files = copy_binaries(pattern, dest)
+    files = copy_binaries(pattern, dest, fname_map=fname_map)
     if do_symlinks:
         library_symlinks(files[0], destdir=destdir)
     return files
