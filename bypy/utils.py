@@ -894,7 +894,9 @@ def windows_cmake_build(
     for k, v in defs.items():
         cmd.append('-D' + k + '=' + v)
     cmd.append('..')
-    run(*cmd, cwd='build', env=extra_env_for_cmake or {})
+    env = extra_env_for_cmake or {}
+    env['CMAKE_PREFIX_PATH'] = PREFIX
+    run(*cmd, cwd='build', env=env)
     if nmake_target:
         run(f'{make} {nmake_target}', cwd='build')
     else:
