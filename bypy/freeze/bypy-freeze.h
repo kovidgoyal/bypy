@@ -15,6 +15,7 @@
 #include <windows.h>
 #else
 #include <fcntl.h>
+#include <sys/time.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <limits.h>
@@ -23,7 +24,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <Python.h>
 #include <frameobject.h>
 #include <stdio.h>
