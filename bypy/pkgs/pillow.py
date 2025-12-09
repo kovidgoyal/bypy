@@ -20,17 +20,15 @@ library_dirs = {libdir}
 enable_zlib = True
 enable_jpeg = True
 enable_webp = True
-enable_webpmux = True
 enable_freetype = True
 ''', file=s)
 
         replace_in_file('setup.py', 'DEBUG = False', 'DEBUG = True')
-        replace_in_file('setup.py', '"libwebp"', '"libwebp_dll"')
-        replace_in_file('setup.py', '"libwebpmux"', '"libwebpmux_dll"')
-        replace_in_file('setup.py', '"libwebpdemux"', '"libwebpdemux_dll"')
+        replace_in_file('setup.py', 'for library in ("webp", "webpmux", "webpdemux")', 'for library in ("webp_dll", "webpmux_dll", "webpdemux_dll")')
+        replace_in_file('setup.py', 'libs = [webp, webp + "mux", webp + "demux"]', 'libs = [webp+"_dll", webp + "mux_dll", webp + "demux_dll"]')
         # dont link against static zlib
         replace_in_file(
-            'setup.py', 'feature.zlib = "zlib"', 'feature.zlib = "zdll"')
+            'setup.py', 'feature.set("zlib", "zlib")', 'feature.set("zlib", "zdll")')
 
 
 def main(args):
