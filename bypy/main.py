@@ -102,9 +102,12 @@ def run_worker(args):
         os.remove(logpath)
     # cwd so that screen log file is in worker dir
     p = subprocess.Popen(cmd, cwd=WORKER_DIR, env=env)
-    while True:
-        with suppress(KeyboardInterrupt):
-            rc = p.wait()
+    try:
+        rc = p.wait()
+    except KeyboardInterrupt:
+        rc = p.poll()
+        if rc is None:
+            rc = 1
     # We do this via SH because running SH leaves the python stdout pipe in a funny
     # state where it substitutes U+2190 for ESC bytes. Running via cat avoids that
     subprocess.Popen(['cat', logpath]).wait()
