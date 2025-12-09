@@ -4,9 +4,10 @@
 
 
 import os
+import re
 
 from bypy.constants import islinux, iswindows
-from bypy.utils import qt_build, require_ram, replace_in_file
+from bypy.utils import qt_build, replace_in_file, require_ram
 
 
 def main(args):
@@ -30,7 +31,13 @@ def main(args):
             'void XSLTProcessor::ParseErrorFunc(void* user_data, const xmlError* error) {')  # }
 
     if iswindows:
-        replace_in_file('cmake/Functions.cmake', 'set(x64List x86_64 AMD64', 'set(x64List x86_64 AMD64 amd64')
+        replace_in_file('cmake/QtToolchainHelpers.cmake', 'set(x64List x86_64 AMD64', 'set(x64List x86_64 AMD64 amd64') # ))
+        # for some reason the MSVC version checks fail
+        replace_in_file(
+            'configure.cmake',
+            re.compile(r'qt_webengine_configure_check\("(visual-studio|msvc-2019|msvc-2022)".+?\)', re.DOTALL),
+            '')
+
 
     qt_build(conf, for_webengine=True)
 
