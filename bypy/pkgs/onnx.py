@@ -2,7 +2,6 @@
 # License: GPLv3 Copyright: 2024, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
-import re
 
 from bypy.constants import CMAKE, PREFIX, PYTHON, current_build_arch, build_dir, ismacos, iswindows
 from bypy.utils import copy_headers, install_binaries, replace_in_file, run, run_shell
@@ -25,12 +24,11 @@ def main(args):
     elif iswindows:
         if add_directml:
             cmdline += ' --use_dml'
-        replace_in_file('tools/ci_build/build.py', 'target_arch = platform.machine()', 'target_arch = platform.machine().upper()')
         kw['append_to_path'] = os.path.dirname(PYTHON)
-        # Visual Studio 2022 ships with ancient CMake, but we dont actually
-        # need updated cmake with one C++ 23 patch
-        replace_in_file('cmake/CMakeLists.txt', re.compile(r'cmake_minimum_required.+'), '')
-        replace_in_file('cmake/onnxruntime_common.cmake', re.compile(r'if.+cxx_std_23.+'), 'if(FALSE)')
+        # The logic for setting the Visual Studio cmake generator is completely broken, so just let cmake pick for us,
+        # which works since we have only one VS install.
+        # Maybe use --cmake_generator Ninja in the future
+        replace_in_file('tools/ci_build/build.py', '"-T", toolset, "-G", args.cmake_generator', '')
     else:
         # noexecstack is needed because some sub module dep of onnx causes the
         # find .so to have its stack marked executable which prevents it from
