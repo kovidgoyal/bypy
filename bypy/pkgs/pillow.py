@@ -10,10 +10,10 @@ from bypy.utils import python_build, python_install, replace_in_file
 
 
 def patch_for_windows():
-        incdir = os.path.join(PREFIX, 'include')
-        libdir = os.path.join(PREFIX, 'lib')
-        with open('setup.cfg', 'a') as s:
-            print(f'''
+    incdir = os.path.join(PREFIX, 'include')
+    libdir = os.path.join(PREFIX, 'lib')
+    with open('setup.cfg', 'a') as s:
+        print(f'''
 [build_ext]
 include_dirs = {incdir}
 library_dirs = {libdir}
@@ -23,12 +23,12 @@ enable_webp = True
 enable_freetype = True
 ''', file=s)
 
-        replace_in_file('setup.py', 'DEBUG = False', 'DEBUG = True')
-        replace_in_file('setup.py', 'for library in ("webp", "webpmux", "webpdemux")', 'for library in ("webp_dll", "webpmux_dll", "webpdemux_dll")')
-        replace_in_file('setup.py', 'libs = [webp, webp + "mux", webp + "demux"]', 'libs = [webp+"_dll", webp + "mux_dll", webp + "demux_dll"]')
-        # dont link against static zlib
-        replace_in_file(
-            'setup.py', 'feature.set("zlib", "zlib")', 'feature.set("zlib", "zdll")')
+    replace_in_file('setup.py', 'DEBUG = False', 'DEBUG = True')
+    replace_in_file('setup.py', 'for library in ("webp", "webpmux", "webpdemux")', 'for library in ("webp_dll", "webpmux_dll", "webpdemux_dll")')
+    replace_in_file('setup.py', 'libs = [webp, webp + "mux", webp + "demux"]', 'libs = [webp+"_dll", webp + "mux_dll", webp + "demux_dll"]')
+    # dont link against static zlib
+    replace_in_file(
+        'setup.py', 'feature.set("zlib", "zlib")', 'feature.set("zlib", "zdll")')
 
 
 def main(args):
