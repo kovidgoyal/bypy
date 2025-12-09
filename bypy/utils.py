@@ -454,13 +454,10 @@ def qt_build(configure_args='', for_webengine=False, dep_name='', **env):
         append_to_path=append_to_path, library_path=True)
     if iswindows:
         prepend_to_path.append(os.path.dirname(PERL))
-        append_to_path.append(os.path.dirname(os.environ['PYTHON_TWO']))
+        env['CMAKE_PREFIX_PATH'] = PREFIX
         if for_webengine:
             append_to_path.insert(0, f'{PREFIX}/private/gnuwin32/bin')
             append_to_path.append(os.path.dirname(NODEJS))
-        if currently_building_dep().name == 'qt-imageformats':
-            # the qt tiff cmake file as broken so give up on system tiff
-            configure_args += ' -qt-tiff'
     if ismacos:
         env['PYTHON3_PATH'] = os.path.dirname(os.path.abspath(sys.executable))
     if for_webengine:
