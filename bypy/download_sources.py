@@ -131,6 +131,7 @@ PROJECT_LICENSE_MAP = {
     'pillow': 'MIT-CMU', # https://pypi.org/project/pillow/
     'zeroconf': "LGPL-2.1-or-later", # https://pypi.org/project/zeroconf/
     'setuptools': "MIT", # https://pypi.org/project/zeroconf/
+    'wrapt': 'BSD-2-Clause', # https://github.com/GrahamDumpleton/wrapt/blob/develop/LICENSE
 }
 
 # }}}
