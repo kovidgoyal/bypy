@@ -1,10 +1,6 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
-
-from __future__ import (
-    absolute_import, division, print_function, unicode_literals
-)
 
 from bypy.constants import BIN, PREFIX, is64bit
 from bypy.utils import simple_build
