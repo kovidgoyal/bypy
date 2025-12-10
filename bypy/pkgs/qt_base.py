@@ -4,7 +4,7 @@
 
 import os
 
-from bypy.constants import BIN, CMAKE, PERL, PREFIX, UNIVERSAL_ARCHES, build_dir, currently_building_dep, islinux, ismacos, iswindows
+from bypy.constants import BIN, CMAKE, PREFIX, UNIVERSAL_ARCHES, build_dir, currently_building_dep, islinux, ismacos, iswindows
 from bypy.utils import apply_patch, relocate_pkgconfig_files, replace_in_file, run, run_shell
 
 
@@ -73,11 +73,9 @@ def cmake(args):
     cmd = [CMAKE] + [f'-D{k}={v}' for k, v in cmake_defines.items()] + [
         '-G', 'Ninja', '..']
     if iswindows:
-        run(*cmd, library_path=True, append_to_path=BIN,
-            prepend_to_path=os.path.dirname(PERL))
+        run(*cmd, library_path=True, append_to_path=BIN)
         run_shell  # ()
         run(CMAKE, '--build', '.', '--parallel',
-            prepend_to_path=os.path.dirname(PERL),
             append_to_path=f'{PREFIX}/private/gnuwin32/bin')
     else:
         run(*cmd, library_path=True, append_to_path=BIN)
