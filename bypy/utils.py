@@ -20,7 +20,8 @@ import tarfile
 import tempfile
 import time
 import zipfile
-from contextlib import closing, contextmanager, suppress
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager, suppress
 from functools import lru_cache, partial
 
 from .constants import (
@@ -39,7 +40,6 @@ from .constants import (
     SH,
     UNIVERSAL_ARCHES,
     build_dir,
-    cpu_count,
     current_build_arch,
     is64bit,
     is_cross_half_of_lipo_build,
@@ -1142,10 +1142,8 @@ def create_job(cmd, human_text=None):
 
 
 def parallel_build(jobs, log=print, verbose=True):
-    from multiprocessing.dummy import Pool
-    p = Pool(cpu_count())
-    with closing(p):
-        for ok, stdout, stderr in p.imap(run_worker, jobs):
+    with ThreadPoolExecutor() as ex:
+        for ok, stdout, stderr in ex.map(run_worker, jobs):
             if verbose or not ok:
                 log(stdout)
                 if stderr:
