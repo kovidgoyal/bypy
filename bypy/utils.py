@@ -41,7 +41,6 @@ from .constants import (
     build_dir,
     cpu_count,
     current_build_arch,
-    currently_building_dep,
     is64bit,
     is_cross_half_of_lipo_build,
     islinux,
@@ -396,6 +395,22 @@ def relocate_pkgconfig_files(prefix=PREFIX):
                 replace_in_file(path, build_dir(), prefix)
 
 
+def setup_env_for_lipo(env, use_envvars_for_lipo=False):
+    if is_cross_half_of_lipo_build():
+        flags = f'{worker_env["CFLAGS"]} -arch {current_build_arch()}'
+        ldflags = f'{worker_env["LDFLAGS"]} -arch {current_build_arch()}'
+        if use_envvars_for_lipo:
+            env.update({'CFLAGS': flags, 'CXXFLAGS': flags, 'LDFLAGS': ldflags,})
+            return []
+        host = 'aarch64' if 'arm' in current_build_arch() else 'x86_64'
+        build = 'aarch64' if 'arm' in UNIVERSAL_ARCHES[0] else 'x86_64'
+        return [
+            f'--build={build}-apple-darwin', f'--host={host}-apple-darwin',
+            f'CXXFLAGS={flags}', f'CFLAGS={flags}', f'LDFLAGS={ldflags}',
+        ]
+    return []
+
+
 def simple_build(
     configure_args=(), make_args=(), install_args=(),
     library_path=None, override_prefix=None, no_parallel=False,
@@ -414,18 +429,7 @@ def simple_build(
     if configure_name and not os.path.exists(configure_name) and os.path.exists(autogen_name):
         run(autogen_name)
     env = env or {}
-    if is_cross_half_of_lipo_build():
-        flags = f'{worker_env["CFLAGS"]} -arch {current_build_arch()}'
-        ldflags = f'{worker_env["LDFLAGS"]} -arch {current_build_arch()}'
-        if use_envvars_for_lipo:
-            env.update({'CFLAGS': flags, 'CXXFLAGS': flags, 'LDFLAGS': ldflags,})
-        else:
-            host = 'aarch64' if 'arm' in current_build_arch() else 'x86_64'
-            build = 'aarch64' if 'arm' in UNIVERSAL_ARCHES[0] else 'x86_64'
-            configure_args += [
-                f'--build={build}-apple-darwin', f'--host={host}-apple-darwin',
-                f'CXXFLAGS={flags}', f'CFLAGS={flags}', f'LDFLAGS={ldflags}',
-            ]
+    configure_args += setup_env_for_lipo(env, use_envvars_for_lipo)
     if configure_name:
         run(configure_name, '--prefix=' + (
             override_prefix or build_dir()), *configure_args, env=env, prepend_to_path=prepend_to_path)
@@ -1017,17 +1021,45 @@ def cmake_build(
 
 
 def meson_build(extra_cmdline='', library_path=None, **options):
+    append_to_path = ''
+    if ismacos and not shutil.which(MESON):
+        append_to_path = '/Library/Frameworks/Python.framework/Versions/Current/bin'
     cmd = [
         MESON, 'setup', '--buildtype=release', f'--prefix={build_dir()}',
         f'--libdir={build_dir()}/lib'
     ]
+    if is_cross_half_of_lipo_build():
+        cpu_family = 'aarch64' if 'arm' in current_build_arch() else 'x86_64'
+        cross_defn = f'''
+[host_machine]
+system = 'darwin'
+cpu_family = '{cpu_family}'
+cpu = '{current_build_arch()}'
+endian = 'little'
+
+[binaries]
+c = 'clang'
+cpp = 'clang++'
+ar = 'ar'
+strip = 'strip'
+
+[built-in options]
+c_args = ['-arch', '{current_build_arch()}']
+cpp_args = ['-arch', '{current_build_arch()}']
+c_link_args = ['-arch', '{current_build_arch()}']
+cpp_link_args = ['-arch', '{current_build_arch()}']
+'''
+        with open('cross-build.ini', 'w') as f:
+            print(cross_defn, file=f)
+        cmd += ['--cross-file', os.path.abspath(f.name)]
+
     if extra_cmdline:
         cmd += shlex.split(extra_cmdline)
     cmd += [f'-D{k}={v}' for k, v in options.items()]
     cmd.append('build')
-    run(*cmd)
-    run(NINJA, '-C', 'build', library_path=library_path)
-    run(NINJA, '-C', 'build', 'install', library_path=library_path)
+    run(*cmd, append_to_path=append_to_path)
+    run(NINJA, '-v', '-C', 'build', library_path=library_path, append_to_path=append_to_path)
+    run(NINJA, '-C', 'build', 'install', library_path=library_path, append_to_path=append_to_path)
     relocate_pkgconfig_files()
 
 
