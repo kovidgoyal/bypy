@@ -174,6 +174,8 @@ def sbom(args):
 
     from .download_sources import read_deps, read_go_deps
     foundry, _, project = args.name.partition('/')
+    if not project:
+        project = foundry
     project_id = f'SPDXRef-{project}'
     sbom_document = {
         "spdxVersion": "SPDX-2.3",
