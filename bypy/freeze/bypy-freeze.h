@@ -665,7 +665,7 @@ bypy_pre_initialize_interpreter(bool use_os_log_) {
 }
 
 static void
-show_error_during_setup() {
+show_error_during_setup(void) {
     // The interpreter is not fully setup so we cant rely on PyErr_Print()
     size_t sz = 0, pos = 0;
     char *errbuf = NULL;
