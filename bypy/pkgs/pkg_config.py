@@ -10,5 +10,5 @@ def main(args):
     suffix = ''
     if UNIVERSAL_ARCHES:
         flags = ' '.join(f'-arch {x}' for x in UNIVERSAL_ARCHES)
-        suffix = f' CFLAGS="{flags}" LDFLAGS="{flags}"'
+        suffix = f' CFLAGS="{flags} -Wno-int-conversion" LDFLAGS="{flags}"'
     simple_build('--with-internal-glib --disable-silent-rules --disable-host-tool' + suffix)
