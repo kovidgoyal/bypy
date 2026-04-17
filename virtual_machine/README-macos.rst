@@ -111,6 +111,7 @@ Download the version of Xcode (12.4 for kitty and 16.2 for calibre) you need as 
     curl -fSsL -O https://github.com/saagarjha/unxip/releases/download/v3.1/unxip && chmod +x unxip && \
     ./unxip -v Xco*.xip && mv Xco*.app /Applications && \
     sudo xcodebuild -license && \
+    sudo xcodebuild -runFirstLaunch && \
     rm Xco*.xip && \
     python3 -m pip install certifi html5lib
 
