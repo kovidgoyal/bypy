@@ -266,7 +266,7 @@ class Dependency:
     def from_go_sum(cls, name: str, version: str, alg: str) -> 'Dependency':
         alg, _, csum = alg.partition(':')
         if alg != 'h1':
-            raise ValueError(f'Unkown checksum algorithm {alg} for go dep: {name}')
+            raise ValueError(f'Unknown checksum algorithm {alg} for go dep: {name}')
         csum = 'sha256:' + standard_b64decode(csum).hex()
         version = version[1:]
         purl = f'pkg:golang/{name}@{version}'
