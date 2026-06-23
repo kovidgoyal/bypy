@@ -6,7 +6,9 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
+import tempfile
 import time
 from base64 import standard_b64decode
 from contextlib import suppress
@@ -93,6 +95,7 @@ LICENSE_INFORMATION = {
     "cairo": ("LGPL-2.1-only", 'cairographics/cairo'),
     "harfbuzz": ("MIT", 'harfbuzz_project/harfbuzz'),
     "simde": ("MIT", ''),
+    "slang": ('Apache-2.0', ''),
     "wayland": ("MIT", 'wayland/wayland'),
     "wayland-protocols": ("MIT", ''),
     "easylzma": ("BSD-2-Clause", ''),  # its actually public domain
@@ -541,7 +544,23 @@ def get_github_url(url):
     return f'https://api.github.com/repos/{ident}/tarball'
 
 
+def get_git_with_submodules(pkg: Dependency, url: str, path: str) -> None:
+    with tempfile.TemporaryDirectory() as tdir:
+        dname = f'{pkg.name}-{pkg.version}'
+        path = os.path.abspath(path)
+        subprocess.check_call(['git', 'clone', '--depth', '1', '--recurse-submodules', '--shallow-submodules', '--branch', 'v' + pkg.version, url, dname], cwd=tdir)
+        subprocess.check_call(['tar', '--exclude=.git*', '-czf', path, dname], cwd=tdir)
+    if not pkg.verify_hash(path):
+        raise SystemExit(
+            f'The hash of the generated file: {os.path.basename(path)}'
+            ' does not match the saved hash. It\'s sha256 is'
+            f': {sha256_for_path(path)}')
+    print('Tarball with submodules generated at:', path)
+
+
 def try_once(pkg: Dependency, url: str, path: str) -> None:
+    if url.startswith('git-submodules:'):
+        return get_git_with_submodules(pkg, url.replace('git-submodules', 'https', 1), path)
     if url.startswith('github:'):
         url = get_github_url(url)
     print('Downloading', os.path.basename(path), 'from', url)
