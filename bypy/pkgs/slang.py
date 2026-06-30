@@ -14,5 +14,10 @@ def main(args):
         SLANG_ENABLE_DXIL='OFF',
         SLANG_ENABLE_OPTIX='OFF',
         SLANG_ENABLE_CUDA='OFF',
+        SLANG_ENABLE_SLANGD='OFF',
+        SLANG_ENABLE_EXAMPLES='OFF',
+        SLANG_ENABLE_GFX='OFF',
+        SLANG_ENABLE_TESTS='OFF',
+        SLANG_ENABLE_SLANGRT='OFF',
         relocate_pkgconfig=False,
     )
