@@ -19,5 +19,8 @@ def main(args):
         SLANG_ENABLE_GFX='OFF',
         SLANG_ENABLE_TESTS='OFF',
         SLANG_ENABLE_SLANGRT='OFF',
+        # SLANG_LIB_TYPE='STATIC',
+        SLANG_EMBED_CORE_MODULE='TRUE',
+        SLANG_EMBED_CORE_MODULE_SOURCE='TRUE',
         relocate_pkgconfig=False,
     )
