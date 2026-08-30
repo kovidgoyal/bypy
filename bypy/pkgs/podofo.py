@@ -14,6 +14,7 @@ def main(args):
         make_args='podofo_shared',
         PODOFO_BUILD_LIB_ONLY='TRUE',
         PODOFO_BUILD_STATIC='FALSE',
+        PODOFO_WITH_FONTMANAGER='FALSE',
     )
 
 
