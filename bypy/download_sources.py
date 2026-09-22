@@ -96,6 +96,9 @@ LICENSE_INFORMATION = {
     "harfbuzz": ("MIT", "harfbuzz_project/harfbuzz"),
     "simde": ("MIT", ""),
     "slang": ("Apache-2.0", ""),
+    "libyuv": ("BSD-3-Clause", "chromium/libyuv"),
+    "dav1d": ("BSD-2-Clause", "videolan/dav1d"),
+    "libavif": ("BSD-2-Clause", "aomediacodec/libavif"),
     "wayland": ("MIT", "wayland/wayland"),
     "wayland-protocols": ("MIT", ""),
     "easylzma": ("BSD-2-Clause", ""),  # its actually public domain
