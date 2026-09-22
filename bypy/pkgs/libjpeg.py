@@ -4,9 +4,8 @@
 
 import os
 
-from bypy.constants import PREFIX, is64bit, iswindows, ismacos
+from bypy.constants import NASM, PREFIX, is64bit, ismacos, iswindows
 from bypy.utils import cmake_build, replace_in_file, windows_cmake_build
-
 
 needs_lipo = True
 
@@ -18,7 +17,7 @@ def main(args):
             'ENABLE_STATIC': '0',
         }
         if ismacos:
-            kw['CMAKE_ASM_NASM_COMPILER'] = f'{PREFIX}/bin/nasm'
+            kw['CMAKE_ASM_NASM_COMPILER'] = NASM
         return cmake_build(**kw)
     cpu = 'x86_64' if is64bit else 'i386'
     replace_in_file(
