@@ -3,13 +3,12 @@
 
 import os
 
-from bypy.constants import CMAKE, PREFIX, PYTHON, current_build_arch, build_dir, ismacos, iswindows
-from bypy.utils import copy_headers, install_binaries, replace_in_file, run, run_shell
+from bypy.constants import CMAKE, PREFIX, PYTHON, build_dir, current_build_arch, ismacos, iswindows
+from bypy.utils import copy_headers, install_binaries, replace_in_file, run
 
-run_shell
 # sadly putting both arches in CMAKE_OSX_ARCHITECTURES caused build failures, so we lipo, sigh
 needs_lipo=True
-add_directml=False
+add_directml=True
 
 
 def main(args):
