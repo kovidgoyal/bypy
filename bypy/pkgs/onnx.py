@@ -20,6 +20,7 @@ def main(args):
             cmdline += f' --cmake_extra_defines CMAKE_OSX_ARCHITECTURES={current_build_arch()}'
         kw['append_to_path'] = os.path.dirname(CMAKE)
         kw['prepend_to_path'] = os.path.dirname(PYTHON)  # onnx build script requires python >= 3.10
+        cmdline += ' --use_coreml'
     elif iswindows:
         if add_directml:
             cmdline += ' --use_dml'
