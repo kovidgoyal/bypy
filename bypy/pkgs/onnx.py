@@ -17,7 +17,9 @@ def main(args):
     kw = {}
     if ismacos:
         if current_build_arch():
-            cmdline += f' --cmake_extra_defines CMAKE_OSX_ARCHITECTURES={current_build_arch()}'
+            cmdline += f' --cmake_extra_defines CMAKE_OSX_ARCHITECTURES={current_build_arch()} CMAKE_POLICY_VERSION_MINIMUM=3.5'
+        else:
+            cmdline += ' --cmake_extra_defines CMAKE_POLICY_VERSION_MINIMUM=3.5'
         kw['append_to_path'] = os.path.dirname(CMAKE)
         kw['prepend_to_path'] = os.path.dirname(PYTHON)  # onnx build script requires python >= 3.10
         cmdline += ' --use_coreml'
