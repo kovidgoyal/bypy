@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 from base64 import standard_b64decode
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -18,8 +19,6 @@ from itertools import count
 from typing import Any, NamedTuple
 from urllib.error import HTTPError
 from urllib.request import urlopen, urlretrieve
-
-import tomllib
 
 from .constants import OS_NAME, SOURCES, SRC, iswindows
 
@@ -62,6 +61,8 @@ LICENSE_INFORMATION = {
     "iconv": ("LGPL-2.1-only", ""),
     "libxml2": ("MIT", "xmlsoft/libxml2"),
     "libxslt": ("MIT", "xmlsoft/libxslt"),
+    "libhighway": ("BSD-3-Clause", ""),
+    "libjxl": ("BSD-3-Clause", ""),
     "chmlib": ("LGPL-2.1-or-later", ""),
     "optipng": ("Zlib", "optipng_project/optipng"),
     "mozjpeg": ("IJG", "mozilla/mozjpeg"),
