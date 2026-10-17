@@ -134,7 +134,8 @@ if iswindows:
     MT = shutil.which("mt", path=worker_env["PATH"]) or "mt"
     SIGNTOOL = shutil.which("signtool", path=worker_env["PATH"]) or "signtool"
 else:
-    CFLAGS = worker_env["CFLAGS"] = "-I" + os.path.join(PREFIX, "include")
+    # configure scripts add their default -O only when CFLAGS is unset
+    CFLAGS = worker_env["CFLAGS"] = "-O2 -I" + os.path.join(PREFIX, "include")
     CPPFLAGS = worker_env["CPPFLAGS"] = "-I" + os.path.join(PREFIX, "include")
     LIBDIR = os.path.join(PREFIX, "lib")
     PKG_CONFIG_PATH = worker_env["PKG_CONFIG_PATH"] = os.path.join(PREFIX, "lib", "pkgconfig")
