@@ -12,5 +12,6 @@ def main(args):
     if not iswindows:
         if islinux:
             require_ram(12)
-        return simple_build()
+        # gyp uses its own -O3 and puts CFLAGS after it
+        return simple_build(optimize=False)
     run('.\\vcbuild.bat')

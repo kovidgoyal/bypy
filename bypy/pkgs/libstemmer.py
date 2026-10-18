@@ -50,7 +50,7 @@ def main(args):
             run(*args)
     if iswindows:
         dll = 'libstemmer.dll'
-        args = ['/LD'] + list(read_sources()) + ['/Fe:' + dll]
+        args = ['/LD', '/O2'] + list(read_sources()) + ['/Fe:' + dll]
         run(cc, *args)
         install_binaries(dll, 'bin')
         install_binaries('libstemmer.lib')

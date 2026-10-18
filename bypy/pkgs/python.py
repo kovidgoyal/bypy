@@ -68,7 +68,8 @@ def unix_python(args):
 
     try:
         with ModifiedEnv(**env):
-            simple_build(conf, relocate_pkgconfig=False, install_args=install_args)
+            # python uses its own -O3 and puts CFLAGS after it
+            simple_build(conf, relocate_pkgconfig=False, install_args=install_args, optimize=False)
     finally:
         if ismacos:
             os.remove(f'{PREFIX}/python')

@@ -12,7 +12,7 @@ needs_lipo = True
 def main(args):
     if iswindows:
         for f in 'hnjalloc.c hyphen.c'.split():
-            run(f'"{CL}" /c /nologo /MD /W3 /DWIN32 -c ' + f)
+            run(f'"{CL}" /c /nologo /MD /W3 /O2 /DWIN32 -c ' + f)
         run(f'"{LIB}" -nologo hnjalloc.obj hyphen.obj -OUT:hyphen.lib')
         install_binaries('hyphen.lib')
         copy_headers('hyphen.h')

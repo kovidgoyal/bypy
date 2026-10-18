@@ -398,7 +398,7 @@ def relocate_pkgconfig_files(prefix=PREFIX):
 
 def setup_env_for_lipo(env, use_envvars_for_lipo=False):
     if is_cross_half_of_lipo_build():
-        flags = f"{worker_env['CFLAGS']} -arch {current_build_arch()}"
+        flags = f"{env.get('CFLAGS', worker_env['CFLAGS'])} -arch {current_build_arch()}"
         ldflags = f"{worker_env['LDFLAGS']} -arch {current_build_arch()}"
         if use_envvars_for_lipo:
             env.update(
@@ -435,6 +435,7 @@ def simple_build(
     use_envvars_for_lipo=False,
     prepend_to_path=None,
     env=None,
+    optimize=True,
 ):
     if isinstance(configure_args, str):
         configure_args = split(configure_args)
@@ -447,6 +448,9 @@ def simple_build(
     if configure_name and not os.path.exists(configure_name) and os.path.exists(autogen_name):
         run(autogen_name)
     env = env or {}
+    if optimize and "CFLAGS" not in env:
+        # configure scripts add their default -O only when CFLAGS is unset
+        env["CFLAGS"] = f"-O2 {worker_env['CFLAGS']}"
     configure_args += setup_env_for_lipo(env, use_envvars_for_lipo)
     if configure_name:
         run(configure_name, "--prefix=" + (override_prefix or build_dir()), *configure_args, env=env, prepend_to_path=prepend_to_path)
