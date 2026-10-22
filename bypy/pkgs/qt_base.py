@@ -55,6 +55,7 @@ def cmake(args):
             'FEATURE_securetransport': 'ON',
             'FEATURE_fontconfig': 'OFF',
         })
+        apply_patch('qtbug-147449.patch', level=1)
     if iswindows:
         cmake_defines.update({
             'INPUT_openssl': 'no',
