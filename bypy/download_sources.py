@@ -102,6 +102,7 @@ LICENSE_INFORMATION = {
     "libavif": ("BSD-2-Clause", "aomediacodec/libavif"),
     "wayland": ("MIT", "wayland/wayland"),
     "wayland-protocols": ("MIT", ""),
+    "vulkan-headers": ("Apache-2.0", ""),
     "easylzma": ("BSD-2-Clause", ""),  # its actually public domain
 }
 
