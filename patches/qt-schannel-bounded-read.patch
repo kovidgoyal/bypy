@@ -1,0 +1,15 @@
+diff --git a/src/plugins/tls/schannel/qtls_schannel.cpp b/src/plugins/tls/schannel/qtls_schannel.cpp
+--- a/src/plugins/tls/schannel/qtls_schannel.cpp
++++ b/src/plugins/tls/schannel/qtls_schannel.cpp
+@@ -1864,8 +1864,9 @@
+     bool hadIncompleteData = false;
+     const auto readBufferMaxSize = d->maxReadBufferSize();
+     while (!readBufferMaxSize || buffer.size() < readBufferMaxSize) {
+-        if (missingData > plainSocket->bytesAvailable()
+-            && (!readBufferMaxSize || readBufferMaxSize >= missingData)) {
++        // Drain a bounded socket even when the pending TLS record is incomplete.
++        // A partial read may leave its read notifier disabled until it is drained.
++        if (missingData > plainSocket->bytesAvailable() && !plainSocket->readBufferSize()) {
+ #ifdef QSSLSOCKET_DEBUG
+             qCDebug(lcTlsBackendSchannel, "We're still missing %lld bytes, will check later.",
+                     missingData);

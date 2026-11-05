@@ -57,6 +57,7 @@ def cmake(args):
         })
         apply_patch('qtbug-147449.patch', level=1)
     if iswindows:
+        apply_patch('qt-schannel-bounded-read.patch', level=1)
         cmake_defines.update({
             'INPUT_openssl': 'no',
             'FEATURE_pkg_config': 'OFF',
