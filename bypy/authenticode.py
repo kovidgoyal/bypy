@@ -4,6 +4,7 @@
 import atexit
 import os
 import shlex
+import signal
 import struct
 import subprocess
 import sys
@@ -155,7 +156,9 @@ def sign_using_hsm(path: str) -> None:
     hsm = initialize_hsm()
     args = [
         OSSL, 'sign',
-        '-engine', '/usr/lib/engines-3/pkcs11.so', '-pkcs11module', hsm.path_to_pkcs11_module,
+        # OpenSSL 4 has no engine support, so use the libp11 provider
+        # (pkcs11prov), which gets the module path from the environment
+        '-provider', 'pkcs11prov', '-pkcs11module', hsm.path_to_pkcs11_module,
         '-certs', hsm.path_to_full_chain_of_certs, '-key', hsm.hsm_private_key_uri, '-pass', hsm.token_pin,
         '-n', APPLICATION_NAME, '-i', APPLICATION_URL, '-h', 'sha256',
         '-in', path, '-out', output
@@ -163,7 +166,13 @@ def sign_using_hsm(path: str) -> None:
     for ts in TIMESTAMP_SERVERS:
         args.extend(('-ts', ts))
 
-    cp = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    env = dict(os.environ, PKCS11_MODULE_PATH=hsm.path_to_pkcs11_module)
+    cp = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env=env)
+    if cp.returncode == -signal.SIGSEGV and os.path.exists(output) and subprocess.run(
+            [OSSL, 'verify', '-in', output], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+        # libeToken crashes in its C_Finalize() destructor at process exit
+        # when used via the OpenSSL provider, after signing has completed.
+        cp.returncode = 0
     if cp.returncode == 0:
         os.replace(output, path)
         os.chmod(path, st.st_mode)
