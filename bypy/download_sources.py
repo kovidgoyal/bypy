@@ -95,6 +95,7 @@ LICENSE_INFORMATION = {
     "pixman": ("MIT", "pixman/pixman"),
     "cairo": ("LGPL-2.1-only", "cairographics/cairo"),
     "harfbuzz": ("MIT", "harfbuzz_project/harfbuzz"),
+    "fribidi": ("LGPL-2.1-or-later", "gnu/fribidi"),
     "simde": ("MIT", ""),
     "slang": ("Apache-2.0", ""),
     "libyuv": ("BSD-3-Clause", "chromium/libyuv"),
