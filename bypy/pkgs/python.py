@@ -47,7 +47,11 @@ def unix_python(args):
             env['ARCHFLAGS'] = ' '.join(f'-arch {x}' for x in UNIVERSAL_ARCHES)
         # We need rpath for libexpat to load from LIBDIR when loading the
         # _elementtree module which links against it as @rpath/libexpat.1.dylib
-        env['LDFLAGS'] = LDFLAGS.replace('-headerpad_max_install_names', '') + f' -rpath {LIBDIR}'
+        # headerpad is needed so that install names can be changed when
+        # freezing, LDFLAGS also propagate to the extension modules in
+        # lib-dynload via sysconfig
+        env['LDFLAGS'] = LDFLAGS.replace(
+            '-headerpad_max_install_names', '-Wl,-headerpad_max_install_names') + f' -rpath {LIBDIR}'
         # dont install IDLE and PythonLauncher
         replace_in_file(
             'Mac/Makefile.in',
