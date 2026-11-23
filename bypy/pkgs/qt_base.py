@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# vim:fileencoding=utf-8
 # License: GPLv3 Copyright: 2019, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
@@ -7,8 +5,7 @@ import os
 from bypy.constants import BIN, CMAKE, PREFIX, UNIVERSAL_ARCHES, build_dir, currently_building_dep, islinux, ismacos, iswindows
 from bypy.utils import apply_patch, relocate_pkgconfig_files, replace_in_file, run, run_shell
 
-
-apply_patch
+a = apply_patch
 
 
 def cmake(args):
@@ -55,7 +52,6 @@ def cmake(args):
             'FEATURE_securetransport': 'ON',
             'FEATURE_fontconfig': 'OFF',
         })
-        apply_patch('qtbug-147449.patch', level=1)
     if iswindows:
         cmake_defines.update({
             'INPUT_openssl': 'no',
