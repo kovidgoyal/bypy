@@ -3,6 +3,7 @@
 # License: GPLv3 Copyright: 2016, Kovid Goyal <kovid at kovidgoyal.net>
 
 import os
+import re
 
 from bypy.constants import PREFIX, iswindows
 from bypy.utils import (cmake_build, install_binaries, replace_in_file,
@@ -14,12 +15,12 @@ def main(args):
         ENABLE_CPP='0',
         ENABLE_GLIB='OFF',
         ENABLE_GOBJECT_INTROSPECTION='OFF',
-        ENABLE_CMS='none',
         ENABLE_QT5='OFF',
         ENABLE_QT6='OFF',
         ENABLE_GPGME='OFF',
         ENABLE_NSS3='OFF',
         ENABLE_BOOST='OFF',
+        ENABLE_HARFBUZZ='OFF',
         ENABLE_LIBCURL='OFF',
         BUILD_GTK_TESTS='OFF',
         BUILD_QT5_TESTS='OFF',
@@ -27,7 +28,7 @@ def main(args):
     )
     # poppler unconditionally searches for cairo which we dont want
     replace_in_file('CMakeLists.txt',
-                    'macro_optional_find_package(Cairo ${CAIRO_VERSION})',
+                    re.compile(r'macro_optional_find_package\(Cairo [^)]*\)'),
                     'set(CAIRO_FOUND false)')
     if iswindows:
         opjinc = f'{PREFIX}/include/openjpeg'.replace('\\', '/')
