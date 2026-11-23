@@ -151,15 +151,23 @@ class GlobalMetadata(NamedTuple):
     qt_version: str
 
 
-def populate_qt_dep(dep, qt_version):
-    f = dep["name"].partition(" ")[0].replace("-", "")
-    filename = f"{f}-everywhere-src-{qt_version}"
-    p = qt_version.rpartition(".")[0]
-    url = f"https://download.qt.io/official_releases/qt/{p}/{qt_version}/submodules/{filename}.tar.xz"
+def populate_qt_dep(dep, qt_version, released_separately=False):
+    existing = dep.get("unix") or {}
+    urls = dep.get("urls") or existing.get("urls")
+    if not urls:
+        f = dep["name"].partition(" ")[0].replace("-", "")
+        filename = f"{f}-everywhere-src-{qt_version}"
+        p = qt_version.rpartition(".")[0]
+        if released_separately:
+            # For example, qtwebengine is now released separately from the rest of Qt
+            url = f"https://download.qt.io/official_releases/{f}/{p}/{qt_version}/src/{filename}.tar.xz"
+        else:
+            url = f"https://download.qt.io/official_releases/qt/{p}/{qt_version}/submodules/{filename}.tar.xz"
+        urls = [url]
     dep["unix"] = {
-        "file_extension": "tar.xz",
-        "hash": dep["hashes"]["unix"],
-        "urls": [url],
+        "file_extension": existing.get("file_extension", "tar.xz"),
+        "hash": existing.get("hash") or dep["hashes"]["unix"],
+        "urls": list(urls),
     }
 
 
@@ -233,8 +241,12 @@ class Dependency:
     def from_sources_json_entry(cls, e: dict[str, Any], global_metadata: GlobalMetadata) -> "Dependency":
         name, _, version = e["name"].partition(" ")
         if name.startswith("qt-"):
-            version = global_metadata.qt_version
-            populate_qt_dep(e, version)
+            # Qt packages use the qt-base version unless their spec specifies
+            # its own version, e.g. qt-webengine which is released separately.
+            # Note that qt-base itself always specifies the qt version.
+            released_separately = bool(version) and version != global_metadata.qt_version
+            version = version or global_metadata.qt_version
+            populate_qt_dep(e, version, released_separately)
             spdx, purl = LICENSE_INFORMATION["qt"]
             cpe_name = name.replace("-", "")
             cpe = f"cpe:2.3:a:qt:{cpe_name}:{version}:*:*:*:*:*:*:*"
