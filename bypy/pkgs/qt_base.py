@@ -40,6 +40,7 @@ def cmake(args):
             'INPUT_libinput': 'yes',
             # 'INPUT_linker': 'gold',
             'INPUT_pkg_config': 'yes',
+            'FEATURE_liburing': 'OFF',
             # 'INPUT_wflags': 'l,-rpath-link,/sw/sw/lib--',
         })
     if ismacos:
@@ -112,9 +113,9 @@ def main(args):
         ev = 'L"CALIBRE_QT_PREFIX"' if iswindows else '"CALIBRE_QT_PREFIX"'
         replace_in_file(
             'src/corelib/global/qlibraryinfo.cpp',
-            '= getPrefix',
-            f'= {getenv}({ev}) ?'
-            f' QString::{ff}({getenv}({ev})) : getPrefix')
+            'QString QLibraryPrefixes::resolveQtPrefix()\n{',
+            'QString QLibraryPrefixes::resolveQtPrefix()\n{\n'
+            f'    if (const auto *cq = {getenv}({ev})) return QString::{ff}(cq);')
     if iswindows:
         # Enable loading of DLLs from the bin directory
         replace_in_file(

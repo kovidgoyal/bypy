@@ -14,21 +14,12 @@ def main(args):
     require_ram(24 if islinux else 8)
     conf = '-feature-qtwebengine-build -feature-qtwebengine-widgets-build'
     conf += ' -no-feature-qtwebengine-quick-build'
+    conf += ' -no-feature-webengine-rust-build'
     # we include ffmpeg for Qt Multimedia anyway we already have the proprietary codecs
     conf += ' -webengine-proprietary-codecs'
     if islinux:
         # use system ICU otherwise there is 10MB duplication
         conf += ' -webengine-icu'
-
-        # fix building with libxml2 2.12
-        replace_in_file(
-            'src/3rdparty/chromium/third_party/blink/renderer/core/xml/xslt_processor.h',
-            'static void ParseErrorFunc(void* user_data, xmlError*)',
-            'static void ParseErrorFunc(void* user_data, const xmlError*)')
-        replace_in_file(
-            'src/3rdparty/chromium/third_party/blink/renderer/core/xml/xslt_processor_libxslt.cc',
-            'void XSLTProcessor::ParseErrorFunc(void* user_data, xmlError* error) {',  # }
-            'void XSLTProcessor::ParseErrorFunc(void* user_data, const xmlError* error) {')  # }
 
     if iswindows:
         replace_in_file('cmake/QtToolchainHelpers.cmake', 'set(x64List x86_64 AMD64', 'set(x64List x86_64 AMD64 amd64') # ))
