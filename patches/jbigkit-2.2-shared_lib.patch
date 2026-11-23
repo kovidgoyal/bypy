@@ -1,0 +1,65 @@
+diff -Naur jbigkit-2.2.old/Makefile jbigkit-2.2/Makefile
+--- jbigkit-2.2.old/Makefile
++++ jbigkit-2.2/Makefile
+@@ -10,12 +10,13 @@
+ export CC CFLAGS
+ 
+ VERSION=2.2
++export VERSION
+ 
+ all: lib pbm
+ 	@echo "Enter 'make test' in order to start some automatic tests."
+ 
+ lib:
+-	cd libjbig && $(MAKE) -e
++	$(MAKE) -C libjbig
+ 
+ pbm: lib
+ 	cd pbmtools && $(MAKE) -e
+diff -Naur jbigkit-2.2.old/libjbig/Makefile jbigkit-2.2/libjbig/Makefile
+--- jbigkit-2.2.old/libjbig/Makefile
++++ jbigkit-2.2/libjbig/Makefile
+@@ -4,9 +4,10 @@
+ CC = gcc
+ 
+ # Options for the compiler: A high optimization level is suggested
+-CFLAGS = -g -O -W -Wall -ansi -pedantic # --coverage
++CFLAGS = -O2 -W -Wall -ansi -pedantic $(EXTRA_CFLAGS) # --coverage
++PICFLAGS := -fPIC -DPIC
+ 
+-all: libjbig.a libjbig85.a tstcodec tstcodec85 tstjoint
++all: libjbig.so libjbig85.so tstcodec tstcodec85 tstjoint
+ 
+ tstcodec: tstcodec.o jbig.o jbig_ar.o
+ 	$(CC) $(LDFLAGS) $(CFLAGS) -o tstcodec tstcodec.o jbig.o jbig_ar.o
+@@ -18,15 +19,16 @@
+ 	$(CC) $(LDFLAGS) $(CFLAGS) -o tstjoint \
+ 	  tstjoint.o jbig.o jbig85.o jbig_ar.o
+ 
+-libjbig.a: jbig.o jbig_ar.o
+-	rm -f libjbig.a
+-	ar rc libjbig.a jbig.o jbig_ar.o
+-	-ranlib libjbig.a
+-
+-libjbig85.a: jbig85.o jbig_ar.o
+-	rm -f libjbig85.a
+-	ar rc libjbig85.a jbig85.o jbig_ar.o
+-	-ranlib libjbig85.a
++%.so: %.so.$(VERSION)
++	ln -sf $< $@
++
++libjbig.so.$(VERSION): jbig.o jbig_ar.o
++	$(CC) $(LDFLAGS) $(CFLAGS) -shared -Wl,-soname,$@ -o $@ $^
++
++libjbig85.so.$(VERSION): jbig85.o jbig_ar.o
++	$(CC) $(LDFLAGS) $(CFLAGS) -shared -Wl,-soname,$@ -o $@ $^
++
++jbig.o jbig85.o jbig_ar.o: CFLAGS += $(PICFLAGS)
+ 
+ jbig.o: jbig.c jbig.h jbig_ar.h
+ jbig85.o: jbig85.c jbig85.h jbig_ar.h
+@@ -58,3 +60,4 @@
+ 	rm -f *.o *.gcda *.gcno *.gcov *.plist *~ core gmon.out dbg_d\=??.pbm
+ 	rm -f t82test.pbm
+ 	rm -f tstcodec tstcodec85 tstjoint
++	rm -f libjbig.so* libjbig85.so*

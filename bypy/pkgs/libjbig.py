@@ -12,7 +12,7 @@ from bypy.utils import (
 def windows_main(args):
     with open('CMakeLists.txt', 'w') as f:
         f.write('''\
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.10)
 project(jbigkit)
 
 set(JBIG_SRC libjbig/jbig.c libjbig/jbig_ar.c)
@@ -25,8 +25,8 @@ set_target_properties(libjbig85 PROPERTIES PUBLIC_HEADER "libjbig/jbig_ar.h;libj
 
 add_executable(pbmtojbg pbmtools/pbmtojbg.c)
 add_executable(pbmtojbg85 pbmtools/pbmtojbg85.c)
-add_executable(jbgtopbm pbmtools/pbmtojbg.c)
-add_executable(jbgtopbm85 pbmtools/pbmtojbg85.c)
+add_executable(jbgtopbm pbmtools/jbgtopbm.c)
+add_executable(jbgtopbm85 pbmtools/jbgtopbm85.c)
 
 target_include_directories(pbmtojbg PRIVATE libjbig)
 target_include_directories(pbmtojbg85 PRIVATE libjbig)
@@ -52,7 +52,7 @@ install(TARGETS libjbig libjbig85 pbmtojbg pbmtojbg85 jbgtopbm jbgtopbm85
 
 
 def unix_main(args):
-    apply_patch('jbigkit-2.1-shared_lib.patch', level=1)
+    apply_patch('jbigkit-2.2-shared_lib.patch', level=1)
     if ismacos:
         replace_in_file('libjbig/Makefile',
             'libjbig.so.$(VERSION)', 'libjbig.$(VERSION).dylib')
