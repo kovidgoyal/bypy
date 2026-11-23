@@ -68,6 +68,7 @@ def install_modern_python(image_name, is_chroot_based):
         yield ['sh', '-c', 'ln -sf `which python3.9` `which python3`']
         yield ['sh', '-c', 'ln -sf `which python3.9` /usr/local/bin/python']
         yield 'python3 -m ensurepip --upgrade --default-pip'
+        yield 'python3 -m pip install --upgrade pip'
         yield 'apt-get remove -y ' + build_deps
         yield 'end_custom_apt'
     else:
@@ -212,9 +213,10 @@ class Chroot:
             yield p(cmd)
         for cmd in install_modern_python(self.image_name, self.is_chroot_based):
             yield p(cmd)
-        yield p('python3 -m pip install --upgrade pip')
-        # html5lib needed for qt-webengine
-        yield p('python3 -m pip install ninja packaging meson certifi html5lib')
+        # html5lib needed for qt-webengine. PIP_BREAK_SYSTEM_PACKAGES is needed
+        # on newer distros where the system python is marked as externally
+        # managed (PEP 668), it is ignored by older versions of pip.
+        yield ['sh', '-c', 'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install ninja packaging meson certifi html5lib']
 
         deps = self.conf['deps']
         if isinstance(deps, (list, tuple)):
