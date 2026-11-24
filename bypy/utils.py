@@ -480,6 +480,7 @@ def qt_build(configure_args="", for_webengine=False, dep_name="", **env):
         # on macOS qt-imageformats falls back to bundled tiff and fails to find
         # WrapJpeg
         env["CMAKE_PREFIX_PATH"] = PREFIX
+    if iswindows:
         prepend_to_path.append(os.path.dirname(PERL))
         if for_webengine:
             append_to_path.insert(0, f"{PREFIX}/private/gnuwin32/bin")
