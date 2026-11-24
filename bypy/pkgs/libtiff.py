@@ -6,4 +6,4 @@ from bypy.utils import cmake_build
 
 
 def main(args):
-    cmake_build()
+    cmake_build(lerc='OFF')
