@@ -45,6 +45,20 @@ def main(args):
             'set(poppler_LIBS ${poppler_LIBS} openjp2)',
             'set(poppler_LIBS ${poppler_LIBS} %s)' % opjlib
         )
+        # poppler finds brotli only via pkg-config, which we dont have on
+        # windows, so create the imported target it expects manually
+        inc = f'{PREFIX}/include'.replace('\\', '/')
+        brotlilib = f'{PREFIX}/lib/brotlidec.lib'.replace('\\', '/')
+        replace_in_file(
+            'CMakeLists.txt',
+            'find_soft_mandatory_package(ENABLE_BROTLI libbrotlidec ${BROTLI_REQUIRED_VERSION})',
+            'if(ENABLE_BROTLI)\n'
+            '  add_library(PkgConfig::libbrotlidec INTERFACE IMPORTED)\n'
+            '  set_target_properties(PkgConfig::libbrotlidec PROPERTIES\n'
+            f'    INTERFACE_INCLUDE_DIRECTORIES "{inc}"\n'
+            f'    INTERFACE_LINK_LIBRARIES "{brotlilib}")\n'
+            'endif()\n'
+        )
         windows_cmake_build(**cmake_args)
         install_binaries('build/utils/*.exe', 'bin')
         install_binaries('build/*.dll', 'bin')
