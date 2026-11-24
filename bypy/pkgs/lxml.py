@@ -12,7 +12,7 @@ from bypy.utils import python_build, python_build_env, python_install, replace_i
 
 def main(args):
     # Dont actually need Cython but pyproject.toml declares it anayway, sigh
-    replace_in_file('pyproject.toml', re.compile(r'"Cython>=\d+.\d+.\d+", '), '')
+    replace_in_file('pyproject.toml', re.compile(r'"Cython[^"]*",\s*'), '')
     if iswindows:
         # libiconv is named libiconv.lib not iconv.lib for us
         replace_in_file('setupinfo.py', ", 'iconv'", ', "libiconv"')
