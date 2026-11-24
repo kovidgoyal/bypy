@@ -420,7 +420,7 @@ class Dependency:
                 suffix = "-" + "-".join(e["filename"].split("-")[-3:])
                 commit(e, suffix)
                 return
-        commit(source, "tar." + source["filename"].rpartition(".")[-1])
+        commit(source, ".tar." + source["filename"].rpartition(".")[-1])
 
     def ensure_download_data(self) -> None:
         if self.urls:
