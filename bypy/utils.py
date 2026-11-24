@@ -475,9 +475,12 @@ def qt_build(configure_args="", for_webengine=False, dep_name="", **env):
         qcm += ".bat"
     run(qcm, "..", "-help", append_to_path=append_to_path, library_path=True)
     run(qcm, "..", "-list-features", append_to_path=append_to_path, library_path=True)
-    if iswindows:
-        prepend_to_path.append(os.path.dirname(PERL))
+    if iswindows or ismacos:
+        # Needed for Qt to find our libraries (tiff, jpeg, webp, etc.), without it
+        # on macOS qt-imageformats falls back to bundled tiff and fails to find
+        # WrapJpeg
         env["CMAKE_PREFIX_PATH"] = PREFIX
+        prepend_to_path.append(os.path.dirname(PERL))
         if for_webengine:
             append_to_path.insert(0, f"{PREFIX}/private/gnuwin32/bin")
             append_to_path.append(os.path.dirname(NODEJS))
