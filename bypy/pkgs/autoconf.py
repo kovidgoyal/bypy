@@ -4,12 +4,17 @@
 
 import os
 
-from bypy.constants import PREFIX, build_dir
-from bypy.utils import replace_in_file, simple_build, walk
+from bypy.constants import BIN, PREFIX, build_dir, ismacos
+from bypy.utils import ModifiedEnv, replace_in_file, simple_build, walk
 
 
 def main(args):
-    simple_build()
+    env = {'PATH': BIN + os.pathsep + os.environ['PATH']}
+    if ismacos:
+        # The m4 shipped with Xcode is too old, use the one we built
+        env['M4'] = os.path.join(BIN, 'm4')
+    with ModifiedEnv(**env):
+        simple_build()
     for path in walk(os.path.join(build_dir(), 'bin')):
         replace_in_file(path, build_dir(), PREFIX)
     for path in walk(build_dir()):

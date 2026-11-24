@@ -28,6 +28,7 @@ DOWNLOAD_RETRIES = 3
 LICENSE_INFORMATION = {
     "nasm": ("BSD-2-Clause", "nasm/netwide_assembler"),
     "cmake": ("BSD-3-Clause", "cmake_project/cmake"),
+    "m4": ("GPL-3.0-or-later", ""),
     "autoconf": ("GPL-3.0-or-later", ""),
     "automake": ("GPL-2.0-or-later", ""),
     "libtool": ("LGPL-2.1-or-later", ""),
