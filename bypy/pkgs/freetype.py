@@ -6,7 +6,7 @@ import os
 import shutil
 
 from bypy.constants import build_dir, iswindows
-from bypy.utils import install_binaries, msbuild, replace_in_file, simple_build, run_shell
+from bypy.utils import install_binaries, meson_build, msbuild, replace_in_file, run_shell
 
 
 needs_lipo = True
@@ -43,4 +43,10 @@ def main(args):
             os.path.join(build_dir(), 'include', 'freetype2', 'freetype',
                          'internal'))
     else:
-        simple_build('--disable-dependency-tracking --disable-static')
+        meson_build(
+            '--wrap-mode=nofallback',
+            # harfbuzz is built after freetype. hvf links against a library
+            # that only exists in recent macOS versions
+            zlib='system', bzip2='enabled', png='enabled', brotli='enabled',
+            harfbuzz='disabled', hvf='disabled', tests='disabled',
+        )

@@ -1025,8 +1025,15 @@ def meson_build(extra_cmdline="", library_path=None, needs_nasm=False, **options
     if ismacos and not shutil.which(MESON):
         append_to_path = "/Library/Frameworks/Python.framework/Versions/Current/bin"
     cmd = [MESON, "setup", "--buildtype=release", f"--prefix={build_dir()}", f"--libdir={build_dir()}/lib"]
+    pkg_config = worker_env.get("PKG_CONFIG", "")
+    if pkg_config and not os.path.exists(pkg_config):
+        pkg_config = ""
     if is_cross_half_of_lipo_build():
         cpu_family = "aarch64" if "arm" in current_build_arch() else "x86_64"
+        # meson ignores PKG_CONFIG and PKG_CONFIG_PATH from the environment
+        # for the host machine when cross compiling
+        pkg_config_binary = f"pkg-config = '{pkg_config}'" if pkg_config else ""
+        pkg_config_path = f"pkg_config_path = '{worker_env['PKG_CONFIG_PATH']}'" if pkg_config else ""
         cross_defn = f"""
 [host_machine]
 system = 'darwin'
@@ -1039,8 +1046,10 @@ c = 'clang'
 cpp = 'clang++'
 ar = 'ar'
 strip = 'strip'
+{pkg_config_binary}
 
 [built-in options]
+{pkg_config_path}
 c_args = ['-arch', '{current_build_arch()}']
 cpp_args = ['-arch', '{current_build_arch()}']
 c_link_args = ['-arch', '{current_build_arch()}']

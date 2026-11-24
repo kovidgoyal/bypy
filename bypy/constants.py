@@ -141,6 +141,8 @@ else:
     if ismacos:
         LDFLAGS = worker_env["LDFLAGS"] = f"-headerpad_max_install_names -L{LIBDIR}"
         CMAKE = os.path.join(BIN, "cmake")
+        # macOS has no pkg-config, we build our own
+        worker_env["PKG_CONFIG"] = os.path.join(BIN, "pkg-config")
         if os.environ.get("BYPY_UNIVERSAL") == "true":
             UNIVERSAL_ARCHES = "x86_64", "arm64"
             if "RELEASE_ARM64" in platform.version():
