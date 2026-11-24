@@ -178,9 +178,9 @@ class Traversable:
     def iterdir(self):
         p = self._self_node
         if p is not None:
-            for child_name, child_node in p.items():
+            for child_name in p:
                 yield Traversable(
-                    tuple(self._path_entries + (child_name,)), child_node)
+                    self._path_entries + (child_name,), self._filesystem_tree)
 
     def is_dir(self):
         return bool(self._self_node)
