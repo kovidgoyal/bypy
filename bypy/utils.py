@@ -485,6 +485,9 @@ def qt_build(configure_args="", for_webengine=False, dep_name="", **env):
         if for_webengine:
             append_to_path.insert(0, f"{PREFIX}/private/gnuwin32/bin")
             append_to_path.append(os.path.dirname(NODEJS))
+            # Some chromium .bat wrappers, such as protoc-gen-ts_proto.bat,
+            # invoke a bare "python", so it must be on PATH
+            append_to_path.append(os.path.dirname(os.path.abspath(sys.executable)))
     if ismacos:
         env["PYTHON3_PATH"] = os.path.dirname(os.path.abspath(sys.executable))
     if for_webengine:
