@@ -204,6 +204,16 @@ def forwarded_port(port_to_forward: int, user=BUILD_VM_USER, server='localhost',
     return rp
 
 
+master_processes: dict[str, subprocess.Popen] = {}
+
+
+def ssh_master_is_alive(user=BUILD_VM_USER, server='localhost', port=22) -> bool:
+    server = f'{user}@{server}'
+    socket = ssh_master_socket_path(server, port)
+    return subprocess.run(
+        ['ssh', '-S', socket, '-O', 'check', '-p', str(port), server], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+
 def ssh_command_to(*args, user=BUILD_VM_USER, server='localhost', port=22, allocate_tty=False, timeout=30, use_master=True):
     server = f'{user}@{server}'
     socket = ssh_master_socket_path(server, port)
@@ -212,10 +222,19 @@ def ssh_command_to(*args, user=BUILD_VM_USER, server='localhost', port=22, alloc
     ssh = ['ssh', '-p', port, '-o', f'ConnectTimeout={timeout}'] + disable_known_hosts
     if use_master:
         ssh += ['-S', socket]
-        if not os.path.exists(socket):
-            master_process = subprocess.Popen(
+        mp = master_processes.get(socket)
+        if mp is not None and mp.poll() is not None:
+            # master process died, for instance because the SSH server was
+            # not yet up when it was started, so start a new one
+            mp = None
+            try:
+                os.remove(socket)
+            except FileNotFoundError:
+                pass
+        if mp is None and not os.path.exists(socket):
+            master_processes[socket] = mp = subprocess.Popen(
                 ssh + ['-o', 'ServerAliveInterval=5', '-o', 'ServerAliveCountMax=3', '-M', '-N', server])
-            atexit.register(end_ssh_master, address, socket, master_process)
+            atexit.register(end_ssh_master, address, socket, mp)
 
     if allocate_tty:
         ssh.append('-t')
@@ -303,18 +322,23 @@ def server_from_spec(spec):
 def wait_for_ssh(spec, timeout=180):
     port = ssh_port(spec)
     server = server_from_spec(spec)
-    cmd = ssh_command_to('date', server=server, port=port, timeout=timeout)
     start = monotonic()
     print(f'Waiting for master connection to SSH server at {server}:{port}...', file=sys.stderr)
     while monotonic() - start < timeout:
+        # Re-create the command each time so that the master connection is
+        # restarted if it died. Note that a successful command does not imply
+        # the master is up, as ssh falls back to a direct connection when the
+        # control socket does not exist, so check the master explicitly.
+        cmd = ssh_command_to('date', server=server, port=port, timeout=timeout)
         try:
             cp = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if cp.returncode == 0 and ssh_master_is_alive(server=server, port=port):
+                time = monotonic() - start
+                print(f'Connected in {time:.1f} seconds', file=sys.stderr)
+                return int(port)
+            sleep(0.5)
         except KeyboardInterrupt:
             raise SystemExit('Interrupted by user')
-        if cp.returncode == 0:
-            time = monotonic() - start
-            print(f'Connected in {time:.1f} seconds', file=sys.stderr)
-            return int(port)
     print(cp.stdout.decode('utf-8', 'replace'), file=sys.stderr)
     raise SystemExit(cp.returncode)
 
